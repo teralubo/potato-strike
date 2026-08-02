@@ -55,7 +55,7 @@ Configi startowe sa w folderze `configs/`, a export configu zawiera tez mapy i m
 ## Tryb fabularny i edytor
 
 - W menu wybierz `Tryb fabularny`, aby grac zapisane misje.
-- `EDYTOR` otwiera osobne okno Potato Strike Studio. To lekki graficzny sandbox do map i trybow: widok 2D albo 3D preview, paleta obiektow, workspace z siatka, explorer obiektow, panel wlasciwosci, ustawienia trybu gry, dodawanie, przesuwanie, usuwanie, rozmiar, rotacja, kolor, bombsite A/B, spawny T/CT, triggery, logika, pickupy broni, propy i tekstury.
+- `EDYTOR` otwiera osobne okno Potato Strike Studio. To lekki graficzny sandbox do map i trybow: widok 2D albo edytowalny 3D, paleta obiektow, workspace z siatka, explorer obiektow, panel wlasciwosci, ustawienia trybu gry, dodawanie, przesuwanie, usuwanie, rozmiar, rotacja, kolor, bombsite A/B, spawny T/CT, triggery, logika, pickupy broni, propy i tekstury.
 - Misje zapisuja sie lokalnie i mozna je pozniej zaladowac w przegladarce albo w buildzie offline.
 - Generator moze stworzyc losowa mape i misje jako punkt startowy, a potem mozna je normalnie poprawiac w edytorze.
 - Studio ma przycisk `Testuj`, ktory uruchamia gre na edytowanej mapie bez potrzeby edycji aktualnej rundy.

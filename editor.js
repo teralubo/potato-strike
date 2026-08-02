@@ -193,9 +193,8 @@ function draw2dEditor() {
 function draw3dPreview() {
   const w = canvas.width;
   const h = canvas.height;
-  const scale = Math.min(w / map.w, h / map.h) * 0.86;
-  const originX = w / 2;
-  const originY = h * 0.18;
+  const layout = isoLayout();
+  const { originX, originY, scale } = layout;
   ctx.fillStyle = "#202620";
   ctx.fillRect(0, 0, w, h);
   const sky = ctx.createLinearGradient(0, 0, 0, h * 0.45);
@@ -224,6 +223,24 @@ function draw3dPreview() {
 
 function isoPoint(x, y, originX, originY, scale) {
   return { x: originX + (x - y) * scale * 0.5, y: originY + (x + y) * scale * 0.25 };
+}
+
+function isoLayout() {
+  return {
+    originX: canvas.width / 2,
+    originY: canvas.height * 0.18,
+    scale: Math.min(canvas.width / map.w, canvas.height / map.h) * 0.86,
+  };
+}
+
+function isoCanvasPoint(screenX, screenY) {
+  const { originX, originY, scale } = isoLayout();
+  const dx = (screenX - originX) / (scale * 0.5);
+  const dy = (screenY - originY) / (scale * 0.25);
+  return {
+    x: Math.max(0, Math.min(map.w, (dx + dy) / 2)),
+    y: Math.max(0, Math.min(map.h, (dy - dx) / 2)),
+  };
 }
 
 function drawIsoLine(x1, y1, x2, y2, originX, originY, scale) {
@@ -327,10 +344,12 @@ function drawObject(obj) {
 
 function canvasPoint(event) {
   const rect = canvas.getBoundingClientRect();
-  return {
+  const screen = {
     x: (event.clientX - rect.left) * (canvas.width / rect.width),
     y: (event.clientY - rect.top) * (canvas.height / rect.height),
   };
+  if (studioSettings.viewportMode === "3d") return isoCanvasPoint(screen.x, screen.y);
+  return screen;
 }
 
 function hitObject(x, y) {
@@ -566,6 +585,7 @@ canvas.addEventListener("mousedown", (event) => {
     const obj = hitObject(p.x, p.y);
     selectedId = obj?.id || "";
     if (obj) drag = { id: obj.id, dx: p.x - obj.x, dy: p.y - obj.y };
+    status(obj ? `Wybrano ${obj.type} w widoku ${studioSettings.viewportMode.toUpperCase()}` : "Brak obiektu pod kursorem");
     renderUi();
     return;
   }
@@ -581,6 +601,7 @@ canvas.addEventListener("mousedown", (event) => {
   else if (activeTool === "siteA") map.sites.A = { x: p.x, y: p.y, r: 115 };
   else if (activeTool === "siteB") map.sites.B = { x: p.x, y: p.y, r: 110 };
   else addObject(activeTool, p.x, p.y);
+  status(`Uzyto ${activeTool} w widoku ${studioSettings.viewportMode.toUpperCase()}`);
   renderUi();
 });
 
@@ -596,6 +617,28 @@ canvas.addEventListener("mousemove", (event) => {
 });
 
 window.addEventListener("mouseup", () => { drag = null; });
+window.addEventListener("keydown", (event) => {
+  const obj = map.obstacles.find((item) => item.id === selectedId);
+  if (!obj) return;
+  if (event.code === "Delete" || event.code === "Backspace") {
+    map.obstacles = map.obstacles.filter((item) => item.id !== selectedId);
+    selectedId = "";
+    renderUi();
+    status("Usunieto obiekt");
+    return;
+  }
+  if (event.code === "KeyQ" || event.code === "KeyE") {
+    obj.rot = ((obj.rot || 0) + (event.code === "KeyE" ? 15 : -15) + 360) % 360;
+    renderUi();
+    status(`Rotacja: ${obj.rot}`);
+    return;
+  }
+  if (event.key === "+" || event.key === "=" || event.key === "-") {
+    obj.z = Math.max(0, (obj.z || 0) + (event.key === "-" ? -8 : 8));
+    renderUi();
+    status(`Wysokosc: ${obj.z}`);
+  }
+});
 ui.name.addEventListener("input", () => { map.name = ui.name.value; });
 ui.viewportMode.addEventListener("change", () => {
   studioSettings.viewportMode = ui.viewportMode.value;

@@ -91,7 +91,7 @@ for (const snippet of [
 }
 
 const editorJs = fs.readFileSync("editor.js", "utf8");
-for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps"]) {
+for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "isoCanvasPoint", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio feature: ${snippet}`);
     process.exit(1);
