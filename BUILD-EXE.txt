@@ -1,0 +1,19 @@
+Potato Strike offline folder
+
+Browser/local process:
+  Run PotatoStrike.bat
+
+Separate offline game window:
+  Run PotatoStrike-Window.bat after npm install
+
+Separate Studio editor window:
+  Run PotatoStrike-Studio.bat after npm install
+
+Full EXE file:
+  npm install
+  npm run build:win
+
+Linux build:
+  npm run build:linux
+
+The EXE build uses Electron and writes output to dist/.

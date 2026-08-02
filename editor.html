@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Potato Strike Studio</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body class="studio-body">
+  <div id="studio">
+    <header class="studio-topbar">
+      <div>
+        <div class="muted">Potato Strike</div>
+        <h1>Studio</h1>
+      </div>
+      <div class="studio-actions">
+        <button id="new-map">Nowa</button>
+        <button id="generate-map">Generuj</button>
+        <button id="save-map">Zapisz</button>
+        <button id="test-map">Testuj</button>
+        <button id="export-map" class="secondary">Export</button>
+        <button id="import-map" class="secondary">Import</button>
+        <input id="import-file" class="hidden" type="file" accept="application/json">
+      </div>
+    </header>
+    <aside class="studio-panel studio-left">
+      <label>
+        Projekt
+        <input id="map-name" value="Studio Map">
+      </label>
+      <label>
+        Istniejaca mapa
+        <select id="map-list"></select>
+      </label>
+      <button id="load-map" class="secondary">Otworz mape</button>
+      <div class="studio-section">
+        <div class="muted">NARZEDZIA</div>
+        <div class="tool-grid">
+          <button data-tool="select">Select</button>
+          <button data-tool="wall">Wall</button>
+          <button data-tool="crate">Crate</button>
+          <button data-tool="cover">Cover</button>
+          <button data-tool="ramp">Ramp</button>
+          <button data-tool="light">Light</button>
+          <button data-tool="spawnT">Spawn T</button>
+          <button data-tool="spawnCT">Spawn CT</button>
+          <button data-tool="siteA">Site A</button>
+          <button data-tool="siteB">Site B</button>
+          <button data-tool="trigger">Trigger</button>
+          <button data-tool="logic">Logic</button>
+          <button data-tool="weaponPickup">Weapon</button>
+          <button data-tool="prop">Prop</button>
+          <button data-tool="delete">Delete</button>
+        </div>
+      </div>
+      <div class="studio-section">
+        <div class="muted">ASSETY / MODY</div>
+        <label>
+          Tekstura
+          <input id="texture-file" type="file" accept="image/*">
+        </label>
+        <input id="texture-name" value="custom-texture">
+        <button id="import-texture" class="secondary">Wgraj teksture</button>
+        <label>
+          Kod / JSON modu
+          <textarea id="mod-code" class="code-box" spellcheck="false">{"name":"Studio Mode","mode":"custom"}</textarea>
+        </label>
+        <button id="save-mod" class="secondary">Zapisz mod</button>
+      </div>
+    </aside>
+    <main class="studio-canvas-wrap">
+      <canvas id="studio-canvas" width="2200" height="1400"></canvas>
+      <div id="studio-status">Gotowe</div>
+    </main>
+    <aside class="studio-panel studio-right">
+      <div class="studio-section">
+        <div class="muted">WLASCIWOSCI</div>
+        <div id="properties" class="property-grid"></div>
+      </div>
+      <div class="studio-section">
+        <div class="muted">EXPLORER</div>
+        <div id="object-list" class="object-list"></div>
+      </div>
+      <div class="studio-section">
+        <div class="muted">ASSET LIST</div>
+        <div id="asset-list" class="object-list"></div>
+      </div>
+    </aside>
+  </div>
+  <script src="editor.js"></script>
+</body>
+</html>

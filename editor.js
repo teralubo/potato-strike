@@ -1,0 +1,459 @@
+const canvas = document.getElementById("studio-canvas");
+const ctx = canvas.getContext("2d");
+const $ = (id) => document.getElementById(id);
+
+const ui = {
+  name: $("map-name"),
+  list: $("map-list"),
+  load: $("load-map"),
+  newMap: $("new-map"),
+  generate: $("generate-map"),
+  save: $("save-map"),
+  test: $("test-map"),
+  exportMap: $("export-map"),
+  importMap: $("import-map"),
+  importFile: $("import-file"),
+  textureFile: $("texture-file"),
+  textureName: $("texture-name"),
+  importTexture: $("import-texture"),
+  modCode: $("mod-code"),
+  saveMod: $("save-mod"),
+  properties: $("properties"),
+  objects: $("object-list"),
+  assets: $("asset-list"),
+  status: $("studio-status"),
+};
+
+const baseMaps = {
+  dustyard: makeMap("Dustyard", 2200, 1480, 1),
+  officepark: makeMap("Officepark", 2000, 1340, 2),
+  cachebox: makeMap("Cachebox", 2180, 1380, 3),
+  dust2: makeMap("Dust II style", 2250, 1500, 4),
+  mirage: makeMap("Mirage style", 2180, 1460, 5),
+  inferno: makeMap("Inferno style", 2050, 1580, 6),
+  nuke: makeMap("Nuke style", 1980, 1380, 7),
+  overpass: makeMap("Overpass style", 2300, 1520, 8),
+  vertigo: makeMap("Vertigo style", 1900, 1320, 9),
+  ancient: makeMap("Ancient style", 2180, 1540, 10),
+  anubis: makeMap("Anubis style", 2240, 1480, 11),
+  train: makeMap("Train style", 2360, 1420, 12),
+};
+
+let activeTool = "select";
+let selectedId = "";
+let drag = null;
+let map = emptyMap();
+let textures = loadJson("potatoStrikeStudioTextures", []);
+let mods = loadJson("potatoStrikeStudioMods", []);
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function loadJson(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+  } catch {
+    return fallback;
+  }
+}
+
+function saveJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function status(text) {
+  ui.status.textContent = text;
+}
+
+function emptyMap() {
+  return {
+    name: "Studio Map",
+    w: 2200,
+    h: 1400,
+    tSpawn: { x: 180, y: 1220 },
+    ctSpawn: { x: 2020, y: 180 },
+    sites: { A: { x: 1650, y: 1000, r: 115 }, B: { x: 560, y: 330, r: 110 } },
+    obstacles: [],
+  };
+}
+
+function makeMap(name, w, h, seed) {
+  const rand = seededRandom(`${name}-${seed}`);
+  const obstacles = [];
+  for (let i = 0; i < 12; i += 1) {
+    obstacles.push({
+      id: `obj-${seed}-${i}`,
+      type: i % 3 === 0 ? "crate" : "wall",
+      x: 180 + Math.floor(rand() * (w - 420)),
+      y: 160 + Math.floor(rand() * (h - 360)),
+      w: 90 + Math.floor(rand() * 260),
+      h: 70 + Math.floor(rand() * 190),
+      z: 96,
+      rot: 0,
+      color: i % 3 === 0 ? "#7d6648" : "#56614d",
+    });
+  }
+  return {
+    name,
+    w,
+    h,
+    tSpawn: { x: 180, y: h - 180 },
+    ctSpawn: { x: w - 180, y: 180 },
+    sites: { A: { x: Math.floor(w * 0.74), y: Math.floor(h * 0.72), r: 115 }, B: { x: Math.floor(w * 0.32), y: Math.floor(h * 0.26), r: 110 } },
+    obstacles,
+  };
+}
+
+function seededRandom(seed) {
+  let value = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) value = Math.imul(value ^ seed.charCodeAt(i), 16777619);
+  return () => {
+    value += value << 13; value ^= value >>> 7; value += value << 3; value ^= value >>> 17; value += value << 5;
+    return ((value >>> 0) % 10000) / 10000;
+  };
+}
+
+function userMaps() {
+  return loadJson("potatoStrikeUserMaps", []);
+}
+
+function writeUserMaps(list) {
+  saveJson("potatoStrikeUserMaps", list);
+}
+
+function refreshMapList() {
+  ui.list.innerHTML = "";
+  for (const [id, item] of Object.entries(baseMaps)) {
+    const option = document.createElement("option");
+    option.value = `base:${id}`;
+    option.textContent = item.name;
+    ui.list.appendChild(option);
+  }
+  for (const item of userMaps()) {
+    const option = document.createElement("option");
+    option.value = `user:${item.id}`;
+    option.textContent = item.map.name || item.id;
+    ui.list.appendChild(option);
+  }
+}
+
+function fitCanvas() {
+  canvas.width = map.w;
+  canvas.height = map.h;
+  canvas.style.width = `${map.w}px`;
+  canvas.style.height = `${map.h}px`;
+}
+
+function draw() {
+  fitCanvas();
+  ctx.fillStyle = "#252b23";
+  ctx.fillRect(0, 0, map.w, map.h);
+  ctx.strokeStyle = "rgba(242,240,223,0.055)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x < map.w; x += 64) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, map.h); ctx.stroke();
+  }
+  for (let y = 0; y < map.h; y += 64) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(map.w, y); ctx.stroke();
+  }
+  drawSite("A", map.sites.A, "#d7bd62");
+  drawSite("B", map.sites.B, "#77b56f");
+  drawSpawn("T", map.tSpawn, "#c48a45");
+  drawSpawn("CT", map.ctSpawn, "#8ea9b8");
+  for (const obj of map.obstacles) drawObject(obj);
+}
+
+function drawSite(label, site, color) {
+  ctx.fillStyle = `${color}44`;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(site.x, site.y, site.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#171812";
+  ctx.font = "800 42px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(label, site.x, site.y + 14);
+}
+
+function drawSpawn(label, spawn, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(spawn.x, spawn.y, 28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#101410";
+  ctx.font = "800 18px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(label, spawn.x, spawn.y + 6);
+}
+
+function drawObject(obj) {
+  ctx.save();
+  ctx.translate(obj.x + obj.w / 2, obj.y + obj.h / 2);
+  ctx.rotate((obj.rot || 0) * Math.PI / 180);
+  ctx.fillStyle = obj.color || "#56614d";
+  ctx.fillRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  for (let x = -obj.w / 2; x < obj.w / 2; x += 18) ctx.fillRect(x, -obj.h / 2, 2, obj.h);
+  if (obj.id === selectedId) {
+    ctx.strokeStyle = "#77b56f";
+    ctx.lineWidth = 5;
+    ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+  }
+  ctx.restore();
+}
+
+function canvasPoint(event) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - rect.left) * (canvas.width / rect.width),
+    y: (event.clientY - rect.top) * (canvas.height / rect.height),
+  };
+}
+
+function hitObject(x, y) {
+  return [...map.obstacles].reverse().find((obj) => x >= obj.x && y >= obj.y && x <= obj.x + obj.w && y <= obj.y + obj.h);
+}
+
+function addObject(type, x, y) {
+  const presets = {
+    wall: [180, 80, 96, "#56614d"],
+    crate: [84, 84, 64, "#7d6648"],
+    cover: [150, 58, 46, "#61715f"],
+    ramp: [160, 90, 28, "#6f765f"],
+    light: [64, 64, 10, "#d7bd62"],
+    trigger: [160, 120, 0, "#7f6bd4"],
+    logic: [120, 80, 0, "#5ca8a6"],
+    weaponPickup: [88, 46, 12, "#bfc7c1"],
+    prop: [110, 90, 36, "#8d846b"],
+  };
+  const p = presets[type] || presets.wall;
+  const obj = { id: `obj-${Date.now().toString(36)}`, type, x: x - p[0] / 2, y: y - p[1] / 2, w: p[0], h: p[1], z: p[2], rot: 0, color: p[3] };
+  map.obstacles.push(obj);
+  selectedId = obj.id;
+  renderUi();
+}
+
+function renderUi() {
+  ui.name.value = map.name;
+  renderProperties();
+  renderObjects();
+  renderAssets();
+  draw();
+}
+
+function renderProperties() {
+  ui.properties.innerHTML = "";
+  const selected = map.obstacles.find((obj) => obj.id === selectedId);
+  const target = selected || map;
+  const fields = selected
+    ? [["type", "text"], ["x", "number"], ["y", "number"], ["w", "number"], ["h", "number"], ["z", "number"], ["rot", "number"], ["color", "color"]]
+    : [["name", "text"], ["w", "number"], ["h", "number"]];
+  for (const [key, type] of fields) {
+    const label = document.createElement("label");
+    label.textContent = key;
+    const input = document.createElement("input");
+    input.type = type;
+    input.value = target[key] ?? "";
+    input.addEventListener("input", () => {
+      target[key] = type === "number" ? Number(input.value) : input.value;
+      if (target === map && key === "name") ui.name.value = target[key];
+      draw();
+      renderObjects();
+    });
+    label.appendChild(input);
+    ui.properties.appendChild(label);
+  }
+}
+
+function renderObjects() {
+  ui.objects.innerHTML = "";
+  const special = [
+    ["Spawn T", `${Math.round(map.tSpawn.x)}, ${Math.round(map.tSpawn.y)}`],
+    ["Spawn CT", `${Math.round(map.ctSpawn.x)}, ${Math.round(map.ctSpawn.y)}`],
+    ["Bombsite A", `${Math.round(map.sites.A.x)}, ${Math.round(map.sites.A.y)}`],
+    ["Bombsite B", `${Math.round(map.sites.B.x)}, ${Math.round(map.sites.B.y)}`],
+  ];
+  for (const [name, value] of special) addObjectRow(name, value);
+  for (const obj of map.obstacles) addObjectRow(obj.type, `${Math.round(obj.x)}, ${Math.round(obj.y)}`, obj.id);
+}
+
+function addObjectRow(name, value, id = "") {
+  const row = document.createElement("button");
+  row.className = `object-row${id && id === selectedId ? " active" : ""}`;
+  row.innerHTML = `<span>${name}</span><span class="tag">${value}</span>`;
+  if (id) row.addEventListener("click", () => { selectedId = id; renderUi(); });
+  ui.objects.appendChild(row);
+}
+
+function renderAssets() {
+  ui.assets.innerHTML = "";
+  const rows = [
+    ...textures.map((item) => ["Texture", item.name]),
+    ...mods.map((item) => ["Mod", item.name || item.id || "unnamed"]),
+  ];
+  if (!rows.length) rows.push(["Assets", "brak"]);
+  for (const [kind, name] of rows) addAssetRow(kind, name);
+}
+
+function addAssetRow(kind, name) {
+  const row = document.createElement("div");
+  row.className = "object-row";
+  row.innerHTML = `<span>${kind}</span><span class="tag">${name}</span>`;
+  ui.assets.appendChild(row);
+}
+
+function saveMap() {
+  map.name = ui.name.value || map.name || "Studio Map";
+  const id = `studio-${map.name.replace(/[^a-z0-9_-]/gi, "-").toLowerCase() || Date.now().toString(36)}`;
+  const list = userMaps().filter((item) => item.id !== id);
+  list.push({ id, map: clone(map) });
+  writeUserMaps(list);
+  localStorage.setItem("potatoStrikeStudioLastMap", JSON.stringify(map));
+  refreshMapList();
+  status(`Zapisano: ${map.name}`);
+  return id;
+}
+
+function loadSelectedMap() {
+  const [kind, id] = ui.list.value.split(":");
+  if (kind === "base") map = clone(baseMaps[id]);
+  else {
+    const item = userMaps().find((entry) => entry.id === id);
+    if (item) map = clone(item.map);
+  }
+  selectedId = "";
+  renderUi();
+  status(`Otwarta mapa: ${map.name}`);
+}
+
+function generateMap() {
+  const seed = `${ui.name.value || "studio"}-${Date.now().toString(36)}`;
+  map = makeMap(`Generated ${seed.slice(-6)}`, 2100, 1400, seed.length);
+  selectedId = "";
+  renderUi();
+  status("Wygenerowano mape do dalszej edycji");
+}
+
+function exportMap() {
+  const blob = new Blob([JSON.stringify({ type: "potato-strike-map", map }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${(map.name || "studio-map").replace(/\s+/g, "-").toLowerCase()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function importMapFile() {
+  const file = ui.importFile.files[0];
+  if (!file) return;
+  const data = JSON.parse(await file.text());
+  map = data.map || data;
+  if (!map.obstacles) map = emptyMap();
+  selectedId = "";
+  renderUi();
+  status(`Zaimportowano: ${map.name || file.name}`);
+}
+
+async function importTexture() {
+  const file = ui.textureFile.files[0];
+  if (!file) return status("Wybierz plik tekstury");
+  const dataUrl = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+  textures.push({ id: `tex-${Date.now().toString(36)}`, name: ui.textureName.value || file.name, dataUrl });
+  saveJson("potatoStrikeStudioTextures", textures);
+  renderAssets();
+  status("Tekstura dodana do Studio");
+}
+
+async function saveMod() {
+  let mod;
+  try {
+    mod = JSON.parse(ui.modCode.value);
+  } catch {
+    mod = { id: `script-${Date.now().toString(36)}`, name: "Studio Script", code: ui.modCode.value };
+  }
+  mods.push(mod);
+  saveJson("potatoStrikeStudioMods", mods);
+  renderAssets();
+  if (window.potatoNative?.saveMod) await window.potatoNative.saveMod(mod.name || mod.id || "studio-mod", mod);
+  status("Mod zapisany");
+}
+
+async function testMap() {
+  saveMap();
+  localStorage.setItem("potatoStrikeStudioTestMap", JSON.stringify(map));
+  status("Uruchamiam test mapy");
+  if (window.potatoNative?.testMap) await window.potatoNative.testMap();
+  else window.open("index.html?studioTest=1", "_blank");
+}
+
+document.querySelectorAll("[data-tool]").forEach((button) => {
+  button.addEventListener("click", () => {
+    activeTool = button.dataset.tool;
+    document.querySelectorAll("[data-tool]").forEach((item) => item.classList.toggle("active", item === button));
+    status(`Tool: ${activeTool}`);
+  });
+});
+
+canvas.addEventListener("mousedown", (event) => {
+  const p = canvasPoint(event);
+  if (activeTool === "select") {
+    const obj = hitObject(p.x, p.y);
+    selectedId = obj?.id || "";
+    if (obj) drag = { id: obj.id, dx: p.x - obj.x, dy: p.y - obj.y };
+    renderUi();
+    return;
+  }
+  if (activeTool === "delete") {
+    const obj = hitObject(p.x, p.y);
+    if (obj) map.obstacles = map.obstacles.filter((item) => item.id !== obj.id);
+    selectedId = "";
+    renderUi();
+    return;
+  }
+  if (activeTool === "spawnT") map.tSpawn = p;
+  else if (activeTool === "spawnCT") map.ctSpawn = p;
+  else if (activeTool === "siteA") map.sites.A = { x: p.x, y: p.y, r: 115 };
+  else if (activeTool === "siteB") map.sites.B = { x: p.x, y: p.y, r: 110 };
+  else addObject(activeTool, p.x, p.y);
+  renderUi();
+});
+
+canvas.addEventListener("mousemove", (event) => {
+  if (!drag) return;
+  const obj = map.obstacles.find((item) => item.id === drag.id);
+  if (!obj) return;
+  const p = canvasPoint(event);
+  obj.x = p.x - drag.dx;
+  obj.y = p.y - drag.dy;
+  draw();
+  renderObjects();
+});
+
+window.addEventListener("mouseup", () => { drag = null; });
+ui.name.addEventListener("input", () => { map.name = ui.name.value; });
+ui.newMap.addEventListener("click", () => { map = emptyMap(); selectedId = ""; renderUi(); status("Nowa mapa"); });
+ui.generate.addEventListener("click", generateMap);
+ui.save.addEventListener("click", saveMap);
+ui.test.addEventListener("click", testMap);
+ui.exportMap.addEventListener("click", exportMap);
+ui.importMap.addEventListener("click", () => ui.importFile.click());
+ui.importFile.addEventListener("change", importMapFile);
+ui.load.addEventListener("click", loadSelectedMap);
+ui.importTexture.addEventListener("click", importTexture);
+ui.saveMod.addEventListener("click", saveMod);
+
+try {
+  map = JSON.parse(localStorage.getItem("potatoStrikeStudioLastMap") || "null") || emptyMap();
+} catch {
+  map = emptyMap();
+}
+refreshMapList();
+renderUi();
+document.querySelector('[data-tool="select"]').classList.add("active");

@@ -1,0 +1,2212 @@
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d", { alpha: false });
+
+const $ = (id) => document.getElementById(id);
+const hud = {
+  mode: $("mode-pill"),
+  team: $("team-pill"),
+  health: $("health"),
+  armor: $("armor"),
+  money: $("money"),
+  round: $("round"),
+  score: $("score"),
+  timer: $("timer"),
+  bomb: $("bomb-pill"),
+  missionPill: $("mission-pill"),
+  weaponName: $("weapon-name"),
+  ammo: $("ammo"),
+  message: $("message"),
+  menu: $("menu"),
+  start: $("start"),
+  shopPanel: $("shop-panel"),
+  shopList: $("shop-list"),
+  settingsPanel: $("settings-panel"),
+  bindsPanel: $("binds-panel"),
+  bindList: $("bind-list"),
+  teamsPanel: $("teams-panel"),
+  teamList: $("team-list"),
+  mapgenPanel: $("mapgen-panel"),
+  mapSeed: $("map-seed"),
+  mapSize: $("map-size"),
+  mapgenStatus: $("mapgen-status"),
+  generateMap: $("generate-map"),
+  editorPanel: $("editor-panel"),
+  editorName: $("editor-name"),
+  editorTool: $("editor-tool"),
+  editorGoal: $("editor-goal"),
+  editorTarget: $("editor-target"),
+  editorWidth: $("editor-width"),
+  editorHeight: $("editor-height"),
+  editorRotation: $("editor-rotation"),
+  editorColor: $("editor-color"),
+  editorNew: $("editor-new"),
+  editorRandom: $("editor-random"),
+  editorSaveMap: $("editor-save-map"),
+  editorSave: $("editor-save"),
+  editorLoad: $("editor-load"),
+  editorExport: $("editor-export"),
+  textureFile: $("texture-file"),
+  textureName: $("texture-name"),
+  textureImport: $("texture-import"),
+  modFile: $("mod-file"),
+  modMode: $("mod-mode"),
+  modCode: $("mod-code"),
+  modImport: $("mod-import"),
+  modExport: $("mod-export"),
+  assetList: $("asset-list"),
+  editorProperties: $("editor-properties"),
+  savedMissions: $("saved-missions"),
+  consolePanel: $("console-panel"),
+  commandInput: $("command-input"),
+  runCommand: $("run-command"),
+  commandLog: $("command-log"),
+  pausePanel: $("pause-panel"),
+  resumeGame: $("resume-game"),
+  pauseSettings: $("pause-settings"),
+  pauseMenu: $("pause-menu"),
+  missionsPanel: $("missions-panel"),
+  missionList: $("mission-list"),
+  networkPanel: $("network-panel"),
+  networkStatus: $("network-status"),
+  rerollMissions: $("reroll-missions"),
+  graphicsMode: $("graphics-mode"),
+  quality: $("quality"),
+  languageSelect: $("language-select"),
+  difficulty: $("difficulty"),
+  resolution: $("resolution"),
+  hzLimit: $("hz-limit"),
+  crosshairStyle: $("crosshair-style"),
+  crosshairColor: $("crosshair-color"),
+  configNick: $("config-nick"),
+  configId: $("config-id"),
+  configPlayerId: $("config-player-id"),
+  exportConfig: $("export-config"),
+  importConfig: $("import-config"),
+  configFile: $("config-file"),
+  sensitivity: $("sensitivity"),
+  screenShake: $("screen-shake"),
+  perfLimit: $("perf-limit"),
+  botCount: $("bot-count"),
+  controlMode: $("control-mode"),
+  showMinimap: $("show-minimap"),
+  autoReload: $("auto-reload"),
+  menuMode: $("menu-mode"),
+  launchTarget: $("launch-target"),
+  matchSize: $("match-size"),
+  fillMode: $("fill-mode"),
+  menuTeam: $("menu-team"),
+  menuMap: $("menu-map"),
+  menuGraphics: $("menu-graphics"),
+  quickEditor: $("quick-editor"),
+  openSettings: $("open-settings"),
+  openBinds: $("open-binds"),
+  openTeams: $("open-teams"),
+  openMapgen: $("open-mapgen"),
+  openEditor: $("open-editor"),
+  openConsole: $("open-console"),
+  openNetwork: $("open-network"),
+  downloadGame: $("download-game"),
+  mobileControls: $("mobile-controls"),
+};
+
+const weaponCatalog = [
+  { name: "Glock-18", side: "T", category: "Pistol", price: 200, magSize: 20, reserve: 120, damage: 19, fireDelay: 95, reloadTime: 1.15, spread: 0.065, recoil: 0.042, bulletSpeed: 1040, automatic: false, color: "#bfc7c1" },
+  { name: "USP-S", side: "CT", category: "Pistol", price: 200, magSize: 12, reserve: 60, damage: 23, fireDelay: 150, reloadTime: 1.2, spread: 0.042, recoil: 0.038, bulletSpeed: 1060, automatic: false, color: "#b7c0b6" },
+  { name: "P2000", side: "CT", category: "Pistol", price: 200, magSize: 13, reserve: 52, damage: 22, fireDelay: 145, reloadTime: 1.2, spread: 0.049, recoil: 0.04, bulletSpeed: 1040, automatic: false, color: "#9fb5b2" },
+  { name: "P250", side: "BOTH", category: "Pistol", price: 300, magSize: 13, reserve: 52, damage: 27, fireDelay: 150, reloadTime: 1.2, spread: 0.052, recoil: 0.05, bulletSpeed: 1060, automatic: false, color: "#aebbb5" },
+  { name: "Five-SeveN", side: "CT", category: "Pistol", price: 500, magSize: 20, reserve: 100, damage: 24, fireDelay: 110, reloadTime: 1.3, spread: 0.057, recoil: 0.045, bulletSpeed: 1080, automatic: false, color: "#a7bfd1" },
+  { name: "Tec-9", side: "T", category: "Pistol", price: 500, magSize: 18, reserve: 90, damage: 25, fireDelay: 88, reloadTime: 1.35, spread: 0.079, recoil: 0.054, bulletSpeed: 1050, automatic: false, color: "#c9a283" },
+  { name: "CZ75-Auto", side: "BOTH", category: "Pistol", price: 500, magSize: 12, reserve: 24, damage: 23, fireDelay: 70, reloadTime: 1.45, spread: 0.095, recoil: 0.062, bulletSpeed: 1030, automatic: true, color: "#b5b2a6" },
+  { name: "Dual Berettas", side: "BOTH", category: "Pistol", price: 300, magSize: 30, reserve: 120, damage: 18, fireDelay: 92, reloadTime: 1.55, spread: 0.082, recoil: 0.04, bulletSpeed: 1000, automatic: false, color: "#c0aa82" },
+  { name: "Desert Eagle", side: "BOTH", category: "Pistol", price: 700, magSize: 7, reserve: 35, damage: 58, fireDelay: 230, reloadTime: 1.35, spread: 0.088, recoil: 0.13, bulletSpeed: 1240, automatic: false, color: "#d1bd83" },
+  { name: "R8 Revolver", side: "BOTH", category: "Pistol", price: 600, magSize: 8, reserve: 24, damage: 64, fireDelay: 360, reloadTime: 1.75, spread: 0.11, recoil: 0.16, bulletSpeed: 1180, automatic: false, color: "#c29b6d" },
+  { name: "MAC-10", side: "T", category: "SMG", price: 1050, magSize: 30, reserve: 100, damage: 20, fireDelay: 62, reloadTime: 1.45, spread: 0.12, recoil: 0.055, bulletSpeed: 960, automatic: true, color: "#c9a283" },
+  { name: "MP9", side: "CT", category: "SMG", price: 1250, magSize: 30, reserve: 120, damage: 21, fireDelay: 58, reloadTime: 1.4, spread: 0.105, recoil: 0.052, bulletSpeed: 1000, automatic: true, color: "#b8c3d6" },
+  { name: "MP7", side: "BOTH", category: "SMG", price: 1500, magSize: 30, reserve: 120, damage: 22, fireDelay: 66, reloadTime: 1.45, spread: 0.088, recoil: 0.052, bulletSpeed: 1040, automatic: true, color: "#9aa8b4" },
+  { name: "MP5-SD", side: "BOTH", category: "SMG", price: 1500, magSize: 30, reserve: 120, damage: 21, fireDelay: 68, reloadTime: 1.45, spread: 0.078, recoil: 0.046, bulletSpeed: 990, automatic: true, color: "#8e9f9b" },
+  { name: "UMP-45", side: "BOTH", category: "SMG", price: 1200, magSize: 25, reserve: 100, damage: 25, fireDelay: 90, reloadTime: 1.5, spread: 0.083, recoil: 0.065, bulletSpeed: 980, automatic: true, color: "#9aa48e" },
+  { name: "P90", side: "BOTH", category: "SMG", price: 2350, magSize: 50, reserve: 100, damage: 19, fireDelay: 58, reloadTime: 1.85, spread: 0.115, recoil: 0.052, bulletSpeed: 1010, automatic: true, color: "#b9b68f" },
+  { name: "PP-Bizon", side: "BOTH", category: "SMG", price: 1400, magSize: 64, reserve: 120, damage: 18, fireDelay: 70, reloadTime: 1.7, spread: 0.12, recoil: 0.043, bulletSpeed: 940, automatic: true, color: "#ada27f" },
+  { name: "Galil AR", side: "T", category: "Rifle", price: 1800, magSize: 35, reserve: 90, damage: 28, fireDelay: 90, reloadTime: 1.6, spread: 0.088, recoil: 0.066, bulletSpeed: 1160, automatic: true, color: "#b08d57" },
+  { name: "FAMAS", side: "CT", category: "Rifle", price: 2050, magSize: 25, reserve: 90, damage: 27, fireDelay: 82, reloadTime: 1.6, spread: 0.071, recoil: 0.058, bulletSpeed: 1180, automatic: true, color: "#8f9b78" },
+  { name: "AK-47", side: "T", category: "Rifle", price: 2700, magSize: 30, reserve: 90, damage: 34, fireDelay: 102, reloadTime: 1.65, spread: 0.092, recoil: 0.078, bulletSpeed: 1220, automatic: true, color: "#c48a45" },
+  { name: "M4A4", side: "CT", category: "Rifle", price: 3100, magSize: 30, reserve: 90, damage: 29, fireDelay: 92, reloadTime: 1.55, spread: 0.074, recoil: 0.061, bulletSpeed: 1260, automatic: true, color: "#8ea9b8" },
+  { name: "M4A1-S", side: "CT", category: "Rifle", price: 2900, magSize: 25, reserve: 75, damage: 31, fireDelay: 105, reloadTime: 1.5, spread: 0.048, recoil: 0.045, bulletSpeed: 1230, automatic: true, color: "#a6ad9f" },
+  { name: "SG 553", side: "T", category: "Rifle", price: 3000, magSize: 30, reserve: 90, damage: 32, fireDelay: 95, reloadTime: 1.7, spread: 0.066, recoil: 0.068, bulletSpeed: 1240, automatic: true, color: "#a98554" },
+  { name: "AUG", side: "CT", category: "Rifle", price: 3300, magSize: 30, reserve: 90, damage: 30, fireDelay: 95, reloadTime: 1.7, spread: 0.058, recoil: 0.06, bulletSpeed: 1250, automatic: true, color: "#8aa0a3" },
+  { name: "SSG 08", side: "BOTH", category: "Sniper", price: 1700, magSize: 10, reserve: 60, damage: 74, fireDelay: 760, reloadTime: 1.8, spread: 0.025, recoil: 0.16, bulletSpeed: 1520, automatic: false, color: "#99a277" },
+  { name: "AWP", side: "BOTH", category: "Sniper", price: 4750, magSize: 5, reserve: 30, damage: 115, fireDelay: 1180, reloadTime: 2.2, spread: 0.018, recoil: 0.22, bulletSpeed: 1680, automatic: false, color: "#6f8c63" },
+  { name: "G3SG1", side: "T", category: "Sniper", price: 5000, magSize: 20, reserve: 90, damage: 80, fireDelay: 260, reloadTime: 2.2, spread: 0.045, recoil: 0.13, bulletSpeed: 1480, automatic: true, color: "#a28d59" },
+  { name: "SCAR-20", side: "CT", category: "Sniper", price: 5000, magSize: 20, reserve: 90, damage: 80, fireDelay: 260, reloadTime: 2.2, spread: 0.043, recoil: 0.13, bulletSpeed: 1480, automatic: true, color: "#8296a0" },
+  { name: "Nova", side: "BOTH", category: "Heavy", price: 1050, magSize: 8, reserve: 32, damage: 16, pellets: 7, fireDelay: 880, reloadTime: 1.9, spread: 0.24, recoil: 0.11, bulletSpeed: 900, automatic: false, color: "#b7a274" },
+  { name: "XM1014", side: "BOTH", category: "Heavy", price: 2000, magSize: 7, reserve: 32, damage: 13, pellets: 7, fireDelay: 350, reloadTime: 1.9, spread: 0.22, recoil: 0.1, bulletSpeed: 900, automatic: true, color: "#b08f75" },
+  { name: "MAG-7", side: "CT", category: "Heavy", price: 1300, magSize: 5, reserve: 32, damage: 18, pellets: 7, fireDelay: 820, reloadTime: 1.8, spread: 0.25, recoil: 0.12, bulletSpeed: 890, automatic: false, color: "#8f9b84" },
+  { name: "Sawed-Off", side: "T", category: "Heavy", price: 1100, magSize: 7, reserve: 32, damage: 17, pellets: 7, fireDelay: 820, reloadTime: 1.8, spread: 0.29, recoil: 0.12, bulletSpeed: 870, automatic: false, color: "#a77e55" },
+  { name: "M249", side: "BOTH", category: "Heavy", price: 5200, magSize: 100, reserve: 200, damage: 28, fireDelay: 86, reloadTime: 2.9, spread: 0.13, recoil: 0.088, bulletSpeed: 1120, automatic: true, color: "#8b9a78" },
+  { name: "Negev", side: "BOTH", category: "Heavy", price: 1700, magSize: 150, reserve: 200, damage: 24, fireDelay: 70, reloadTime: 3.0, spread: 0.16, recoil: 0.092, bulletSpeed: 1080, automatic: true, color: "#a19570" },
+];
+
+const grenadeCatalog = [
+  { name: "HE Grenade", key: "he", side: "BOTH", price: 300, color: "#d56b4f" },
+  { name: "Flashbang", key: "flash", side: "BOTH", price: 200, color: "#e7ddaa" },
+  { name: "Smoke", key: "smoke", side: "BOTH", price: 300, color: "#b7b7ad" },
+  { name: "Molotov", key: "fire", side: "T", price: 400, color: "#de8746" },
+  { name: "Incendiary", key: "fire", side: "CT", price: 600, color: "#de8746" },
+  { name: "Decoy", key: "decoy", side: "BOTH", price: 50, color: "#8ab2d4" },
+];
+
+const maps = {
+  dustyard: {
+    name: "Dustyard",
+    w: 2200,
+    h: 1480,
+    tSpawn: { x: 260, y: 1180 },
+    ctSpawn: { x: 1900, y: 260 },
+    sites: { A: { x: 1640, y: 1050, r: 115 }, B: { x: 760, y: 270, r: 110 } },
+    obstacles: [
+      { x: 250, y: 220, w: 270, h: 90 }, { x: 690, y: 150, w: 120, h: 360 }, { x: 1010, y: 270, w: 380, h: 90 },
+      { x: 1550, y: 140, w: 130, h: 340 }, { x: 320, y: 650, w: 430, h: 120 }, { x: 900, y: 630, w: 220, h: 230 },
+      { x: 1320, y: 670, w: 420, h: 90 }, { x: 210, y: 1020, w: 250, h: 90 }, { x: 710, y: 1030, w: 430, h: 110 },
+      { x: 1370, y: 1020, w: 110, h: 270 }, { x: 1660, y: 1130, w: 310, h: 100 },
+    ],
+  },
+  officepark: {
+    name: "Officepark",
+    w: 2000,
+    h: 1340,
+    tSpawn: { x: 250, y: 230 },
+    ctSpawn: { x: 1710, y: 1090 },
+    sites: { A: { x: 1450, y: 260, r: 105 }, B: { x: 560, y: 960, r: 105 } },
+    obstacles: [
+      { x: 430, y: 120, w: 130, h: 420 }, { x: 760, y: 240, w: 430, h: 100 }, { x: 1360, y: 470, w: 130, h: 390 },
+      { x: 160, y: 710, w: 360, h: 110 }, { x: 690, y: 760, w: 160, h: 360 }, { x: 1000, y: 910, w: 430, h: 110 },
+      { x: 1580, y: 910, w: 190, h: 100 }, { x: 1190, y: 90, w: 120, h: 270 },
+    ],
+  },
+  cachebox: {
+    name: "Cachebox",
+    w: 2180,
+    h: 1380,
+    tSpawn: { x: 250, y: 690 },
+    ctSpawn: { x: 1900, y: 690 },
+    sites: { A: { x: 1530, y: 1030, r: 115 }, B: { x: 1500, y: 330, r: 115 } },
+    obstacles: [
+      { x: 390, y: 250, w: 250, h: 90 }, { x: 390, y: 1000, w: 250, h: 90 }, { x: 760, y: 140, w: 120, h: 380 },
+      { x: 760, y: 850, w: 120, h: 380 }, { x: 1040, y: 560, w: 300, h: 210 }, { x: 1430, y: 160, w: 100, h: 310 },
+      { x: 1430, y: 910, w: 100, h: 310 }, { x: 1690, y: 560, w: 250, h: 120 },
+    ],
+  },
+  custom: {
+    name: "Custom Mission",
+    w: 2100,
+    h: 1420,
+    tSpawn: { x: 260, y: 1190 },
+    ctSpawn: { x: 1840, y: 220 },
+    sites: { A: { x: 480, y: 450, r: 110 }, B: { x: 1620, y: 1020, r: 110 } },
+    obstacles: [
+      { x: 330, y: 220, w: 430, h: 80 }, { x: 920, y: 170, w: 120, h: 400 }, { x: 1240, y: 300, w: 420, h: 90 },
+      { x: 240, y: 730, w: 360, h: 110 }, { x: 780, y: 760, w: 500, h: 90 }, { x: 1480, y: 650, w: 150, h: 330 },
+      { x: 360, y: 1110, w: 450, h: 90 }, { x: 1020, y: 1080, w: 150, h: 260 }, { x: 1500, y: 1180, w: 400, h: 80 },
+    ],
+  },
+};
+
+function makeClassicMap(name, w, h, variant) {
+  const base = [
+    { x: w * 0.18, y: h * 0.18, w: w * 0.16, h: 82 },
+    { x: w * 0.42, y: h * 0.12, w: 110, h: h * 0.32 },
+    { x: w * 0.58, y: h * 0.22, w: w * 0.18, h: 90 },
+    { x: w * 0.22, y: h * 0.55, w: w * 0.24, h: 105 },
+    { x: w * 0.5, y: h * 0.53, w: 130, h: h * 0.25 },
+    { x: w * 0.7, y: h * 0.64, w: w * 0.18, h: 90 },
+  ];
+  const extras = Array.from({ length: 5 + variant }, (_, i) => ({
+    x: 180 + ((i * 271 + variant * 97) % Math.floor(w - 420)),
+    y: 150 + ((i * 193 + variant * 131) % Math.floor(h - 360)),
+    w: 80 + ((i + variant) % 4) * 42,
+    h: 64 + ((i * 2 + variant) % 3) * 48,
+    type: i % 2 ? "crate" : "cover",
+    color: i % 2 ? "#7d6648" : "#61715f",
+  }));
+  return {
+    name,
+    w,
+    h,
+    tSpawn: { x: 170 + variant * 8, y: h - 170 },
+    ctSpawn: { x: w - 170, y: 170 + variant * 6 },
+    sites: {
+      A: { x: Math.floor(w * 0.74), y: Math.floor(h * 0.72), r: 112 },
+      B: { x: Math.floor(w * 0.3), y: Math.floor(h * 0.25), r: 108 },
+    },
+    obstacles: [...base, ...extras].map((o) => ({ type: "wall", color: "#56614d", ...o })),
+  };
+}
+
+Object.assign(maps, {
+  dust2: makeClassicMap("Dust II style", 2250, 1500, 1),
+  mirage: makeClassicMap("Mirage style", 2180, 1460, 2),
+  inferno: makeClassicMap("Inferno style", 2050, 1580, 3),
+  nuke: makeClassicMap("Nuke style", 1980, 1380, 4),
+  overpass: makeClassicMap("Overpass style", 2300, 1520, 5),
+  vertigo: makeClassicMap("Vertigo style", 1900, 1320, 6),
+  ancient: makeClassicMap("Ancient style", 2180, 1540, 7),
+  anubis: makeClassicMap("Anubis style", 2240, 1480, 8),
+  train: makeClassicMap("Train style", 2360, 1420, 9),
+  cache: makeClassicMap("Cache style", 2150, 1400, 10),
+  office: makeClassicMap("Office hostage style", 1950, 1280, 11),
+  italy: makeClassicMap("Italy hostage style", 2020, 1360, 12),
+  tuscan: makeClassicMap("Tuscan classic style", 2160, 1440, 13),
+  cobblestone: makeClassicMap("Cobblestone style", 2320, 1600, 14),
+  assault: makeClassicMap("Assault classic style", 1880, 1280, 15),
+});
+
+const campaignTemplates = [
+  { title: "Condition Zero I", text: "Wygraj 2 rundy na dowolnej mapie", type: "roundWins", target: 2, reward: 900 },
+  { title: "Pistol discipline", text: "Zdobadz 5 fragow pistolami", type: "category", category: "Pistol", target: 5, reward: 1000 },
+  { title: "Bomb carrier", text: "Podloz bombe 2 razy jako T", type: "plants", target: 2, reward: 1200 },
+  { title: "Retake drill", text: "Rozbroj bombe albo wygraj 2 rundy jako CT", type: "ctRounds", target: 2, reward: 1400 },
+  { title: "Rifle license", text: "Zdobadz 8 fragow karabinami", type: "category", category: "Rifle", target: 8, reward: 1800 },
+  { title: "Map control", text: "Wygraj runde na kazdej mapie", type: "mapWins", target: 3, reward: 2400 },
+];
+
+const state = {
+  running: false,
+  overlayOpen: false,
+  gameMode: "offline",
+  lobbyOwnerId: "",
+  team: "T",
+  enemyTeam: "CT",
+  mapKey: "dustyard",
+  map: maps.dustyard,
+  round: 1,
+  half: 1,
+  score: { T: 0, CT: 0 },
+  roundTime: 115,
+  freezeTime: 5,
+  phase: "freeze",
+  paused: false,
+  winner: "",
+  bomb: { status: "carried", carrier: "player", x: 0, y: 0, site: "", timer: 40, defuse: 0 },
+  campaignIndex: 0,
+  randomMissions: [],
+  frameSkip: 0,
+};
+
+const settings = {
+  graphicsMode: "2d",
+  quality: "medium",
+  difficulty: "normal",
+  resolution: "auto",
+  hzLimit: 60,
+  crosshairStyle: "classic",
+  crosshairColor: "#f2f0df",
+  language: "pl",
+  configId: "",
+  nick: "Potato",
+  playerId: "",
+  sensitivity: 1,
+  screenShake: 0.8,
+  perfLimit: "balanced",
+  botCount: 10,
+  matchSize: 5,
+  fillMode: "bots",
+  controlMode: "keyboard",
+  showMinimap: true,
+  autoReload: true,
+};
+
+const bindings = {
+  forward: "KeyW",
+  back: "KeyS",
+  left: "KeyA",
+  right: "KeyD",
+  use: "KeyE",
+  reload: "KeyR",
+  shop: "KeyB",
+  settings: "KeyO",
+  missions: "KeyM",
+  binds: "KeyI",
+  teams: "KeyT",
+  network: "KeyN",
+  grenade: "KeyG",
+  dash: "Space",
+  pause: "KeyP",
+  console: "Backquote",
+};
+
+const actionLabels = {
+  forward: "Ruch do przodu",
+  back: "Ruch do tylu",
+  left: "Ruch w lewo",
+  right: "Ruch w prawo",
+  use: "Uzyj / bomba",
+  reload: "Przeladuj",
+  shop: "Sklep",
+  settings: "Ustawienia",
+  missions: "Misje",
+  binds: "Bindy",
+  teams: "Druzyny",
+  network: "LAN / online",
+  grenade: "Granat",
+  dash: "Dash",
+  pause: "Pauza",
+  console: "Komendy lobby",
+};
+
+const player = {
+  x: 0,
+  y: 0,
+  r: 16,
+  hp: 100,
+  armor: 0,
+  money: 800,
+  speed: 250,
+  dash: 0,
+  invuln: 0,
+  angle: 0,
+  weaponId: 0,
+  kills: 0,
+  roundKills: 0,
+  hits: 0,
+  plants: 0,
+  defuses: 0,
+  alive: true,
+  grenades: {},
+};
+
+let weapons = [];
+const bots = [];
+const allies = [];
+const bullets = [];
+const grenades = [];
+const effects = [];
+const customTextures = [];
+const loadedMods = [];
+const keys = new Set();
+const touchActions = new Set();
+const mouse = { x: 0, y: 0, down: false, clicked: false };
+const camera = { x: 0, y: 0, shake: 0 };
+let last = performance.now();
+let waitingForBind = "";
+const editor = { active: false, selectedMission: "", selectedObject: null };
+
+function makeWeapons() {
+  weapons = weaponCatalog.map((weapon, id) => ({
+    ...weapon,
+    id,
+    owned: false,
+    ammo: weapon.magSize,
+    currentReserve: weapon.reserve,
+    cooldown: 0,
+    reloading: 0,
+  }));
+}
+
+function resize() {
+  const scale = window.devicePixelRatio || 1;
+  const fixed = settings.resolution !== "auto" ? settings.resolution.split("x").map(Number) : null;
+  const cssW = fixed ? fixed[0] : window.innerWidth;
+  const cssH = fixed ? fixed[1] : window.innerHeight;
+  canvas.width = Math.floor(cssW * scale);
+  canvas.height = Math.floor(cssH * scale);
+  canvas.style.width = `${cssW}px`;
+  canvas.style.height = `${cssH}px`;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+}
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function dist(ax, ay, bx, by) {
+  return Math.hypot(ax - bx, ay - by);
+}
+
+function angleTo(ax, ay, bx, by) {
+  return Math.atan2(by - ay, bx - ax);
+}
+
+function teamName(team) {
+  return team === "T" ? "Terrorists" : "Counter-Terrorists";
+}
+
+function enemyOf(team) {
+  return team === "T" ? "CT" : "T";
+}
+
+function showMessage(text) {
+  hud.message.textContent = text;
+  hud.message.classList.add("show");
+  clearTimeout(showMessage.timer);
+  showMessage.timer = setTimeout(() => hud.message.classList.remove("show"), 1600);
+}
+
+function actionDown(action) {
+  return keys.has(bindings[action]) || touchActions.has(action);
+}
+
+function codeName(code) {
+  if (code === "Space") return "Space";
+  if (code.startsWith("Key")) return code.slice(3);
+  if (code.startsWith("Digit")) return code.slice(5);
+  return code;
+}
+
+function ensurePlayerId() {
+  if (!settings.configId) {
+    settings.configId = `cfg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+  if (!settings.playerId) {
+    settings.playerId = `ps-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+  hud.configId.value = settings.configId;
+  hud.configPlayerId.value = settings.playerId;
+}
+
+function serializeConfig() {
+  return {
+    version: 1,
+    configId: settings.configId,
+    nick: settings.nick,
+    playerId: settings.playerId,
+    settings,
+    bindings,
+    userMaps: userMaps(),
+    storyMissions: savedStoryMissions(),
+    customTextures,
+    mods: loadedMods,
+  };
+}
+
+function saveConfig() {
+  ensurePlayerId();
+  localStorage.setItem("potatoStrikeConfig", JSON.stringify(serializeConfig()));
+}
+
+function loadConfig() {
+  const raw = localStorage.getItem("potatoStrikeConfig");
+  if (!raw) {
+    ensurePlayerId();
+    hud.configNick.value = settings.nick;
+    saveConfig();
+    return;
+  }
+  try {
+    const config = JSON.parse(raw);
+    Object.assign(settings, config.settings || {});
+    Object.assign(bindings, config.bindings || {});
+    settings.configId = config.configId || settings.configId;
+    settings.nick = config.nick || settings.nick;
+    settings.playerId = config.playerId || settings.playerId;
+    restoreUserContent(config);
+  } catch {
+    showMessage("Config uszkodzony, uzywam domyslnego");
+  }
+  ensurePlayerId();
+  hud.configNick.value = settings.nick;
+  hud.configId.value = settings.configId;
+  hud.configPlayerId.value = settings.playerId;
+  hud.languageSelect.value = settings.language;
+  hud.resolution.value = settings.resolution;
+  hud.hzLimit.value = String(settings.hzLimit);
+  hud.crosshairStyle.value = settings.crosshairStyle;
+  hud.crosshairColor.value = settings.crosshairColor;
+}
+
+function downloadJson(name, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function exportConfig() {
+  const config = serializeConfig();
+  const name = `config-${settings.nick || "player"}-${settings.playerId || "local"}`;
+  if (window.potatoNative?.saveConfig) {
+    const result = await window.potatoNative.saveConfig(name, config);
+    showMessage(result.ok ? `Config zapisany w configs` : "Nie zapisano configu");
+    return;
+  }
+  downloadJson("potato-strike-config.json", config);
+}
+
+function isLobbyCommander() {
+  return Boolean(settings.playerId && state.lobbyOwnerId && settings.playerId === state.lobbyOwnerId);
+}
+
+function openOwnerConsole() {
+  if (!isLobbyCommander()) {
+    showMessage("Tylko dowodca lobby moze otworzyc konsole");
+    return;
+  }
+  togglePanel(hud.consolePanel);
+}
+
+function savedStoryMissions() {
+  try {
+    return JSON.parse(localStorage.getItem("potatoStrikeMissions") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function userMaps() {
+  try {
+    return JSON.parse(localStorage.getItem("potatoStrikeUserMaps") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function writeUserMaps(list) {
+  localStorage.setItem("potatoStrikeUserMaps", JSON.stringify(list));
+}
+
+function registerUserMap(map, id = `map-${Date.now().toString(36)}`) {
+  const list = userMaps().filter((item) => item.id !== id);
+  const record = { id, map: JSON.parse(JSON.stringify(map)) };
+  list.push(record);
+  writeUserMaps(list);
+  maps[id] = record.map;
+  if (![...hud.menuMap.options].some((option) => option.value === id)) {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = record.map.name || id;
+    hud.menuMap.appendChild(option);
+  }
+  saveConfig();
+  return id;
+}
+
+function loadUserMapsFromStorage() {
+  for (const item of userMaps()) {
+    if (!item?.id || !item?.map) continue;
+    maps[item.id] = item.map;
+    if (![...hud.menuMap.options].some((option) => option.value === item.id)) {
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = item.map.name || item.id;
+      hud.menuMap.appendChild(option);
+    }
+  }
+}
+
+function loadStudioTestMap() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("studioTest")) return false;
+  try {
+    const testMap = JSON.parse(localStorage.getItem("potatoStrikeStudioTestMap") || "null");
+    if (!testMap?.obstacles) return false;
+    maps.studioTest = testMap;
+    if (![...hud.menuMap.options].some((option) => option.value === "studioTest")) {
+      const option = document.createElement("option");
+      option.value = "studioTest";
+      option.textContent = `Studio test: ${testMap.name || "Map"}`;
+      hud.menuMap.appendChild(option);
+    }
+    hud.menuMap.value = "studioTest";
+    hud.menuGraphics.value = "2d";
+    hud.menuMode.value = "offline";
+    hud.menu.classList.add("hidden");
+    closePanels();
+    state.running = true;
+    mouse.x = window.innerWidth / 2;
+    mouse.y = window.innerHeight / 2;
+    newMatch();
+    showMessage("Test mapy ze Studio");
+    return true;
+  } catch {
+    showMessage("Nie udalo sie zaladowac testu Studio");
+    return false;
+  }
+}
+
+function restoreUserContent(config) {
+  const mapList = config.userMaps || [];
+  writeUserMaps(mapList);
+  for (const item of mapList) {
+    maps[item.id] = item.map;
+    if (![...hud.menuMap.options].some((option) => option.value === item.id)) {
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = item.map.name || item.id;
+      hud.menuMap.appendChild(option);
+    }
+  }
+  if (config.storyMissions) writeStoryMissions(config.storyMissions);
+  customTextures.splice(0, customTextures.length, ...(config.customTextures || []));
+  loadedMods.splice(0, loadedMods.length, ...(config.mods || []));
+  renderAssetList();
+}
+
+function writeStoryMissions(list) {
+  localStorage.setItem("potatoStrikeMissions", JSON.stringify(list));
+}
+
+function renderSavedMissions() {
+  hud.savedMissions.innerHTML = "";
+  for (const mission of savedStoryMissions()) {
+    const item = document.createElement("div");
+    item.className = "mission-item";
+    item.innerHTML = `<div class="mission-title"><span>${mission.name}</span><span class="tag">${mission.goal.type} ${mission.goal.target}</span></div><div>${mission.map.name} / ${mission.map.obstacles.length} obiektow</div>`;
+    item.addEventListener("click", () => {
+      editor.selectedMission = mission.id;
+      showMessage(`Wybrano misje: ${mission.name}`);
+    });
+    hud.savedMissions.appendChild(item);
+  }
+}
+
+function saveEditorMission() {
+  const list = savedStoryMissions();
+  const mission = {
+    id: `mission-${Date.now().toString(36)}`,
+    name: hud.editorName.value || "Moja misja",
+    goal: { type: hud.editorGoal.value, target: Number(hud.editorTarget.value || 1) },
+    map: JSON.parse(JSON.stringify(state.map)),
+  };
+  list.push(mission);
+  writeStoryMissions(list);
+  registerUserMap(mission.map, `story-map-${mission.id}`);
+  renderSavedMissions();
+  showMessage("Misja zapisana");
+}
+
+function loadEditorMission(id = editor.selectedMission) {
+  const mission = savedStoryMissions().find((item) => item.id === id);
+  if (!mission) return showMessage("Najpierw wybierz misje");
+  maps.story = JSON.parse(JSON.stringify(mission.map));
+  maps.story.name = mission.name;
+  if (![...hud.menuMap.options].some((option) => option.value === "story")) {
+    const option = document.createElement("option");
+    option.value = "story";
+    option.textContent = "Story mission";
+    hud.menuMap.appendChild(option);
+  }
+  hud.menuMode.value = "story";
+  hud.menuMap.value = "story";
+  showMessage(`Zaladowano: ${mission.name}`);
+}
+
+function newEditorMap() {
+  maps.editor = JSON.parse(JSON.stringify(maps.custom));
+  maps.editor.name = hud.editorName.value || "Editor Map";
+  state.map = maps.editor;
+  state.mapKey = "editor";
+  editor.active = true;
+  showMessage("Edytor map aktywny");
+}
+
+function logCommand(text) {
+  const line = document.createElement("div");
+  line.textContent = text;
+  hud.commandLog.prepend(line);
+}
+
+function runOwnerCommand() {
+  if (!isLobbyCommander()) {
+    logCommand("Brak uprawnien: tylko dowodca lobby");
+    showMessage("Tylko dowodca lobby moze uzywac komend");
+    return;
+  }
+  const parts = hud.commandInput.value.trim().split(/\s+/);
+  const cmd = parts[0] || "";
+  const arg = parts[1];
+  if (!cmd) return;
+  if (cmd === "bot_kick") {
+    bots.length = 0;
+    allies.length = 0;
+    logCommand("Usunieto boty");
+  } else if (cmd === "bot_add_t" || cmd === "bot_add_ct") {
+    settings.matchSize += 1;
+    spawnBots();
+    logCommand(`Dodano boty przez ${cmd}`);
+  } else if (cmd === "mp_restartgame") {
+    newMatch();
+    logCommand("Restart meczu");
+  } else if (cmd === "mp_freezetime") {
+    state.freezeTime = Number(arg || 0);
+    logCommand(`Freeze time: ${state.freezeTime}`);
+  } else if (cmd === "mp_roundtime" || cmd === "mp_roundtime_defuse") {
+    state.roundTime = Number(arg || 115);
+    logCommand(`Round time: ${state.roundTime}`);
+  } else if (cmd === "mp_startmoney" || cmd === "give_money") {
+    player.money = Number(arg || player.money);
+    logCommand(`Money: ${player.money}`);
+  } else if (cmd === "map_generate") {
+    generateMapFromMenu();
+    logCommand("Mapa wygenerowana");
+  } else if (cmd === "pause") {
+    setPaused(true);
+    logCommand("Pauza");
+  } else if (cmd === "resume") {
+    setPaused(false);
+    logCommand("Resume");
+  } else {
+    logCommand(`Nieznana komenda: ${cmd}`);
+  }
+  hud.commandInput.value = "";
+}
+
+function setPaused(value) {
+  state.paused = value;
+  hud.pausePanel.classList.toggle("hidden", !value);
+  document.exitPointerLock?.();
+}
+
+function sideAllows(item, team = state.team) {
+  return item.side === "BOTH" || item.side === team;
+}
+
+function activeWeapon() {
+  return weapons[player.weaponId] || weapons[0];
+}
+
+function defaultWeaponId(team) {
+  const name = team === "T" ? "Glock-18" : "USP-S";
+  return weapons.find((weapon) => weapon.name === name)?.id || 0;
+}
+
+function difficultyScale() {
+  if (settings.difficulty === "easy") return 0.75;
+  if (settings.difficulty === "hard") return 1.3;
+  return 1;
+}
+
+function pointInRect(x, y, o) {
+  return x > o.x && x < o.x + o.w && y > o.y && y < o.y + o.h;
+}
+
+function pointInObstacle(x, y) {
+  return state.map.obstacles.some((o) => pointInRect(x, y, o));
+}
+
+function rectCircleHit(rect, cx, cy, r) {
+  const x = clamp(cx, rect.x, rect.x + rect.w);
+  const y = clamp(cy, rect.y, rect.y + rect.h);
+  return dist(cx, cy, x, y) < r;
+}
+
+function inSite(siteKey, x = player.x, y = player.y) {
+  const site = state.map.sites[siteKey];
+  return site && dist(x, y, site.x, site.y) <= site.r;
+}
+
+function currentSite(x = player.x, y = player.y) {
+  if (inSite("A", x, y)) return "A";
+  if (inSite("B", x, y)) return "B";
+  return "";
+}
+
+function hasLineOfSight(ax, ay, bx, by) {
+  const steps = Math.ceil(dist(ax, ay, bx, by) / 28);
+  for (let i = 1; i < steps; i += 1) {
+    const t = i / steps;
+    if (pointInObstacle(ax + (bx - ax) * t, ay + (by - ay) * t)) return false;
+  }
+  return true;
+}
+
+function moveEntity(entity, vx, vy, dt) {
+  entity.x += vx * dt;
+  for (const o of state.map.obstacles) {
+    if (rectCircleHit(o, entity.x, entity.y, entity.r)) {
+      entity.x -= vx * dt;
+      break;
+    }
+  }
+  entity.y += vy * dt;
+  for (const o of state.map.obstacles) {
+    if (rectCircleHit(o, entity.x, entity.y, entity.r)) {
+      entity.y -= vy * dt;
+      break;
+    }
+  }
+  entity.x = clamp(entity.x, entity.r, state.map.w - entity.r);
+  entity.y = clamp(entity.y, entity.r, state.map.h - entity.r);
+}
+
+function seededRandom(seed) {
+  let value = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) value = Math.imul(value ^ seed.charCodeAt(i), 16777619);
+  return () => {
+    value += value << 13; value ^= value >>> 7; value += value << 3; value ^= value >>> 17; value += value << 5;
+    return ((value >>> 0) % 10000) / 10000;
+  };
+}
+
+function generateMapFromMenu() {
+  const seed = hud.mapSeed.value || "potato";
+  const rand = seededRandom(seed);
+  const size = hud.mapSize.value;
+  const w = size === "large" ? 2400 : size === "small" ? 1700 : 2100;
+  const h = size === "large" ? 1600 : size === "small" ? 1120 : 1400;
+  const obstacles = [];
+  const count = size === "large" ? 16 : size === "small" ? 9 : 12;
+  for (let i = 0; i < count; i += 1) {
+    const ow = 90 + Math.floor(rand() * 330);
+    const oh = 70 + Math.floor(rand() * 230);
+    const x = 220 + Math.floor(rand() * (w - ow - 440));
+    const y = 160 + Math.floor(rand() * (h - oh - 320));
+    obstacles.push({ x, y, w: ow, h: oh });
+  }
+  maps.generated = {
+    name: `Generated ${seed}`,
+    w,
+    h,
+    tSpawn: { x: 180, y: h - 180 },
+    ctSpawn: { x: w - 180, y: 180 },
+    sites: { A: { x: Math.floor(w * 0.74), y: Math.floor(h * 0.72), r: 115 }, B: { x: Math.floor(w * 0.32), y: Math.floor(h * 0.26), r: 110 } },
+    obstacles,
+  };
+  const id = registerUserMap(maps.generated, `generated-${seed.replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`);
+  hud.menuMap.value = id;
+  hud.mapgenStatus.textContent = `Wygenerowano mape z seedem "${seed}".`;
+  showMessage("Mapa wygenerowana");
+}
+
+function editorCanvasPoint(event) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: event.clientX - rect.left + camera.x, y: event.clientY - rect.top + camera.y };
+}
+
+function editMapAt(event) {
+  if (!editor.active || !state.overlayOpen || !state.map) return false;
+  const p = editorCanvasPoint(event);
+  const tool = hud.editorTool.value;
+  if (["wall", "crate", "cover", "ramp", "light"].includes(tool)) {
+    const obj = {
+      id: `obj-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+      type: tool,
+      x: p.x - Number(hud.editorWidth.value) / 2,
+      y: p.y - Number(hud.editorHeight.value) / 2,
+      w: Number(hud.editorWidth.value),
+      h: Number(hud.editorHeight.value),
+      z: tool === "ramp" ? 28 : tool === "cover" ? 46 : tool === "crate" ? 64 : tool === "light" ? 10 : 96,
+      rot: Number(hud.editorRotation.value),
+      color: hud.editorColor.value,
+    };
+    state.map.obstacles.push(obj);
+    editor.selectedObject = obj.id;
+  } else if (tool === "siteA") {
+    state.map.sites.A = { x: p.x, y: p.y, r: 115 };
+  } else if (tool === "siteB") {
+    state.map.sites.B = { x: p.x, y: p.y, r: 110 };
+  } else if (tool === "tSpawn") {
+    state.map.tSpawn = { x: p.x, y: p.y };
+  } else if (tool === "ctSpawn") {
+    state.map.ctSpawn = { x: p.x, y: p.y };
+  } else if (tool === "delete") {
+    state.map.obstacles = state.map.obstacles.filter((o) => !rectCircleHit(o, p.x, p.y, 12));
+    editor.selectedObject = null;
+  } else if (tool === "move") {
+    const o = state.map.obstacles.find((item) => rectCircleHit(item, p.x, p.y, 12));
+    if (o) {
+      o.x = p.x - o.w / 2;
+      o.y = p.y - o.h / 2;
+      editor.selectedObject = o.id || `${o.x}-${o.y}`;
+    }
+  }
+  renderEditorProperties();
+  render2d();
+  return true;
+}
+
+function renderEditorProperties() {
+  hud.editorProperties.innerHTML = "";
+  const selected = state.map?.obstacles.find((o) => (o.id || `${o.x}-${o.y}`) === editor.selectedObject);
+  if (selected) {
+    const fields = [
+      ["Typ", "type"], ["X", "x"], ["Y", "y"], ["W", "w"], ["H", "h"], ["Z", "z"], ["Rot", "rot"], ["Kolor", "color"],
+    ];
+    for (const [label, key] of fields) {
+      const item = document.createElement("div");
+      item.className = "team-item";
+      const inputType = key === "color" ? "color" : key === "type" ? "text" : "number";
+      item.innerHTML = `<span>${label}</span><input data-prop="${key}" type="${inputType}" value="${selected[key] ?? ""}">`;
+      hud.editorProperties.appendChild(item);
+    }
+    hud.editorProperties.querySelectorAll("[data-prop]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const key = input.dataset.prop;
+        selected[key] = input.type === "number" ? Number(input.value) : input.value;
+        render2d();
+      });
+    });
+    return;
+  }
+  const rows = [["Wybrany", "brak"], ["Obiekty", state.map?.obstacles.length || 0], ["Bombsite", "A/B"], ["Spawny", "T/CT"]];
+  for (const [label, value] of rows) {
+    const item = document.createElement("div");
+    item.className = "team-item";
+    item.innerHTML = `<span>${label}</span><span class="tag">${value}</span>`;
+    hud.editorProperties.appendChild(item);
+  }
+}
+
+function saveCurrentMapOnly() {
+  if (!state.map) return;
+  const id = registerUserMap({ ...JSON.parse(JSON.stringify(state.map)), name: hud.editorName.value || state.map.name || "User Map" });
+  hud.menuMap.value = id;
+  showMessage("Mapa zapisana do configu");
+}
+
+function renderAssetList() {
+  if (!hud.assetList) return;
+  hud.assetList.innerHTML = "";
+  const rows = [
+    ...customTextures.map((texture) => ["Texture", texture.name]),
+    ...loadedMods.map((mod) => ["Mod", mod.name || mod.id || "unnamed"]),
+  ];
+  if (!rows.length) rows.push(["Assets", "brak"]);
+  for (const [kind, name] of rows) {
+    const item = document.createElement("div");
+    item.className = "team-item";
+    item.innerHTML = `<span>${kind}</span><span class="tag">${name}</span>`;
+    hud.assetList.appendChild(item);
+  }
+}
+
+async function importTexture() {
+  const file = hud.textureFile.files[0];
+  if (!file) return showMessage("Wybierz plik tekstury");
+  const dataUrl = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+  customTextures.push({ id: `tex-${Date.now().toString(36)}`, name: hud.textureName.value || file.name, dataUrl });
+  renderAssetList();
+  saveConfig();
+  showMessage("Tekstura wgrana do configu");
+}
+
+function safeApplyMod(mod) {
+  if (mod.roundTime) state.roundTime = Number(mod.roundTime);
+  if (mod.mode) state.gameMode = String(mod.mode).slice(0, 32);
+  if (mod.map) {
+    const id = registerUserMap(mod.map, `mod-map-${mod.name || Date.now().toString(36)}`);
+    hud.menuMap.value = id;
+  }
+  if (Array.isArray(mod.weapons)) {
+    for (const weapon of mod.weapons) {
+      weaponCatalog.push({ side: "BOTH", category: "Mod", price: 1000, magSize: 20, reserve: 80, damage: 25, fireDelay: 110, reloadTime: 1.5, spread: 0.07, recoil: 0.05, bulletSpeed: 1000, automatic: true, color: "#d7bd62", ...weapon });
+    }
+  }
+}
+
+async function importMod() {
+  let source = hud.modCode.value.trim();
+  const file = hud.modFile.files[0];
+  if (file) source = await file.text();
+  if (!source) return showMessage("Wklej kod albo wybierz plik modu");
+  let mod;
+  if (hud.modMode.value === "json") {
+    mod = JSON.parse(source);
+  } else {
+    mod = { id: `script-${Date.now().toString(36)}`, name: "Script sandbox", script: source };
+    try {
+      const api = { setRoundTime: (v) => { state.roundTime = Number(v); }, addMoney: (v) => { player.money += Number(v); }, message: showMessage };
+      Function("api", `"use strict";\n${source}`)(api);
+    } catch {
+      showMessage("Script mod ma blad");
+    }
+  }
+  loadedMods.push({ id: mod.id || `mod-${Date.now().toString(36)}`, ...mod });
+  safeApplyMod(mod);
+  if (window.potatoNative?.saveMod) await window.potatoNative.saveMod(mod.name || mod.id || "mod", mod);
+  renderAssetList();
+  saveConfig();
+  showMessage("Mod/tryb wgrany");
+}
+
+function resetLoadout() {
+  for (const weapon of weapons) {
+    weapon.owned = false;
+    weapon.ammo = weapon.magSize;
+    weapon.currentReserve = weapon.reserve;
+    weapon.cooldown = 0;
+    weapon.reloading = 0;
+  }
+  player.grenades = {};
+  const id = defaultWeaponId(state.team);
+  weapons[id].owned = true;
+  player.weaponId = id;
+  state.bomb.status = state.team === "T" ? "carried" : "none";
+  state.bomb.carrier = state.team === "T" ? "player" : "";
+}
+
+function resetRoundPositions() {
+  const spawn = state.team === "T" ? state.map.tSpawn : state.map.ctSpawn;
+  player.x = spawn.x;
+  player.y = spawn.y;
+  player.hp = 100;
+  player.armor = Math.min(player.armor, 100);
+  player.alive = true;
+  player.roundKills = 0;
+  player.invuln = 0;
+  bullets.length = 0;
+  grenades.length = 0;
+  effects.length = 0;
+  state.roundTime = 115;
+  state.freezeTime = 5;
+  state.phase = "freeze";
+  state.winner = "";
+  state.bomb.timer = 40;
+  state.bomb.defuse = 0;
+  if (state.team === "T") {
+    state.bomb.status = "carried";
+    state.bomb.carrier = "player";
+  } else {
+    state.bomb.status = "hidden";
+    state.bomb.carrier = "enemy";
+    const siteKey = Math.random() < 0.5 ? "A" : "B";
+    const site = state.map.sites[siteKey];
+    state.bomb.x = site.x;
+    state.bomb.y = site.y;
+    state.bomb.site = siteKey;
+  }
+}
+
+function spawnBots() {
+  bots.length = 0;
+  allies.length = 0;
+  const count = Math.max(1, Number(settings.matchSize));
+  const enemySpawn = state.enemyTeam === "T" ? state.map.tSpawn : state.map.ctSpawn;
+  for (let i = 0; i < count; i += 1) {
+    bots.push({
+      x: enemySpawn.x + (Math.random() - 0.5) * 180,
+      y: enemySpawn.y + (Math.random() - 0.5) * 180,
+      r: 15,
+      hp: 78 + state.round * 2 * difficultyScale(),
+      team: state.enemyTeam,
+      angle: 0,
+      speed: (92 + Math.random() * 22) * difficultyScale(),
+      fire: 450 + Math.random() * 700,
+      weapon: state.enemyTeam === "T" ? "AK-47" : "M4A4",
+      flashed: 0,
+    });
+  }
+  const allySpawn = state.team === "T" ? state.map.tSpawn : state.map.ctSpawn;
+  for (let i = 1; i < count; i += 1) {
+    allies.push({
+      x: allySpawn.x + (Math.random() - 0.5) * 170,
+      y: allySpawn.y + (Math.random() - 0.5) * 170,
+      r: 15,
+      hp: 82,
+      team: state.team,
+      angle: 0,
+      speed: 92 + Math.random() * 18,
+      fire: 520 + Math.random() * 760,
+      name: `BOT ${i}`,
+      flashed: 0,
+    });
+  }
+  renderTeams();
+}
+
+function newMatch() {
+  state.gameMode = hud.menuMode.value;
+  ensurePlayerId();
+  state.lobbyOwnerId = settings.playerId;
+  if (hud.launchTarget.value === "exe") showMessage("EXE: uzyj Pobierz lokalnie albo npm run build:win");
+  settings.matchSize = Number(hud.matchSize.value);
+  settings.fillMode = hud.fillMode.value;
+  settings.botCount = settings.matchSize * 2;
+  state.team = hud.menuTeam.value === "random" ? (Math.random() < 0.5 ? "T" : "CT") : hud.menuTeam.value;
+  state.enemyTeam = enemyOf(state.team);
+  state.mapKey = hud.menuMap.value;
+  if (state.gameMode === "story" && !maps.story) {
+    const first = savedStoryMissions()[0];
+    if (first) {
+      maps.story = JSON.parse(JSON.stringify(first.map));
+      state.mapKey = "story";
+    } else {
+      showMessage("Brak zapisanej misji, uzywam Custom Mission");
+      state.mapKey = "custom";
+    }
+  }
+  state.map = maps[state.mapKey] || maps.custom;
+  state.round = 1;
+  state.half = 1;
+  state.score = { T: 0, CT: 0 };
+  settings.graphicsMode = hud.menuGraphics.value;
+  hud.graphicsMode.value = settings.graphicsMode;
+  player.money = 800;
+  player.kills = 0;
+  player.hits = 0;
+  player.plants = 0;
+  player.defuses = 0;
+  makeWeapons();
+  resetLoadout();
+  resetRoundPositions();
+  spawnBots();
+  renderShop();
+  renderMissions();
+  showMessage(`${state.gameMode.toUpperCase()} / ${teamName(state.team)} / ${state.map.name} / dowodca ${settings.nick}`);
+}
+
+function swapSidesIfNeeded() {
+  if (state.round === 17) {
+    state.team = enemyOf(state.team);
+    state.enemyTeam = enemyOf(state.team);
+    state.half = 2;
+    player.money = 800;
+    resetLoadout();
+    showMessage(`Zmiana stron: grasz jako ${teamName(state.team)}`);
+  }
+}
+
+function endRound(winner, reason) {
+  if (state.phase === "ended") return;
+  state.phase = "ended";
+  state.winner = winner;
+  state.score[winner] += 1;
+  player.money += winner === state.team ? 3250 : 1900;
+  if (winner === state.team) advanceMission("roundWins", 1);
+  if (winner === "CT" && state.team === "CT") advanceMission("ctRounds", 1);
+  if (winner === state.team) markMapWin();
+  showMessage(`${winner} wygrywa: ${reason}`);
+  setTimeout(() => {
+    state.round += 1;
+    if (state.round > 32) {
+      hud.menu.classList.remove("hidden");
+      state.running = false;
+      showMessage("Mecz zakonczony");
+      return;
+    }
+    swapSidesIfNeeded();
+    resetRoundPositions();
+    spawnBots();
+    renderShop();
+  }, 1800);
+}
+
+function plantBomb() {
+  if (state.team !== "T" || state.bomb.status !== "carried") return;
+  const site = currentSite();
+  if (!site) {
+    showMessage("Musisz byc na bombsite A albo B");
+    return;
+  }
+  state.bomb.status = "planted";
+  state.bomb.x = player.x;
+  state.bomb.y = player.y;
+  state.bomb.site = site;
+  state.bomb.timer = 40;
+  player.plants += 1;
+  advanceMission("plants", 1);
+  showMessage(`Bomba podlozona na ${site}`);
+}
+
+function defuseBomb(dt) {
+  if (state.team !== "CT" || state.bomb.status !== "planted") return;
+  if (dist(player.x, player.y, state.bomb.x, state.bomb.y) > 62) {
+    state.bomb.defuse = 0;
+    return;
+  }
+  state.bomb.defuse += dt;
+  if (state.bomb.defuse >= 5) {
+    player.defuses += 1;
+    advanceMission("defuses", 1);
+    endRound("CT", "bomba rozbrojona");
+  }
+}
+
+function useKey(dt) {
+  if (!actionDown("use")) {
+    state.bomb.defuse = 0;
+    return;
+  }
+  if (state.team === "T") plantBomb();
+  if (state.team === "CT") defuseBomb(dt);
+}
+
+function updateRoundRules(dt) {
+  if (state.phase === "freeze") {
+    state.freezeTime -= dt;
+    if (state.freezeTime <= 0) state.phase = "live";
+    return;
+  }
+  if (state.phase !== "live") return;
+  state.roundTime -= dt;
+  if (state.bomb.status === "planted") {
+    state.bomb.timer -= dt;
+    if (state.bomb.timer <= 0) endRound("T", "bomba wybuchla");
+  } else if (state.roundTime <= 0) {
+    endRound("CT", "czas rundy minal");
+  }
+  if (bots.every((bot) => bot.hp <= 0)) {
+    if (state.team === "T" && state.bomb.status === "planted") return;
+    endRound(state.team, "eliminacja druzyny przeciwnej");
+  }
+}
+
+function buyItem(type, id) {
+  if (state.phase !== "freeze") {
+    showMessage("Kupowanie tylko na freeze time");
+    return;
+  }
+  if (type === "weapon") {
+    const weapon = weapons[id];
+    if (!weapon || !sideAllows(weapon)) return;
+    if (!weapon.owned) {
+      if (player.money < weapon.price) return showMessage("Za malo kasy");
+      player.money -= weapon.price;
+      weapon.owned = true;
+      weapon.ammo = weapon.magSize;
+      weapon.currentReserve = weapon.reserve;
+    }
+    player.weaponId = weapon.id;
+    showMessage(`Wyposazono: ${weapon.name}`);
+  }
+  if (type === "grenade") {
+    const grenade = grenadeCatalog[id];
+    if (!grenade || !sideAllows(grenade)) return;
+    const count = player.grenades[grenade.name] || 0;
+    if (count >= 2) return showMessage("Limit granatow");
+    if (player.money < grenade.price) return showMessage("Za malo kasy");
+    player.money -= grenade.price;
+    player.grenades[grenade.name] = count + 1;
+    showMessage(`Kupiono: ${grenade.name}`);
+  }
+  renderShop();
+  updateHud();
+}
+
+function throwGrenade() {
+  const entry = Object.entries(player.grenades).find(([, count]) => count > 0);
+  if (!entry) return showMessage("Brak granatow");
+  const [name] = entry;
+  const catalog = grenadeCatalog.find((g) => g.name === name);
+  player.grenades[name] -= 1;
+  grenades.push({
+    x: player.x,
+    y: player.y,
+    vx: Math.cos(player.angle) * 520,
+    vy: Math.sin(player.angle) * 520,
+    timer: catalog.key === "flash" ? 0.7 : 1.2,
+    type: catalog.key,
+    color: catalog.color,
+  });
+  renderShop();
+}
+
+function explodeGrenade(grenade) {
+  effects.push({ x: grenade.x, y: grenade.y, r: grenade.type === "smoke" ? 130 : 86, life: grenade.type === "smoke" ? 7 : 0.45, type: grenade.type, color: grenade.color });
+  if (grenade.type === "he" || grenade.type === "fire") {
+    for (const bot of bots) {
+      if (bot.hp > 0 && dist(grenade.x, grenade.y, bot.x, bot.y) < 120) {
+        bot.hp -= grenade.type === "he" ? 60 : 35;
+      }
+    }
+  }
+  if (grenade.type === "flash") {
+    for (const bot of bots) {
+      if (bot.hp > 0 && dist(grenade.x, grenade.y, bot.x, bot.y) < 260 && hasLineOfSight(grenade.x, grenade.y, bot.x, bot.y)) bot.flashed = 2.4;
+    }
+  }
+}
+
+function shoot(owner, angle, weapon, hostile = false) {
+  if (!hostile && owner === player) {
+    if (state.phase !== "live" || state.overlayOpen) return;
+    if (weapon.reloading > 0 || weapon.cooldown > 0) return;
+    if (weapon.ammo <= 0) {
+      if (settings.autoReload) reload();
+      return;
+    }
+    weapon.ammo -= 1;
+    weapon.cooldown = weapon.fireDelay / 1000;
+    camera.shake = Math.min(10, camera.shake + weapon.recoil * 90 * settings.screenShake);
+  }
+  const pelletCount = weapon.pellets || 1;
+  for (let i = 0; i < pelletCount; i += 1) {
+    const spread = hostile ? 0.11 * difficultyScale() : weapon.spread + weapon.recoil * Math.min(1.5, owner.speedFactor || 0);
+    const a = angle + (Math.random() - 0.5) * spread;
+    bullets.push({
+      x: owner.x + Math.cos(a) * (owner.r + 18),
+      y: owner.y + Math.sin(a) * (owner.r + 18),
+      vx: Math.cos(a) * (hostile ? 760 * difficultyScale() : weapon.bulletSpeed),
+      vy: Math.sin(a) * (hostile ? 760 * difficultyScale() : weapon.bulletSpeed),
+      damage: hostile ? 10 * difficultyScale() : weapon.damage,
+      hostile,
+      life: 0.95,
+      color: hostile ? "#f06d58" : "#f5df88",
+    });
+  }
+}
+
+function reload() {
+  const weapon = activeWeapon();
+  if (weapon.reloading > 0 || weapon.ammo === weapon.magSize || weapon.currentReserve <= 0) return;
+  weapon.reloading = weapon.reloadTime;
+  showMessage(`Przeladowanie: ${weapon.name}`);
+}
+
+function updatePlayer(dt) {
+  if (!player.alive || state.overlayOpen || state.phase === "ended") return;
+  useKey(dt);
+  const forward = (actionDown("forward") ? 1 : 0) - (actionDown("back") ? 1 : 0);
+  const strafe = (actionDown("right") ? 1 : 0) - (actionDown("left") ? 1 : 0);
+  const len = Math.hypot(forward, strafe) || 1;
+  const walking = keys.has("ShiftLeft") || keys.has("ShiftRight") || state.phase === "freeze";
+  let speed = player.speed * (walking ? 0.58 : 1);
+  if (actionDown("dash") && player.dash <= 0 && state.phase === "live" && (forward || strafe)) player.dash = 0.18;
+  if (player.dash > 0) {
+    speed *= 2.2;
+    player.dash -= dt;
+  }
+  player.speedFactor = Math.hypot(forward, strafe) * (walking ? 0.25 : 1);
+  if (settings.graphicsMode === "3d") {
+    const vx = Math.cos(player.angle) * forward * speed + Math.cos(player.angle + Math.PI / 2) * strafe * speed;
+    const vy = Math.sin(player.angle) * forward * speed + Math.sin(player.angle + Math.PI / 2) * strafe * speed;
+    moveEntity(player, vx / len, vy / len, dt);
+  } else {
+    moveEntity(player, (strafe / len) * speed, (-forward / len) * speed, dt);
+    player.angle = angleTo(player.x, player.y, mouse.x + camera.x, mouse.y + camera.y);
+  }
+  const weapon = activeWeapon();
+  weapon.cooldown = Math.max(0, weapon.cooldown - dt);
+  if (weapon.reloading > 0) {
+    weapon.reloading -= dt;
+    if (weapon.reloading <= 0) {
+      const need = weapon.magSize - weapon.ammo;
+      const take = Math.min(need, weapon.currentReserve);
+      weapon.ammo += take;
+      weapon.currentReserve -= take;
+    }
+  }
+  if (mouse.down && (weapon.automatic || mouse.clicked)) shoot(player, player.angle, weapon);
+  mouse.clicked = false;
+  player.invuln = Math.max(0, player.invuln - dt);
+}
+
+function updateBots(dt) {
+  if (state.phase !== "live") return;
+  for (const bot of bots) {
+    if (bot.hp <= 0) continue;
+    bot.flashed = Math.max(0, bot.flashed - dt);
+    const a = angleTo(bot.x, bot.y, player.x, player.y);
+    bot.angle = a;
+    const d = dist(bot.x, bot.y, player.x, player.y);
+    const los = hasLineOfSight(bot.x, bot.y, player.x, player.y);
+    const targetSite = state.enemyTeam === "T" ? state.map.sites[state.bomb.site || (Math.random() < 0.5 ? "A" : "B")] : null;
+    if (bot.flashed <= 0 && (!los || d > 260)) {
+      const tx = targetSite ? targetSite.x : player.x;
+      const ty = targetSite ? targetSite.y : player.y;
+      const moveA = angleTo(bot.x, bot.y, tx, ty) + Math.sin(performance.now() / 420 + bot.x) * 0.45;
+      moveEntity(bot, Math.cos(moveA) * bot.speed, Math.sin(moveA) * bot.speed, dt);
+    }
+    bot.fire -= dt * 1000;
+    if (bot.fire <= 0 && los && d < 740 && player.alive && bot.flashed <= 0) {
+      shoot(bot, a, { damage: 10, spread: 0.1, recoil: 0, bulletSpeed: 780, pellets: 1 }, true);
+      bot.fire = 520 / difficultyScale() + Math.random() * 440;
+    }
+    if (d < bot.r + player.r) damagePlayer(16 * dt * difficultyScale());
+  }
+}
+
+function updateAllies(dt) {
+  if (state.phase !== "live") return;
+  const aliveEnemies = bots.filter((bot) => bot.hp > 0);
+  for (const ally of allies) {
+    if (ally.hp <= 0) continue;
+    const target = aliveEnemies.sort((a, b) => dist(ally.x, ally.y, a.x, a.y) - dist(ally.x, ally.y, b.x, b.y))[0];
+    if (!target) continue;
+    const a = angleTo(ally.x, ally.y, target.x, target.y);
+    ally.angle = a;
+    const d = dist(ally.x, ally.y, target.x, target.y);
+    const los = hasLineOfSight(ally.x, ally.y, target.x, target.y);
+    if (!los || d > 360) {
+      moveEntity(ally, Math.cos(a) * ally.speed, Math.sin(a) * ally.speed, dt);
+    }
+    ally.fire -= dt * 1000;
+    if (ally.fire <= 0 && los && d < 680) {
+      shoot(ally, a, { damage: 11, spread: 0.12, recoil: 0, bulletSpeed: 760, pellets: 1, automatic: true }, false);
+      ally.fire = 620 + Math.random() * 460;
+    }
+  }
+}
+
+function damagePlayer(amount) {
+  if (player.invuln > 0 || !player.alive) return;
+  const armorBlock = Math.min(player.armor, amount * 0.5);
+  player.armor -= armorBlock;
+  player.hp -= amount - armorBlock;
+  player.invuln = 0.12;
+  if (player.hp <= 0) {
+    player.hp = 0;
+    player.alive = false;
+    endRound(state.enemyTeam, "gracz wyeliminowany");
+  }
+}
+
+function updateBullets(dt) {
+  for (let i = bullets.length - 1; i >= 0; i -= 1) {
+    const b = bullets[i];
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    b.life -= dt;
+    let remove = b.life <= 0 || b.x < 0 || b.y < 0 || b.x > state.map.w || b.y > state.map.h || pointInObstacle(b.x, b.y);
+  if (!remove && b.hostile && dist(b.x, b.y, player.x, player.y) < player.r) {
+      damagePlayer(b.damage);
+      remove = true;
+    }
+    if (!remove && b.hostile) {
+      for (const ally of allies) {
+        if (ally.hp > 0 && dist(b.x, b.y, ally.x, ally.y) < ally.r) {
+          ally.hp -= b.damage;
+          remove = true;
+          break;
+        }
+      }
+    }
+    if (!remove && !b.hostile) {
+      for (const bot of bots) {
+        if (bot.hp > 0 && dist(b.x, b.y, bot.x, bot.y) < bot.r) {
+          bot.hp -= b.damage;
+          player.hits += 1;
+          advanceMission("hits", 1);
+          if (bot.hp <= 0) {
+            player.kills += 1;
+            player.roundKills += 1;
+            player.money += 300;
+            advanceMission("kills", 1);
+            advanceMission("category", 1, activeWeapon().category);
+          }
+          remove = true;
+          break;
+        }
+      }
+    }
+    if (remove) {
+      if (settings.quality !== "low") effects.push({ x: b.x, y: b.y, r: 10, life: 0.18, type: "hit", color: b.color });
+      bullets.splice(i, 1);
+    }
+  }
+}
+
+function updateGrenades(dt) {
+  for (let i = grenades.length - 1; i >= 0; i -= 1) {
+    const g = grenades[i];
+    g.x += g.vx * dt;
+    g.y += g.vy * dt;
+    g.vx *= 0.965;
+    g.vy *= 0.965;
+    if (pointInObstacle(g.x, g.y)) {
+      g.vx *= -0.35;
+      g.vy *= -0.35;
+    }
+    g.timer -= dt;
+    if (g.timer <= 0) {
+      explodeGrenade(g);
+      grenades.splice(i, 1);
+    }
+  }
+  for (let i = effects.length - 1; i >= 0; i -= 1) {
+    effects[i].life -= dt;
+    if (effects[i].type === "fire") {
+      for (const bot of bots) {
+        if (bot.hp > 0 && dist(effects[i].x, effects[i].y, bot.x, bot.y) < effects[i].r) bot.hp -= 16 * dt;
+      }
+    }
+    if (effects[i].life <= 0) effects.splice(i, 1);
+  }
+}
+
+function missionValue(mission) {
+  if (mission.type === "kills") return player.kills;
+  if (mission.type === "hits") return player.hits;
+  if (mission.type === "plants") return player.plants;
+  if (mission.type === "defuses") return player.defuses;
+  return mission.progress || 0;
+}
+
+function activeMissions() {
+  const campaign = campaignTemplates.slice(0, state.campaignIndex + 1).filter((m) => !m.done).slice(0, 3);
+  return [...campaign, ...state.randomMissions].slice(0, 5);
+}
+
+function advanceMission(type, amount = 1, category = "") {
+  const all = [...campaignTemplates, ...state.randomMissions];
+  let changed = false;
+  for (const mission of all) {
+    if (mission.done) continue;
+    if (mission.type === type || (mission.type === "category" && mission.category === category)) {
+      mission.progress = (mission.progress || 0) + amount;
+      if ((mission.progress || 0) >= mission.target) {
+        mission.done = true;
+        player.money += mission.reward;
+        if (campaignTemplates.includes(mission) && state.campaignIndex < campaignTemplates.length - 1) state.campaignIndex += 1;
+        showMessage(`Misja wykonana: ${mission.title} +$${mission.reward}`);
+      }
+      changed = true;
+    }
+  }
+  if (changed) renderMissions();
+}
+
+function markMapWin() {
+  const mission = campaignTemplates.find((m) => m.type === "mapWins");
+  if (!mission || mission.done) return;
+  mission.maps = mission.maps || {};
+  mission.maps[state.mapKey] = true;
+  mission.progress = Object.keys(mission.maps).length;
+  if (mission.progress >= mission.target) advanceMission("mapWins", 0);
+}
+
+function generateRandomMissions() {
+  const pool = [
+    { title: "Eco hero", text: "Zdobadz 3 fragi bez kupowania karabinu", type: "kills", target: player.kills + 3, reward: 700 },
+    { title: "Grenadier", text: "Kup i rzuc granat w tej rundzie", type: "grenade", target: 1, reward: 500 },
+    { title: "Aim warmup", text: "Traf 12 pociskow", type: "hits", target: player.hits + 12, reward: 650 },
+    { title: "AWP dream", text: "Zdobadz 2 fragi sniperem", type: "category", category: "Sniper", target: 2, reward: 900 },
+  ];
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  state.randomMissions = [{ ...picked, progress: 0, done: false }];
+  renderMissions();
+}
+
+function renderMissions() {
+  hud.missionList.innerHTML = "";
+  const list = activeMissions();
+  let done = 0;
+  for (const mission of list) {
+    if (mission.done) done += 1;
+    const value = Math.min(mission.target, Math.floor(missionValue(mission)));
+    const pct = mission.done ? 100 : clamp((value / mission.target) * 100, 0, 100);
+    const item = document.createElement("div");
+    item.className = "mission-item";
+    item.innerHTML = `<div class="mission-title"><span>${mission.title}</span><span class="tag">+$${mission.reward}</span></div><div>${mission.text}: ${value}/${mission.target}</div><div class="mission-progress"><span style="width:${pct}%"></span></div>`;
+    hud.missionList.appendChild(item);
+  }
+  hud.missionPill.textContent = `MISJE ${done}/${list.length || 1}`;
+}
+
+function renderTeams() {
+  if (!hud.teamList) return;
+  hud.teamList.innerHTML = "";
+  const localSlots = [{ name: "TY", team: state.team, hp: player.hp, source: "player" }, ...allies.map((bot) => ({ name: bot.name, team: state.team, hp: bot.hp, source: settings.fillMode === "lan" ? "LAN/BOT" : "BOT" }))];
+  const enemySlots = bots.map((bot, index) => ({ name: `ENEMY ${index + 1}`, team: state.enemyTeam, hp: bot.hp, source: settings.fillMode === "lan" ? "LAN/BOT" : "BOT" }));
+  for (const slot of [...localSlots, ...enemySlots]) {
+    const item = document.createElement("div");
+    item.className = "team-item";
+    item.innerHTML = `<span>${slot.name} / ${slot.team}</span><span class="tag">${slot.source} ${Math.max(0, Math.ceil(slot.hp))}HP</span>`;
+    hud.teamList.appendChild(item);
+  }
+}
+
+function renderBinds() {
+  hud.bindList.innerHTML = "";
+  for (const [action, code] of Object.entries(bindings)) {
+    const item = document.createElement("div");
+    item.className = "bind-item";
+    const button = document.createElement("button");
+    button.textContent = waitingForBind === action ? "Nacisnij klawisz..." : codeName(code);
+    button.addEventListener("click", () => {
+      waitingForBind = action;
+      renderBinds();
+    });
+    item.innerHTML = `<span>${actionLabels[action] || action}</span>`;
+    item.appendChild(button);
+    hud.bindList.appendChild(item);
+  }
+}
+
+function renderShop() {
+  hud.shopList.innerHTML = "";
+  const visibleWeapons = weapons.filter((weapon) => sideAllows(weapon));
+  for (const weapon of visibleWeapons) {
+    const item = document.createElement("div");
+    item.className = `shop-item${weapon.owned ? " owned" : ""}`;
+    item.innerHTML = `<div class="shop-title"><span>${weapon.name}</span><span class="tag">${weapon.owned ? "Posiadane" : `$${weapon.price}`}</span></div><div class="muted">${weapon.side} / ${weapon.category}</div><div class="shop-stats"><span>DMG ${weapon.damage}</span><span>MAG ${weapon.magSize}</span><span>RECOIL ${Math.round(weapon.recoil * 100)}</span><span>SPREAD ${Math.round(weapon.spread * 100)}</span></div>`;
+    const button = document.createElement("button");
+    button.textContent = weapon.owned ? "Wyposaz" : "Kup";
+    button.disabled = !weapon.owned && player.money < weapon.price;
+    button.addEventListener("click", () => buyItem("weapon", weapon.id));
+    item.appendChild(button);
+    hud.shopList.appendChild(item);
+  }
+  for (const grenade of grenadeCatalog.filter((item) => sideAllows(item))) {
+    const id = grenadeCatalog.indexOf(grenade);
+    const item = document.createElement("div");
+    item.className = "shop-item";
+    item.innerHTML = `<div class="shop-title"><span>${grenade.name}</span><span class="tag">$${grenade.price}</span></div><div class="muted">Grenade / ${grenade.side}</div><div class="shop-stats"><span>Posiadane ${player.grenades[grenade.name] || 0}</span><span>G - rzut</span></div>`;
+    const button = document.createElement("button");
+    button.textContent = "Kup";
+    button.disabled = player.money < grenade.price;
+    button.addEventListener("click", () => buyItem("grenade", id));
+    item.appendChild(button);
+    hud.shopList.appendChild(item);
+  }
+}
+
+function drawMap2d() {
+  ctx.fillStyle = "#20291f";
+  ctx.fillRect(-camera.x, -camera.y, state.map.w, state.map.h);
+  if (settings.quality !== "low") {
+    ctx.strokeStyle = "#2e3a2d";
+    for (let x = 0; x < state.map.w; x += 80) {
+      ctx.beginPath(); ctx.moveTo(x - camera.x, -camera.y); ctx.lineTo(x - camera.x, state.map.h - camera.y); ctx.stroke();
+    }
+    for (let y = 0; y < state.map.h; y += 80) {
+      ctx.beginPath(); ctx.moveTo(-camera.x, y - camera.y); ctx.lineTo(state.map.w - camera.x, y - camera.y); ctx.stroke();
+    }
+  }
+  for (const [key, site] of Object.entries(state.map.sites)) {
+    ctx.fillStyle = key === "A" ? "rgba(215,189,98,0.18)" : "rgba(119,181,111,0.18)";
+    ctx.beginPath(); ctx.arc(site.x - camera.x, site.y - camera.y, site.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#f2f0df"; ctx.font = "22px Arial"; ctx.textAlign = "center"; ctx.fillText(key, site.x - camera.x, site.y - camera.y + 8);
+  }
+  ctx.strokeStyle = "#848b72"; ctx.lineWidth = 3;
+  for (const o of state.map.obstacles) {
+    ctx.fillStyle = o.color || (o.type === "crate" ? "#7d6648" : o.type === "cover" ? "#61715f" : o.type === "light" ? "#d7bd62" : "#56614d");
+    ctx.fillRect(o.x - camera.x, o.y - camera.y, o.w, o.h);
+    if (settings.quality !== "low") {
+      ctx.strokeStyle = "rgba(255,255,255,0.13)";
+      const step = o.type === "crate" ? 18 : 28;
+      for (let tx = o.x; tx < o.x + o.w; tx += step) {
+        ctx.beginPath();
+        ctx.moveTo(tx - camera.x, o.y - camera.y);
+        ctx.lineTo(tx - camera.x, o.y + o.h - camera.y);
+        ctx.stroke();
+      }
+      if (o.type === "light") {
+        ctx.fillStyle = "rgba(255,238,143,0.24)";
+        ctx.beginPath();
+        ctx.arc(o.x + o.w / 2 - camera.x, o.y + o.h / 2 - camera.y, Math.max(o.w, o.h), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.strokeRect(o.x - camera.x, o.y - camera.y, o.w, o.h);
+    if (o.type) {
+      ctx.fillStyle = "#f2f0df";
+      ctx.font = "10px Arial";
+      ctx.fillText(o.type, o.x - camera.x + o.w / 2, o.y - camera.y + o.h / 2);
+    }
+  }
+  ctx.strokeStyle = "#786544"; ctx.lineWidth = 12; ctx.strokeRect(-camera.x, -camera.y, state.map.w, state.map.h);
+}
+
+function drawActor(actor, color, label) {
+  const x = actor.x - camera.x;
+  const y = actor.y - camera.y;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(actor.angle || 0);
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(0, 0, actor.r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#1a1d18"; ctx.fillRect(4, -5, actor.r + 16, 10);
+  ctx.fillStyle = "#ede2b7"; ctx.fillRect(actor.r + 12, -2, 14, 4);
+  ctx.restore();
+  ctx.fillStyle = "#f2f0df"; ctx.font = "12px Arial"; ctx.textAlign = "center"; ctx.fillText(label, x, y - actor.r - 10);
+}
+
+function drawProjectiles2d() {
+  for (const b of bullets) {
+    ctx.strokeStyle = b.color; ctx.lineWidth = 3; ctx.beginPath();
+    ctx.moveTo(b.x - camera.x, b.y - camera.y);
+    ctx.lineTo(b.x - camera.x - b.vx * 0.018, b.y - camera.y - b.vy * 0.018);
+    ctx.stroke();
+  }
+  for (const g of grenades) {
+    ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x - camera.x, g.y - camera.y, 7, 0, Math.PI * 2); ctx.fill();
+  }
+  for (const e of effects) {
+    ctx.globalAlpha = clamp(e.life / 1.5, 0.18, 0.75);
+    ctx.fillStyle = e.type === "smoke" ? "#a8aaa1" : e.color;
+    ctx.beginPath(); ctx.arc(e.x - camera.x, e.y - camera.y, e.r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  if (state.bomb.status === "planted" || state.bomb.status === "hidden") {
+    ctx.fillStyle = "#d75f4f"; ctx.fillRect(state.bomb.x - camera.x - 8, state.bomb.y - camera.y - 8, 16, 16);
+  }
+}
+
+function drawMinimap() {
+  if (!settings.showMinimap) return;
+  const w = 170, h = 112, x = window.innerWidth - w - 16, y = 16;
+  ctx.fillStyle = "rgba(12,14,12,.72)"; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = "rgba(242,240,223,.18)"; ctx.strokeRect(x, y, w, h);
+  const sx = w / state.map.w, sy = h / state.map.h;
+  ctx.fillStyle = "#7a8169";
+  for (const o of state.map.obstacles) ctx.fillRect(x + o.x * sx, y + o.y * sy, o.w * sx, o.h * sy);
+  ctx.fillStyle = "#d7bd62";
+  for (const site of Object.values(state.map.sites)) ctx.fillRect(x + site.x * sx - 3, y + site.y * sy - 3, 6, 6);
+  ctx.fillStyle = "#77b56f"; ctx.fillRect(x + player.x * sx - 2, y + player.y * sy - 2, 4, 4);
+  ctx.fillStyle = "#d95f4e";
+  for (const bot of bots) if (bot.hp > 0) ctx.fillRect(x + bot.x * sx - 2, y + bot.y * sy - 2, 4, 4);
+}
+
+function drawCrosshair() {
+  const weapon = activeWeapon();
+  const cx = settings.graphicsMode === "3d" ? window.innerWidth / 2 : mouse.x;
+  const cy = settings.graphicsMode === "3d" ? window.innerHeight / 2 : mouse.y;
+  const gap = 10 + weapon.spread * 120 + player.speedFactor * 10 + camera.shake;
+  ctx.strokeStyle = settings.crosshairColor;
+  ctx.fillStyle = settings.crosshairColor;
+  ctx.lineWidth = 2;
+  if (settings.crosshairStyle === "dot") {
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+  const length = settings.crosshairStyle === "wide" ? 13 : 7;
+  ctx.beginPath();
+  ctx.moveTo(cx - gap - length, cy); ctx.lineTo(cx - gap, cy);
+  ctx.moveTo(cx + gap, cy); ctx.lineTo(cx + gap + length, cy);
+  ctx.moveTo(cx, cy - gap - length); ctx.lineTo(cx, cy - gap);
+  ctx.moveTo(cx, cy + gap); ctx.lineTo(cx, cy + gap + length);
+  ctx.stroke();
+}
+
+function render2d() {
+  camera.shake *= 0.88;
+  camera.x = clamp(player.x - window.innerWidth / 2 + (Math.random() - 0.5) * camera.shake, 0, Math.max(0, state.map.w - window.innerWidth));
+  camera.y = clamp(player.y - window.innerHeight / 2 + (Math.random() - 0.5) * camera.shake, 0, Math.max(0, state.map.h - window.innerHeight));
+  drawMap2d();
+  drawProjectiles2d();
+  for (const ally of allies) if (ally.hp > 0) drawActor(ally, state.team === "T" ? "#c48a45" : "#8ea9b8", state.team);
+  for (const bot of bots) if (bot.hp > 0) drawActor(bot, state.enemyTeam === "T" ? "#b84d42" : "#557bb0", state.enemyTeam);
+  drawActor(player, state.team === "T" ? "#c48a45" : "#8ea9b8", "YOU");
+  drawMinimap();
+  drawCrosshair();
+}
+
+function castRay(angle) {
+  let x = player.x, y = player.y, d = 0;
+  const step = settings.quality === "low" ? 24 : 14;
+  while (d < 1200) {
+    x += Math.cos(angle) * step; y += Math.sin(angle) * step; d += step;
+    if (x < 0 || y < 0 || x > state.map.w || y > state.map.h || pointInObstacle(x, y)) return d;
+  }
+  return 1200;
+}
+
+function render3d() {
+  camera.shake *= 0.88;
+  const w = window.innerWidth, h = window.innerHeight;
+  const sky = ctx.createLinearGradient(0, 0, 0, h / 2);
+  sky.addColorStop(0, "#304045");
+  sky.addColorStop(1, "#202a2d");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, h / 2);
+  const floor = ctx.createLinearGradient(0, h / 2, 0, h);
+  floor.addColorStop(0, "#31362f");
+  floor.addColorStop(1, "#181c18");
+  ctx.fillStyle = floor;
+  ctx.fillRect(0, h / 2, w, h / 2);
+  if (settings.quality !== "low") {
+    ctx.strokeStyle = "rgba(215,189,98,0.1)";
+    ctx.lineWidth = 1;
+    for (let y = h / 2 + 34; y < h; y += 36) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+  }
+  const fov = Math.PI / 2.9;
+  const cols = settings.quality === "low" ? 100 : settings.quality === "high" ? 260 : 170;
+  const colW = w / cols;
+  const depth = [];
+  for (let i = 0; i < cols; i += 1) {
+    const ray = player.angle - fov / 2 + (i / cols) * fov;
+    const raw = castRay(ray);
+    const d = raw * Math.cos(ray - player.angle);
+    depth[i] = d;
+    const wallH = clamp((h * 620) / d, 8, h * 1.5);
+    const shade = clamp(218 - d * 0.13, 50, 198);
+    const x = i * colW;
+    const y = h / 2 - wallH / 2 + camera.shake;
+    ctx.fillStyle = `rgb(${Math.floor(shade * 0.62)},${Math.floor(shade * 0.72)},${Math.floor(shade * 0.58)})`;
+    ctx.fillRect(x, y, colW + 1, wallH);
+    if (settings.quality !== "low" && i % 2 === 0) {
+      ctx.fillStyle = `rgba(255,245,190,${clamp(0.16 - d / 9000, 0.02, 0.13)})`;
+      ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.06));
+      ctx.fillStyle = `rgba(0,0,0,${clamp(d / 2600, 0.04, 0.34)})`;
+      ctx.fillRect(x, y + wallH * 0.72, colW + 1, Math.max(1, wallH * 0.12));
+    }
+  }
+  const sprites = [
+    ...bots.filter((bot) => bot.hp > 0).map((bot) => ({ bot, color: state.enemyTeam === "T" ? "#b84d42" : "#557bb0", d: dist(player.x, player.y, bot.x, bot.y), a: angleTo(player.x, player.y, bot.x, bot.y) })),
+    ...allies.filter((bot) => bot.hp > 0).map((bot) => ({ bot, color: state.team === "T" ? "#c48a45" : "#8ea9b8", d: dist(player.x, player.y, bot.x, bot.y), a: angleTo(player.x, player.y, bot.x, bot.y) })),
+  ].sort((a, b) => b.d - a.d);
+  for (const s of sprites) {
+    let rel = s.a - player.angle;
+    while (rel < -Math.PI) rel += Math.PI * 2;
+    while (rel > Math.PI) rel -= Math.PI * 2;
+    if (Math.abs(rel) > fov / 1.35) continue;
+    const sx = (0.5 + rel / fov) * w;
+    const col = clamp(Math.floor(sx / colW), 0, depth.length - 1);
+    if (s.d > depth[col] + 45) continue;
+    const size = clamp((h * 94) / s.d, 14, 180);
+    draw3dCharacter(sx, h / 2, size, s.color);
+  }
+  draw3dSiteMarkers(w, h, fov, depth, colW);
+  draw3dWeapon(w, h);
+  drawMinimap();
+  drawCrosshair();
+}
+
+function draw3dSiteMarkers(w, h, fov, depth, colW) {
+  for (const [key, site] of Object.entries(state.map.sites)) {
+    const d = dist(player.x, player.y, site.x, site.y);
+    let rel = angleTo(player.x, player.y, site.x, site.y) - player.angle;
+    while (rel < -Math.PI) rel += Math.PI * 2;
+    while (rel > Math.PI) rel -= Math.PI * 2;
+    if (Math.abs(rel) > fov / 1.25) continue;
+    const sx = (0.5 + rel / fov) * w;
+    const col = clamp(Math.floor(sx / colW), 0, depth.length - 1);
+    if (d > depth[col] + 110) continue;
+    const y = h / 2 + clamp((h * 180) / d, 18, 130);
+    ctx.fillStyle = key === "A" ? "rgba(215,189,98,0.86)" : "rgba(119,181,111,0.86)";
+    ctx.beginPath();
+    ctx.arc(sx, y, clamp((h * 22) / d, 8, 24), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#171812";
+    ctx.font = "700 14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(key, sx, y + 5);
+  }
+}
+
+function draw3dCharacter(x, y, size, color) {
+  ctx.fillStyle = "rgba(0,0,0,0.32)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + size * 0.62, size * 0.34, size * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.fillRect(x - size * 0.22, y - size * 0.45, size * 0.44, size * 0.62);
+  ctx.fillStyle = "#d8c19a";
+  ctx.fillRect(x - size * 0.16, y - size * 0.72, size * 0.32, size * 0.25);
+  ctx.fillStyle = "#1a1d18";
+  ctx.fillRect(x + size * 0.08, y - size * 0.25, size * 0.55, size * 0.08);
+  ctx.fillStyle = "#f2f0df";
+  ctx.fillRect(x - size * 0.08, y - size * 0.64, size * 0.05, size * 0.04);
+  ctx.fillRect(x + size * 0.04, y - size * 0.64, size * 0.05, size * 0.04);
+  ctx.fillStyle = "#2b2d28";
+  ctx.fillRect(x - size * 0.2, y + size * 0.18, size * 0.16, size * 0.42);
+  ctx.fillRect(x + size * 0.04, y + size * 0.18, size * 0.16, size * 0.42);
+}
+
+function draw3dWeapon(w, h) {
+  const weapon = activeWeapon();
+  const x = w / 2 + 46;
+  const y = h - 126 + camera.shake;
+  ctx.fillStyle = weapon.color;
+  ctx.fillRect(x, y + 24, 146, 28);
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.fillRect(x + 10, y + 28, 92, 4);
+  ctx.fillStyle = "#1a1d18";
+  ctx.fillRect(x + 64, y + 12, 150, 13);
+  ctx.fillStyle = "#2f332d";
+  ctx.fillRect(x + 34, y + 50, 28, 56);
+  ctx.fillStyle = "#d8c19a";
+  ctx.fillRect(x - 34, y + 58, 48, 34);
+  if (weapon.category === "Sniper") {
+    ctx.fillStyle = "#111";
+    ctx.fillRect(x + 42, y, 82, 12);
+  }
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.fillRect(x + 4, y + 52, 118, 5);
+}
+
+function updateHud() {
+  const weapon = activeWeapon();
+  hud.mode.textContent = state.gameMode.toUpperCase();
+  hud.team.textContent = `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
+  hud.health.textContent = `HP ${Math.ceil(player.hp)}`;
+  hud.armor.textContent = `ARMOR ${Math.ceil(player.armor)}`;
+  hud.money.textContent = `$${player.money}`;
+  hud.round.textContent = `R ${state.round}/32`;
+  hud.score.textContent = `T ${state.score.T} : ${state.score.CT} CT`;
+  const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
+  hud.timer.textContent = `${Math.floor(time / 60)}:${String(Math.max(0, Math.ceil(time % 60))).padStart(2, "0")}`;
+  hud.bomb.textContent = state.bomb.status === "planted" ? `BOMBA ${state.bomb.site} ${Math.ceil(state.bomb.timer)}s` : state.bomb.status === "carried" ? "BOMBA TY" : "BOMBA --";
+  hud.weaponName.textContent = weapon.name;
+  hud.ammo.textContent = weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
+}
+
+function tick(now) {
+  const target = settings.hzLimit ? 1000 / settings.hzLimit : settings.perfLimit === "eco" ? 1000 / 30 : settings.perfLimit === "balanced" ? 1000 / 60 : 0;
+  if (target && now - last < target) {
+    requestAnimationFrame(tick);
+    return;
+  }
+  const dt = Math.min(0.033, (now - last) / 1000 || 0);
+  last = now;
+  if (state.running && !state.paused) {
+    updateRoundRules(dt);
+    updatePlayer(dt);
+    updateAllies(dt);
+    updateBots(dt);
+    updateBullets(dt);
+    updateGrenades(dt);
+    if (settings.graphicsMode === "3d") render3d(); else render2d();
+    updateHud();
+  }
+  requestAnimationFrame(tick);
+}
+
+function togglePanel(panel) {
+  const open = panel.classList.contains("hidden");
+  closePanels();
+  if (open) {
+    state.overlayOpen = true;
+    panel.classList.remove("hidden");
+    document.exitPointerLock?.();
+    if (panel === hud.shopPanel) renderShop();
+    if (panel === hud.missionsPanel) renderMissions();
+    if (panel === hud.teamsPanel) renderTeams();
+    if (panel === hud.bindsPanel) renderBinds();
+    if (panel === hud.editorPanel) renderSavedMissions();
+  }
+}
+
+function closePanels() {
+  state.overlayOpen = false;
+  hud.shopPanel.classList.add("hidden");
+  hud.settingsPanel.classList.add("hidden");
+  hud.bindsPanel.classList.add("hidden");
+  hud.teamsPanel.classList.add("hidden");
+  hud.mapgenPanel.classList.add("hidden");
+  hud.editorPanel.classList.add("hidden");
+  hud.consolePanel.classList.add("hidden");
+  hud.missionsPanel.classList.add("hidden");
+  hud.networkPanel.classList.add("hidden");
+}
+
+function equipHotkey(n) {
+  const owned = weapons.filter((weapon) => weapon.owned && sideAllows(weapon));
+  const weapon = owned[n - 1];
+  if (weapon) {
+    player.weaponId = weapon.id;
+    showMessage(weapon.name);
+  }
+}
+
+function downloadLauncher() {
+  const content = `@echo off\r\ncd /d "%~dp0"\r\nstart "" "index.html"\r\n`;
+  const blob = new Blob([content], { type: "application/octet-stream" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "PotatoStrike-launch-browser.bat";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showMessage("Pobrano launcher .bat do gry lokalnej");
+}
+
+window.addEventListener("resize", resize);
+window.addEventListener("keydown", (event) => {
+  if (waitingForBind) {
+    event.preventDefault();
+    bindings[waitingForBind] = event.code;
+    showMessage(`Bind ustawiony: ${actionLabels[waitingForBind]} = ${codeName(event.code)}`);
+    waitingForBind = "";
+    renderBinds();
+    return;
+  }
+  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash].includes(event.code)) event.preventDefault();
+  keys.add(event.code);
+  if (event.code === "Escape") closePanels();
+  if (event.code === bindings.shop) togglePanel(hud.shopPanel);
+  if (event.code === bindings.settings) togglePanel(hud.settingsPanel);
+  if (event.code === bindings.missions) togglePanel(hud.missionsPanel);
+  if (event.code === bindings.binds) togglePanel(hud.bindsPanel);
+  if (event.code === bindings.teams) togglePanel(hud.teamsPanel);
+  if (event.code === bindings.network) togglePanel(hud.networkPanel);
+  if (event.code === bindings.console) openOwnerConsole();
+  if (event.code === bindings.pause) setPaused(!state.paused);
+  if (state.overlayOpen) return;
+  if (event.code === bindings.reload) reload();
+  if (event.code === bindings.grenade) { throwGrenade(); advanceMission("grenade", 1); }
+  if (event.code.startsWith("Digit")) equipHotkey(Number(event.code.slice(5)));
+});
+window.addEventListener("keyup", (event) => keys.delete(event.code));
+canvas.addEventListener("mousemove", (event) => {
+  if (document.pointerLockElement === canvas) {
+    if (settings.graphicsMode === "3d") {
+      player.angle += event.movementX * 0.0032 * settings.sensitivity;
+      mouse.x = window.innerWidth / 2;
+      mouse.y = window.innerHeight / 2;
+    } else {
+      mouse.x = clamp(mouse.x + event.movementX, 0, window.innerWidth);
+      mouse.y = clamp(mouse.y + event.movementY, 0, window.innerHeight);
+    }
+  } else {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = event.clientX - rect.left;
+    mouse.y = event.clientY - rect.top;
+  }
+});
+canvas.addEventListener("mousedown", async (event) => {
+  if (editMapAt(event)) return;
+  if (state.overlayOpen) return;
+  mouse.down = true;
+  mouse.clicked = true;
+  try { await canvas.requestPointerLock(); } catch { /* optional */ }
+});
+window.addEventListener("mouseup", () => { mouse.down = false; });
+
+document.querySelectorAll(".close-panel").forEach((button) => button.addEventListener("click", closePanels));
+hud.openSettings.addEventListener("click", () => togglePanel(hud.settingsPanel));
+hud.openBinds.addEventListener("click", () => togglePanel(hud.bindsPanel));
+hud.openTeams.addEventListener("click", () => togglePanel(hud.teamsPanel));
+hud.openMapgen.addEventListener("click", () => togglePanel(hud.mapgenPanel));
+async function openStandaloneEditor() {
+  if (window.potatoNative?.openEditor) {
+    await window.potatoNative.openEditor();
+    return;
+  }
+  window.location.href = "editor.html";
+}
+
+hud.quickEditor.addEventListener("click", openStandaloneEditor);
+hud.openEditor.addEventListener("click", openStandaloneEditor);
+hud.openConsole.addEventListener("click", openOwnerConsole);
+hud.openNetwork.addEventListener("click", () => togglePanel(hud.networkPanel));
+hud.downloadGame.addEventListener("click", downloadLauncher);
+hud.generateMap.addEventListener("click", generateMapFromMenu);
+hud.editorNew.addEventListener("click", newEditorMap);
+hud.editorRandom.addEventListener("click", () => {
+  hud.mapSeed.value = `${hud.editorName.value || "story"}-${Date.now().toString(36)}`;
+  generateMapFromMenu();
+  maps.editor = JSON.parse(JSON.stringify(maps.generated));
+  state.map = maps.editor;
+  state.mapKey = "editor";
+  editor.active = true;
+  showMessage("Losowa misja/mapa gotowa do edycji");
+});
+hud.editorSave.addEventListener("click", saveEditorMission);
+hud.editorSaveMap.addEventListener("click", saveCurrentMapOnly);
+hud.editorLoad.addEventListener("click", () => loadEditorMission());
+hud.editorExport.addEventListener("click", () => {
+  const mission = savedStoryMissions().find((item) => item.id === editor.selectedMission);
+  if (!mission) return showMessage("Najpierw wybierz misje");
+  downloadJson(`${mission.name.replace(/\s+/g, "-").toLowerCase()}.potato-mission.json`, mission);
+});
+hud.textureImport.addEventListener("click", importTexture);
+hud.modImport.addEventListener("click", importMod);
+hud.modExport.addEventListener("click", () => downloadJson("potato-strike-modpack.json", { mods: loadedMods, textures: customTextures, maps: userMaps(), missions: savedStoryMissions() }));
+hud.runCommand.addEventListener("click", runOwnerCommand);
+hud.commandInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") runOwnerCommand();
+});
+hud.resumeGame.addEventListener("click", () => setPaused(false));
+hud.pauseSettings.addEventListener("click", () => {
+  setPaused(false);
+  togglePanel(hud.settingsPanel);
+});
+hud.pauseMenu.addEventListener("click", () => {
+  state.running = false;
+  setPaused(false);
+  hud.menu.classList.remove("hidden");
+});
+hud.start.addEventListener("click", async () => {
+  hud.menu.classList.add("hidden");
+  closePanels();
+  state.running = true;
+  mouse.x = window.innerWidth / 2;
+  mouse.y = window.innerHeight / 2;
+  newMatch();
+  if (state.gameMode !== "offline") {
+    hud.networkStatus.textContent = `${state.gameMode.toUpperCase()} jest przygotowany w menu. Aktualny build gra lokalnie z botami, dopoki nie zostanie podpiety serwer.`;
+    showMessage(`${state.gameMode.toUpperCase()}: fallback do botow`);
+  }
+  try { await canvas.requestPointerLock(); } catch { /* optional */ }
+});
+
+hud.graphicsMode.addEventListener("change", () => { settings.graphicsMode = hud.graphicsMode.value; hud.menuGraphics.value = settings.graphicsMode; });
+hud.quality.addEventListener("change", () => { settings.quality = hud.quality.value; });
+hud.languageSelect.addEventListener("change", () => {
+  settings.language = hud.languageSelect.value;
+  showMessage(settings.language === "pl" ? "Jezyk: polski" : "Language: English");
+  saveConfig();
+});
+hud.difficulty.addEventListener("change", () => { settings.difficulty = hud.difficulty.value; });
+hud.resolution.addEventListener("change", () => { settings.resolution = hud.resolution.value; resize(); saveConfig(); });
+hud.hzLimit.addEventListener("change", () => { settings.hzLimit = Number(hud.hzLimit.value); saveConfig(); });
+hud.crosshairStyle.addEventListener("change", () => { settings.crosshairStyle = hud.crosshairStyle.value; saveConfig(); });
+hud.crosshairColor.addEventListener("input", () => { settings.crosshairColor = hud.crosshairColor.value; saveConfig(); });
+hud.configNick.addEventListener("input", () => { settings.nick = hud.configNick.value || "Potato"; hud.playerName.value = settings.nick; saveConfig(); });
+hud.exportConfig.addEventListener("click", exportConfig);
+hud.importConfig.addEventListener("click", () => hud.configFile.click());
+hud.configFile.addEventListener("change", async () => {
+  const file = hud.configFile.files[0];
+  if (!file) return;
+  const config = JSON.parse(await file.text());
+  Object.assign(settings, config.settings || {});
+  Object.assign(bindings, config.bindings || {});
+  settings.nick = config.nick || settings.nick;
+  settings.playerId = config.playerId || settings.playerId;
+  restoreUserContent(config);
+  saveConfig();
+  loadConfig();
+  renderBinds();
+  showMessage("Config wgrany");
+});
+hud.sensitivity.addEventListener("input", () => { settings.sensitivity = Number(hud.sensitivity.value); });
+hud.screenShake.addEventListener("input", () => { settings.screenShake = Number(hud.screenShake.value); });
+hud.perfLimit.addEventListener("change", () => { settings.perfLimit = hud.perfLimit.value; });
+hud.botCount.addEventListener("input", () => { settings.botCount = Number(hud.botCount.value); });
+hud.controlMode.addEventListener("change", () => {
+  settings.controlMode = hud.controlMode.value;
+  hud.mobileControls.classList.toggle("hidden", settings.controlMode !== "mobile");
+  showMessage(settings.controlMode === "mobile" ? "Sterowanie telefonem wlaczone" : "Sterowanie klawiatura");
+});
+hud.matchSize.addEventListener("change", () => {
+  settings.matchSize = Number(hud.matchSize.value);
+  hud.botCount.value = String(settings.matchSize * 2);
+});
+hud.fillMode.addEventListener("change", () => { settings.fillMode = hud.fillMode.value; });
+hud.showMinimap.addEventListener("change", () => { settings.showMinimap = hud.showMinimap.checked; });
+hud.autoReload.addEventListener("change", () => { settings.autoReload = hud.autoReload.checked; });
+hud.rerollMissions.addEventListener("click", () => {
+  if (player.money < 300) return showMessage("Za malo kasy");
+  player.money -= 300;
+  generateRandomMissions();
+  updateHud();
+});
+
+document.querySelectorAll("[data-touch-action]").forEach((button) => {
+  const action = button.dataset.touchAction;
+  const down = (event) => {
+    event.preventDefault();
+    if (action === "fire") {
+      mouse.down = true;
+      mouse.clicked = true;
+    } else if (action === "reload") {
+      reload();
+    } else if (action === "grenade") {
+      throwGrenade();
+      advanceMission("grenade", 1);
+    } else {
+      touchActions.add(action);
+    }
+  };
+  const up = (event) => {
+    event.preventDefault();
+    if (action === "fire") mouse.down = false;
+    touchActions.delete(action);
+  };
+  button.addEventListener("pointerdown", down);
+  button.addEventListener("pointerup", up);
+  button.addEventListener("pointercancel", up);
+  button.addEventListener("pointerleave", up);
+});
+
+makeWeapons();
+loadConfig();
+loadUserMapsFromStorage();
+resize();
+renderMissions();
+renderShop();
+renderBinds();
+renderSavedMissions();
+renderAssetList();
+loadStudioTestMap();
+requestAnimationFrame(tick);

@@ -1,0 +1,44 @@
+{
+  "name": "potato-strike",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lightweight CS-like Potato Strike prototype.",
+  "main": "main.js",
+  "scripts": {
+    "serve": "node server.js",
+    "verify": "node scripts/verify.js",
+    "package:offline": "node scripts/package-offline.js",
+    "start": "electron .",
+    "start:editor": "electron . --editor",
+    "build:win": "electron-builder --win portable",
+    "build:linux": "electron-builder --linux dir"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "local.potatostrike.game",
+    "productName": "Potato Strike",
+    "files": [
+      "index.html",
+      "editor.html",
+      "styles.css",
+      "editor.css",
+      "game.js",
+      "editor.js",
+      "main.js",
+      "preload.js",
+      "configs/default-config.json",
+      "mods/README.md",
+      "server.js"
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "linux": {
+      "target": "dir",
+      "category": "Game"
+    }
+  }
+}
