@@ -33,6 +33,15 @@
   flex-wrap: wrap;
 }
 
+.studio-actions select {
+  border: 1px solid rgba(242, 240, 223, 0.2);
+  border-radius: 8px;
+  padding: 9px;
+  background: #222820;
+  color: #f2f0df;
+  font-weight: 800;
+}
+
 .studio-panel {
   overflow: auto;
   padding: 12px;
@@ -97,6 +106,10 @@
   height: 1400px;
   image-rendering: pixelated;
   cursor: crosshair;
+}
+
+.studio-canvas-wrap.preview-3d #studio-canvas {
+  cursor: grab;
 }
 
 #studio-status {

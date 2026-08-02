@@ -15,6 +15,10 @@
         <h1>Studio</h1>
       </div>
       <div class="studio-actions">
+        <select id="viewport-mode" title="Widok edytora">
+          <option value="2d" selected>2D</option>
+          <option value="3d">3D preview</option>
+        </select>
         <button id="new-map">Nowa</button>
         <button id="generate-map">Generuj</button>
         <button id="save-map">Zapisz</button>
@@ -34,6 +38,49 @@
         <select id="map-list"></select>
       </label>
       <button id="load-map" class="secondary">Otworz mape</button>
+      <div class="studio-section">
+        <div class="muted">SANDBOX GRY</div>
+        <label>
+          Tryb gry
+          <select id="game-mode">
+            <option value="defuse">Defuse</option>
+            <option value="deathmatch">Deathmatch</option>
+            <option value="story">Story</option>
+            <option value="sandbox" selected>Sandbox</option>
+          </select>
+        </label>
+        <label>
+          Grafika testu
+          <select id="test-graphics">
+            <option value="2d">2D</option>
+            <option value="3d">3D</option>
+          </select>
+        </label>
+        <label>
+          Rozmiar meczu
+          <select id="match-size">
+            <option value="1">1v1</option>
+            <option value="2">2v2</option>
+            <option value="3">3v3</option>
+            <option value="4">4v4</option>
+            <option value="5" selected>5v5</option>
+            <option value="8">8v8</option>
+            <option value="10">10v10</option>
+          </select>
+        </label>
+        <label>
+          Domyslna bron
+          <select id="default-weapon">
+            <option value="side-default" selected>Default strony</option>
+            <option value="Glock-18">Glock-18</option>
+            <option value="USP-S">USP-S</option>
+            <option value="AK-47">AK-47</option>
+            <option value="M4A4">M4A4</option>
+            <option value="M4A1-S">M4A1-S</option>
+            <option value="AWP">AWP</option>
+          </select>
+        </label>
+      </div>
       <div class="studio-section">
         <div class="muted">NARZEDZIA</div>
         <div class="tool-grid">
@@ -63,6 +110,11 @@
         <input id="texture-name" value="custom-texture">
         <button id="import-texture" class="secondary">Wgraj teksture</button>
         <label>
+          Pliki sandboxa
+          <input id="asset-files" type="file" multiple accept="image/*,.json,.js,.txt,.css">
+        </label>
+        <button id="import-assets" class="secondary">Dodaj pliki</button>
+        <label>
           Kod / JSON modu
           <textarea id="mod-code" class="code-box" spellcheck="false">{"name":"Studio Mode","mode":"custom"}</textarea>
         </label>
@@ -83,7 +135,7 @@
         <div id="object-list" class="object-list"></div>
       </div>
       <div class="studio-section">
-        <div class="muted">ASSET LIST</div>
+        <div class="muted">LISTA PLIKOW / ASSETY</div>
         <div id="asset-list" class="object-list"></div>
       </div>
     </aside>

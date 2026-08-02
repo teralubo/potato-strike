@@ -4,6 +4,12 @@ Lekki CS-like prototyp w HTML Canvas. Dziala bez serwera przez otwarcie `index.h
 
 Repozytorium gry: [teralubo/potato-strike](https://github.com/teralubo/potato-strike)
 
+Licencja: GNU GPL 3.0 (`GPL-3.0-only`). Potato Strike ma byc lekkim sandboxem LAN/BOT do edycji, modowania i przerabiania przez graczy.
+
+Workflow repo:
+- `beta` - wszystkie nowe zmiany, testy, eksperymenty i wersje beta.
+- `main` - pelne wydanie gry po potwierdzeniu.
+
 ## Uruchamianie w przegladarce
 
 - Kliknij dwa razy `index.html`, albo uruchom `launch-browser.bat`.
@@ -34,14 +40,14 @@ npm run build:linux
 ```
 
 Po zbudowaniu instalator i pliki `.exe` beda w katalogu `dist/`.
-Folder gry bez osobnego `release` przygotujesz komenda:
+Folder gry bez osobnego `release` ani lokalnego folderu `beta` przygotujesz komenda:
 
 ```powershell
 npm run package:offline
 ```
 
-Wtedy glowny katalog projektu jest gotowym folderem gry: ma `PotatoStrike.exe`, `PotatoStrike.bat`, `PotatoStrike-Window.bat`, `configs/` i `mods/`.
-Wersja testowa trafia tylko do folderu `beta/`.
+Wtedy glowny katalog projektu jest gotowym folderem gry: ma `PotatoStrike.exe`, `PotatoStrike.bat`, `PotatoStrike-Window.bat`, `PotatoStrike-Studio.bat`, `configs/` i `mods/`.
+Wersja testowa trafia na branch GitHuba `beta`, nie do folderu `beta/`.
 Po `npm install` launcher `PotatoStrike-Window.bat` uruchamia gre jako osobne okno/proces Electron, bez zwyklej karty przegladarki. Pelny plik `.exe` powstaje po `npm run build:win`.
 Launcher `PotatoStrike-Studio.bat` uruchamia osobne okno edytora Studio. Na Linuxie build jest w `dist/linux-unpacked/`, a edytor mozna uruchomic argumentem `--editor`.
 Configi startowe sa w folderze `configs/`, a export configu zawiera tez mapy i misje stworzone przez gracza. W wersji Electron przycisk eksportu zapisuje config bezposrednio do `configs/`; w wersji HTML pobiera JSON przez przegladarke.
@@ -49,10 +55,11 @@ Configi startowe sa w folderze `configs/`, a export configu zawiera tez mapy i m
 ## Tryb fabularny i edytor
 
 - W menu wybierz `Tryb fabularny`, aby grac zapisane misje.
-- `EDYTOR` otwiera osobne okno Potato Strike Studio. To lekki graficzny sandbox do map i trybow: paleta obiektow, workspace z siatka, explorer obiektow, panel wlasciwosci, dodawanie, przesuwanie, usuwanie, rozmiar, rotacja, kolor, bombsite A/B, spawny T/CT, triggery, logika, pickupy broni, propy i tekstury.
+- `EDYTOR` otwiera osobne okno Potato Strike Studio. To lekki graficzny sandbox do map i trybow: widok 2D albo 3D preview, paleta obiektow, workspace z siatka, explorer obiektow, panel wlasciwosci, ustawienia trybu gry, dodawanie, przesuwanie, usuwanie, rozmiar, rotacja, kolor, bombsite A/B, spawny T/CT, triggery, logika, pickupy broni, propy i tekstury.
 - Misje zapisuja sie lokalnie i mozna je pozniej zaladowac w przegladarce albo w buildzie offline.
 - Generator moze stworzyc losowa mape i misje jako punkt startowy, a potem mozna je normalnie poprawiac w edytorze.
 - Studio ma przycisk `Testuj`, ktory uruchamia gre na edytowanej mapie bez potrzeby edycji aktualnej rundy.
+- Studio ma liste plikow assetow: mozna dodawac tekstury, JSON, JS, TXT i CSS do sandboxa/modow.
 - W puli sa lekkie mapy inspirowane klasykami CS: Dust II, Mirage, Inferno, Nuke, Overpass, Vertigo, Ancient, Anubis, Train, Cache, Office, Italy, Tuscan, Cobblestone i Assault.
 
 ## Config

@@ -33,17 +33,16 @@ for (const file of [
   "PotatoStrike-Studio.bat",
   "configs/default-config.json",
   "mods/README.md",
-  "beta/PotatoStrike-Beta.exe",
-  "beta/PotatoStrike.bat",
-  "beta/PotatoStrike-Window.bat",
-  "beta/PotatoStrike-Studio.bat",
-  "beta/configs/default-config.json",
-  "beta/mods/README.md",
 ]) {
   if (!fs.existsSync(file)) {
     console.error(`Missing required game artifact: ${file}`);
     process.exit(1);
   }
+}
+
+if (fs.existsSync("beta")) {
+  console.error("Local beta folder should not exist; beta is published via the GitHub beta branch");
+  process.exit(1);
 }
 
 for (const key of ["configId", "userMaps", "storyMissions", "customTextures", "mods", "settings", "bindings", "nick", "playerId"]) {
@@ -92,7 +91,7 @@ for (const snippet of [
 }
 
 const editorJs = fs.readFileSync("editor.js", "utf8");
-for (const snippet of ["testMap", "saveMap", "generateMap", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps"]) {
+for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio feature: ${snippet}`);
     process.exit(1);

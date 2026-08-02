@@ -3,6 +3,7 @@ const ctx = canvas.getContext("2d");
 const $ = (id) => document.getElementById(id);
 
 const ui = {
+  viewportMode: $("viewport-mode"),
   name: $("map-name"),
   list: $("map-list"),
   load: $("load-map"),
@@ -16,8 +17,14 @@ const ui = {
   textureFile: $("texture-file"),
   textureName: $("texture-name"),
   importTexture: $("import-texture"),
+  assetFiles: $("asset-files"),
+  importAssets: $("import-assets"),
   modCode: $("mod-code"),
   saveMod: $("save-mod"),
+  gameMode: $("game-mode"),
+  testGraphics: $("test-graphics"),
+  matchSize: $("match-size"),
+  defaultWeapon: $("default-weapon"),
   properties: $("properties"),
   objects: $("object-list"),
   assets: $("asset-list"),
@@ -45,6 +52,14 @@ let drag = null;
 let map = emptyMap();
 let textures = loadJson("potatoStrikeStudioTextures", []);
 let mods = loadJson("potatoStrikeStudioMods", []);
+let files = loadJson("potatoStrikeStudioFiles", []);
+let studioSettings = loadJson("potatoStrikeStudioSettings", {
+  viewportMode: "2d",
+  gameMode: "sandbox",
+  testGraphics: "2d",
+  matchSize: 5,
+  defaultWeapon: "side-default",
+});
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -74,6 +89,7 @@ function emptyMap() {
     tSpawn: { x: 180, y: 1220 },
     ctSpawn: { x: 2020, y: 180 },
     sites: { A: { x: 1650, y: 1000, r: 115 }, B: { x: 560, y: 330, r: 110 } },
+    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5 },
     obstacles: [],
   };
 }
@@ -101,6 +117,7 @@ function makeMap(name, w, h, seed) {
     tSpawn: { x: 180, y: h - 180 },
     ctSpawn: { x: w - 180, y: 180 },
     sites: { A: { x: Math.floor(w * 0.74), y: Math.floor(h * 0.72), r: 115 }, B: { x: Math.floor(w * 0.32), y: Math.floor(h * 0.26), r: 110 } },
+    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5 },
     obstacles,
   };
 }
@@ -147,6 +164,15 @@ function fitCanvas() {
 
 function draw() {
   fitCanvas();
+  document.querySelector(".studio-canvas-wrap").classList.toggle("preview-3d", studioSettings.viewportMode === "3d");
+  if (studioSettings.viewportMode === "3d") {
+    draw3dPreview();
+    return;
+  }
+  draw2dEditor();
+}
+
+function draw2dEditor() {
   ctx.fillStyle = "#252b23";
   ctx.fillRect(0, 0, map.w, map.h);
   ctx.strokeStyle = "rgba(242,240,223,0.055)";
@@ -162,6 +188,100 @@ function draw() {
   drawSpawn("T", map.tSpawn, "#c48a45");
   drawSpawn("CT", map.ctSpawn, "#8ea9b8");
   for (const obj of map.obstacles) drawObject(obj);
+}
+
+function draw3dPreview() {
+  const w = canvas.width;
+  const h = canvas.height;
+  const scale = Math.min(w / map.w, h / map.h) * 0.86;
+  const originX = w / 2;
+  const originY = h * 0.18;
+  ctx.fillStyle = "#202620";
+  ctx.fillRect(0, 0, w, h);
+  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.45);
+  sky.addColorStop(0, "#304045");
+  sky.addColorStop(1, "#202620");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, h * 0.45);
+  ctx.fillStyle = "#293128";
+  ctx.beginPath();
+  ctx.moveTo(originX, originY);
+  ctx.lineTo(originX + map.w * scale * 0.5, originY + map.w * scale * 0.25);
+  ctx.lineTo(originX + (map.w - map.h) * scale * 0.5, originY + (map.w + map.h) * scale * 0.25);
+  ctx.lineTo(originX - map.h * scale * 0.5, originY + map.h * scale * 0.25);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(242,240,223,0.08)";
+  for (let x = 0; x <= map.w; x += 256) drawIsoLine(x, 0, x, map.h, originX, originY, scale);
+  for (let y = 0; y <= map.h; y += 256) drawIsoLine(0, y, map.w, y, originX, originY, scale);
+  const sorted = [...map.obstacles].sort((a, b) => (a.x + a.y) - (b.x + b.y));
+  for (const obj of sorted) drawIsoBox(obj, originX, originY, scale);
+  drawIsoMarker("A", map.sites.A, "#d7bd62", originX, originY, scale);
+  drawIsoMarker("B", map.sites.B, "#77b56f", originX, originY, scale);
+  drawIsoMarker("T", map.tSpawn, "#c48a45", originX, originY, scale);
+  drawIsoMarker("CT", map.ctSpawn, "#8ea9b8", originX, originY, scale);
+}
+
+function isoPoint(x, y, originX, originY, scale) {
+  return { x: originX + (x - y) * scale * 0.5, y: originY + (x + y) * scale * 0.25 };
+}
+
+function drawIsoLine(x1, y1, x2, y2, originX, originY, scale) {
+  const a = isoPoint(x1, y1, originX, originY, scale);
+  const b = isoPoint(x2, y2, originX, originY, scale);
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+}
+
+function drawIsoBox(obj, originX, originY, scale) {
+  const z = Math.max(18, obj.z || 64) * scale * 0.7;
+  const p1 = isoPoint(obj.x, obj.y, originX, originY, scale);
+  const p2 = isoPoint(obj.x + obj.w, obj.y, originX, originY, scale);
+  const p3 = isoPoint(obj.x + obj.w, obj.y + obj.h, originX, originY, scale);
+  const p4 = isoPoint(obj.x, obj.y + obj.h, originX, originY, scale);
+  ctx.fillStyle = obj.color || "#56614d";
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y - z);
+  ctx.lineTo(p2.x, p2.y - z);
+  ctx.lineTo(p3.x, p3.y - z);
+  ctx.lineTo(p4.x, p4.y - z);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.beginPath();
+  ctx.moveTo(p2.x, p2.y - z);
+  ctx.lineTo(p3.x, p3.y - z);
+  ctx.lineTo(p3.x, p3.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y - z);
+  ctx.lineTo(p2.x, p2.y - z);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.lineTo(p1.x, p1.y);
+  ctx.closePath();
+  ctx.fill();
+  if (obj.id === selectedId) {
+    ctx.strokeStyle = "#77b56f";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+}
+
+function drawIsoMarker(label, point, color, originX, originY, scale) {
+  const p = isoPoint(point.x, point.y, originX, originY, scale);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y - 16, 15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#101410";
+  ctx.font = "800 11px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(label, p.x, p.y - 12);
 }
 
 function drawSite(label, site, color) {
@@ -238,6 +358,12 @@ function addObject(type, x, y) {
 
 function renderUi() {
   ui.name.value = map.name;
+  map.meta = map.meta || {};
+  ui.viewportMode.value = studioSettings.viewportMode;
+  ui.gameMode.value = map.meta.gameMode || studioSettings.gameMode;
+  ui.testGraphics.value = studioSettings.testGraphics;
+  ui.matchSize.value = String(map.meta.matchSize || studioSettings.matchSize);
+  ui.defaultWeapon.value = map.meta.defaultWeapon || studioSettings.defaultWeapon;
   renderProperties();
   renderObjects();
   renderAssets();
@@ -293,6 +419,7 @@ function renderAssets() {
   const rows = [
     ...textures.map((item) => ["Texture", item.name]),
     ...mods.map((item) => ["Mod", item.name || item.id || "unnamed"]),
+    ...files.map((item) => [item.kind || "File", item.name]),
   ];
   if (!rows.length) rows.push(["Assets", "brak"]);
   for (const [kind, name] of rows) addAssetRow(kind, name);
@@ -307,6 +434,14 @@ function addAssetRow(kind, name) {
 
 function saveMap() {
   map.name = ui.name.value || map.name || "Studio Map";
+  map.meta = {
+    ...(map.meta || {}),
+    gameMode: ui.gameMode.value,
+    defaultWeapon: ui.defaultWeapon.value,
+    matchSize: Number(ui.matchSize.value || 5),
+    testGraphics: ui.testGraphics.value,
+    license: "GNU GPL 3.0",
+  };
   const id = `studio-${map.name.replace(/[^a-z0-9_-]/gi, "-").toLowerCase() || Date.now().toString(36)}`;
   const list = userMaps().filter((item) => item.id !== id);
   list.push({ id, map: clone(map) });
@@ -371,6 +506,30 @@ async function importTexture() {
   status("Tekstura dodana do Studio");
 }
 
+async function importAssets() {
+  const selected = [...ui.assetFiles.files];
+  if (!selected.length) return status("Wybierz pliki assetow");
+  for (const file of selected) {
+    const textLike = /\.(json|js|txt|css)$/i.test(file.name);
+    const data = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      if (textLike) reader.readAsText(file);
+      else reader.readAsDataURL(file);
+    });
+    files.push({
+      id: `file-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+      name: file.name,
+      kind: file.type.startsWith("image/") ? "Texture file" : file.name.endsWith(".js") ? "Code file" : "Data file",
+      type: file.type || "application/octet-stream",
+      data,
+    });
+  }
+  saveJson("potatoStrikeStudioFiles", files);
+  renderAssets();
+  status(`Dodano pliki: ${selected.length}`);
+}
+
 async function saveMod() {
   let mod;
   try {
@@ -387,7 +546,7 @@ async function saveMod() {
 
 async function testMap() {
   saveMap();
-  localStorage.setItem("potatoStrikeStudioTestMap", JSON.stringify(map));
+  localStorage.setItem("potatoStrikeStudioTestMap", JSON.stringify({ ...map, meta: { ...(map.meta || {}), testGraphics: ui.testGraphics.value } }));
   status("Uruchamiam test mapy");
   if (window.potatoNative?.testMap) await window.potatoNative.testMap();
   else window.open("index.html?studioTest=1", "_blank");
@@ -438,6 +597,19 @@ canvas.addEventListener("mousemove", (event) => {
 
 window.addEventListener("mouseup", () => { drag = null; });
 ui.name.addEventListener("input", () => { map.name = ui.name.value; });
+ui.viewportMode.addEventListener("change", () => {
+  studioSettings.viewportMode = ui.viewportMode.value;
+  saveJson("potatoStrikeStudioSettings", studioSettings);
+  draw();
+  status(`Widok: ${studioSettings.viewportMode.toUpperCase()}`);
+});
+ui.gameMode.addEventListener("change", () => { map.meta = { ...(map.meta || {}), gameMode: ui.gameMode.value }; });
+ui.testGraphics.addEventListener("change", () => {
+  studioSettings.testGraphics = ui.testGraphics.value;
+  saveJson("potatoStrikeStudioSettings", studioSettings);
+});
+ui.matchSize.addEventListener("change", () => { map.meta = { ...(map.meta || {}), matchSize: Number(ui.matchSize.value) }; });
+ui.defaultWeapon.addEventListener("change", () => { map.meta = { ...(map.meta || {}), defaultWeapon: ui.defaultWeapon.value }; });
 ui.newMap.addEventListener("click", () => { map = emptyMap(); selectedId = ""; renderUi(); status("Nowa mapa"); });
 ui.generate.addEventListener("click", generateMap);
 ui.save.addEventListener("click", saveMap);
@@ -447,6 +619,7 @@ ui.importMap.addEventListener("click", () => ui.importFile.click());
 ui.importFile.addEventListener("change", importMapFile);
 ui.load.addEventListener("click", loadSelectedMap);
 ui.importTexture.addEventListener("click", importTexture);
+ui.importAssets.addEventListener("click", importAssets);
 ui.saveMod.addEventListener("click", saveMod);
 
 try {

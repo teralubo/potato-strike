@@ -608,20 +608,33 @@ function loadStudioTestMap() {
       hud.menuMap.appendChild(option);
     }
     hud.menuMap.value = "studioTest";
-    hud.menuGraphics.value = "2d";
+    hud.menuGraphics.value = testMap.meta?.testGraphics || "2d";
     hud.menuMode.value = "offline";
+    if (testMap.meta?.matchSize) hud.matchSize.value = String(testMap.meta.matchSize);
     hud.menu.classList.add("hidden");
     closePanels();
     state.running = true;
     mouse.x = window.innerWidth / 2;
     mouse.y = window.innerHeight / 2;
     newMatch();
+    applyStudioTestMeta(testMap.meta || {});
     showMessage("Test mapy ze Studio");
     return true;
   } catch {
     showMessage("Nie udalo sie zaladowac testu Studio");
     return false;
   }
+}
+
+function applyStudioTestMeta(meta) {
+  if (!meta.defaultWeapon || meta.defaultWeapon === "side-default") return;
+  const weapon = weapons.find((item) => item.name === meta.defaultWeapon);
+  if (!weapon) return;
+  weapon.owned = true;
+  weapon.ammo = weapon.magSize;
+  weapon.currentReserve = weapon.reserve;
+  player.weaponId = weapon.id;
+  showMessage(`Studio weapon: ${weapon.name}`);
 }
 
 function restoreUserContent(config) {
