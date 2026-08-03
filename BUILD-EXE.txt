@@ -1,7 +1,10 @@
 Potato Strike offline folder
 
 Browser/local process:
-  Run PotatoStrike.bat
+  Run PotatoStrike.bat or open PotatoStrike.html
+
+One-file browser build:
+  PotatoStrike.html
 
 Separate offline game window:
   Run PotatoStrike-Window.bat after npm install

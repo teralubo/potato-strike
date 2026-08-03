@@ -1,3 +1,1015 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Potato Strike</title>
+  <style>
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  overflow: hidden;
+  background: #141816;
+  color: #f2f0df;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #1b211c;
+}
+
+#game {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  image-rendering: pixelated;
+  cursor: crosshair;
+}
+
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: 14px;
+  text-shadow: 0 1px 2px #000;
+}
+
+.hud-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hud-row.bottom {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  align-items: end;
+}
+
+.pill,
+.weapon-card {
+  border: 1px solid rgba(242, 240, 223, 0.18);
+  background: rgba(12, 14, 12, 0.72);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.weapon-card {
+  min-width: 118px;
+}
+
+.weapon-card.wide {
+  flex: 1;
+  min-width: 260px;
+  font-weight: 500;
+}
+
+.muted {
+  color: #b6b49f;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#message {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100vw - 28px));
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(12, 14, 12, 0.72);
+  color: #f2f0df;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+#message.show {
+  opacity: 1;
+}
+
+#menu {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background:
+    linear-gradient(rgba(20, 24, 22, 0.78), rgba(20, 24, 22, 0.78)),
+    repeating-linear-gradient(45deg, #1d271f 0 18px, #253226 18px 36px);
+}
+
+#player-menu {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  z-index: 2;
+  width: min(360px, calc(100vw - 28px));
+  border: 1px solid rgba(242, 240, 223, 0.16);
+  border-radius: 8px;
+  background: rgba(17, 20, 17, 0.86);
+  padding: 10px;
+  text-align: left;
+}
+
+#profile-current {
+  margin: 4px 0 8px;
+  font-weight: 800;
+}
+
+.profile-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.profile-row input,
+.profile-row select {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid rgba(242, 240, 223, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  background: #222820;
+  color: #f2f0df;
+}
+
+.profile-row button {
+  padding: 8px 9px;
+}
+
+.menu-box {
+  width: min(760px, calc(100vw - 28px));
+  border: 1px solid rgba(242, 240, 223, 0.16);
+  border-radius: 8px;
+  background: rgba(17, 20, 17, 0.78);
+  padding: 18px;
+}
+
+#menu h1 {
+  margin: 0;
+  font-size: clamp(34px, 7vw, 76px);
+  letter-spacing: 0;
+}
+
+#menu p {
+  max-width: 560px;
+  margin: 0 auto;
+  color: #d8d5bf;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.menu-grid label {
+  display: grid;
+  gap: 6px;
+  color: #d8d5bf;
+  font-weight: 700;
+}
+
+.menu-grid select,
+.settings-grid input {
+  border: 1px solid rgba(242, 240, 223, 0.2);
+  border-radius: 8px;
+  padding: 9px;
+  background: #222820;
+  color: #f2f0df;
+}
+
+.menu-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.menu-actions.left {
+  justify-content: flex-start;
+}
+
+#start {
+  justify-self: center;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 22px;
+  background: #d7bd62;
+  color: #171812;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#start:hover {
+  background: #ebcf6d;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  width: min(920px, calc(100vw - 28px));
+  max-height: min(720px, calc(100vh - 28px));
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(242, 240, 223, 0.18);
+  border-radius: 8px;
+  background: rgba(17, 20, 17, 0.96);
+  padding: 14px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+}
+
+.panel h2 {
+  margin: 2px 0 0;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+button,
+.buy-button,
+.close-panel,
+#reroll-missions {
+  border: 1px solid rgba(242, 240, 223, 0.2);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #d7bd62;
+  color: #171812;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button.secondary,
+.close-panel {
+  background: rgba(242, 240, 223, 0.08);
+  color: #f2f0df;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.shop-list,
+.mission-list,
+.bind-list,
+.team-list,
+.command-log {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.shop-item,
+.mission-item,
+.bind-item,
+.team-item {
+  border: 1px solid rgba(242, 240, 223, 0.14);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(242, 240, 223, 0.055);
+}
+
+.command-log {
+  margin-top: 12px;
+}
+
+.command-log div {
+  border-left: 3px solid rgba(215, 189, 98, 0.65);
+  padding: 7px 9px;
+  background: rgba(242, 240, 223, 0.055);
+  color: #d8d5bf;
+}
+
+.code-box {
+  width: 100%;
+  min-height: 130px;
+  margin: 12px 0;
+  border: 1px solid rgba(242, 240, 223, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  background: #171c17;
+  color: #f2f0df;
+  font-family: Consolas, "Courier New", monospace;
+  resize: vertical;
+}
+
+#pause-panel {
+  z-index: 6;
+}
+
+.shop-item.owned {
+  border-color: rgba(119, 181, 111, 0.55);
+}
+
+.shop-title,
+.mission-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+  font-weight: 800;
+}
+
+.shop-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  margin: 8px 0;
+  color: #d8d5bf;
+  font-size: 13px;
+}
+
+.tag {
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: rgba(242, 240, 223, 0.1);
+  color: #d8d5bf;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.settings-grid label {
+  display: grid;
+  gap: 6px;
+  color: #d8d5bf;
+  font-weight: 700;
+}
+
+.settings-grid select,
+.settings-grid input[type="range"] {
+  width: 100%;
+}
+
+.settings-grid select {
+  border: 1px solid rgba(242, 240, 223, 0.2);
+  border-radius: 8px;
+  padding: 9px;
+  background: #222820;
+  color: #f2f0df;
+}
+
+.panel-note {
+  margin: 12px 0 0;
+  color: #d8d5bf;
+}
+
+.settings-grid .check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mission-progress {
+  height: 8px;
+  margin-top: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(242, 240, 223, 0.1);
+}
+
+.mission-progress span {
+  display: block;
+  height: 100%;
+  background: #77b56f;
+}
+
+#reroll-missions {
+  margin-top: 12px;
+}
+
+#generate-map {
+  margin-top: 12px;
+}
+
+.bind-item,
+.team-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.bind-item button {
+  min-width: 120px;
+}
+
+#mobile-controls {
+  position: absolute;
+  inset: auto 12px 12px 12px;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  pointer-events: none;
+}
+
+#mobile-controls button {
+  min-width: 54px;
+  min-height: 54px;
+  border-radius: 999px;
+  background: rgba(215, 189, 98, 0.78);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.mobile-stick,
+.mobile-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.mobile-stick div,
+.mobile-actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  #hud {
+    padding: 8px;
+  }
+
+  .hud-row.bottom {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .weapon-card.wide {
+    display: none;
+  }
+
+  .panel {
+    padding: 10px;
+  }
+
+  #mobile-controls {
+    display: flex;
+  }
+}
+
+</style>
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" width="1280" height="720" aria-label="Simple tactical shooter game"></canvas>
+    <div id="hud">
+      <div class="hud-row">
+        <div class="pill" id="mode-pill">OFFLINE</div>
+        <div class="pill" id="team-pill">TEAM T</div>
+        <div class="pill" id="health">HP 100</div>
+        <div class="pill" id="armor">ARMOR 0</div>
+        <div class="pill" id="money">$800</div>
+        <div class="pill" id="round">R 1/32</div>
+        <div class="pill" id="score">T 0 : 0 CT</div>
+        <div class="pill" id="timer">1:55</div>
+        <div class="pill" id="bomb-pill">BOMBA --</div>
+        <div class="pill" id="mission-pill">MISJE 0/3</div>
+      </div>
+      <div class="hud-row bottom">
+        <div class="weapon-card">
+          <div class="muted">weapon</div>
+          <div id="weapon-name">Glock-18</div>
+        </div>
+        <div class="weapon-card">
+          <div class="muted">ammo</div>
+          <div id="ammo">20 / 120</div>
+        </div>
+        <div class="weapon-card wide">
+          <div class="muted">controls</div>
+          <div>WASD ruch / mysz / E uzyj-podloz-rozbroj / R reload / B sklep / O ustawienia / M misje / I bindy / G granat / 1-9 bron</div>
+        </div>
+      </div>
+      <div id="message" role="status"></div>
+    </div>
+    <div class="panel hidden" id="shop-panel" aria-label="Sklep broni">
+      <div class="panel-head">
+        <div>
+          <div class="muted">sklep</div>
+          <h2>Bronie i ekwipunek</h2>
+        </div>
+        <button class="close-panel" data-panel="shop-panel">Zamknij</button>
+      </div>
+      <div id="shop-list" class="shop-list"></div>
+    </div>
+    <div class="panel hidden" id="settings-panel" aria-label="Ustawienia gry">
+      <div class="panel-head">
+        <div>
+          <div class="muted">opcje</div>
+          <h2>Ustawienia gry</h2>
+        </div>
+        <button class="close-panel" data-panel="settings-panel">Zamknij</button>
+      </div>
+      <div class="settings-grid">
+        <label>
+          Jezyk / Language
+          <select id="language-select">
+            <option value="pl" selected>Polski</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label>
+          Tryb grafiki
+          <select id="graphics-mode">
+            <option value="2d">2D top-down</option>
+            <option value="3d">3D potato raycast</option>
+          </select>
+        </label>
+        <label>
+          Jakosc
+          <select id="quality">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+        <label>
+          Poziom botow
+          <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+        <label>
+          Rozdzielczosc
+          <select id="resolution">
+            <option value="auto" selected>Auto</option>
+            <option value="1280x720">1280x720</option>
+            <option value="1600x900">1600x900</option>
+            <option value="1920x1080">1920x1080</option>
+          </select>
+        </label>
+        <label>
+          Hz / FPS cap
+          <select id="hz-limit">
+            <option value="30">30 Hz</option>
+            <option value="60" selected>60 Hz</option>
+            <option value="120">120 Hz</option>
+            <option value="0">Bez limitu</option>
+          </select>
+        </label>
+        <label>
+          Celownik
+          <select id="crosshair-style">
+            <option value="classic" selected>Classic</option>
+            <option value="dot">Dot</option>
+            <option value="wide">Wide</option>
+          </select>
+        </label>
+        <label>
+          Kolor celownika
+          <input id="crosshair-color" type="color" value="#f2f0df">
+        </label>
+        <label>
+          Nick gracza
+          <input id="config-nick" value="Potato">
+        </label>
+        <label>
+          ID configu
+          <input id="config-id" readonly>
+        </label>
+        <label>
+          ID gracza
+          <input id="config-player-id" readonly>
+        </label>
+        <label>
+          Czuleosc myszy
+          <input id="sensitivity" type="range" min="0.4" max="2.4" step="0.1" value="1">
+        </label>
+        <label>
+          Screen shake
+          <input id="screen-shake" type="range" min="0" max="1" step="0.05" value="0.8">
+        </label>
+        <label>
+          Limit CPU/GPU
+          <select id="perf-limit">
+            <option value="eco">Eco 30 FPS</option>
+            <option value="balanced" selected>Balanced 60 FPS</option>
+            <option value="max">Max FPS</option>
+          </select>
+        </label>
+        <label>
+          Liczba botow
+          <input id="bot-count" type="range" min="4" max="18" step="1" value="10">
+        </label>
+        <label>
+          Sterowanie
+          <select id="control-mode">
+            <option value="keyboard" selected>Klawiatura + mysz</option>
+            <option value="mobile">Telefon / ekran dotykowy</option>
+          </select>
+        </label>
+        <label class="check">
+          <input id="show-minimap" type="checkbox" checked>
+          Minimap
+        </label>
+        <label class="check">
+          <input id="auto-reload" type="checkbox" checked>
+          Auto reload przy pustym magazynku
+        </label>
+      </div>
+      <div class="menu-actions left">
+        <button id="export-config">Pobierz config</button>
+        <button id="import-config">Wgraj config</button>
+        <input id="config-file" class="hidden" type="file" accept="application/json">
+      </div>
+      <p class="panel-note">W wersji Electron config zapisuje sie bezposrednio w folderze gry `configs`. W przegladarce pobiera sie jako plik JSON.</p>
+    </div>
+    <div class="panel hidden" id="missions-panel" aria-label="Misje">
+      <div class="panel-head">
+        <div>
+          <div class="muted">kontrakty</div>
+          <h2>Misje rundy</h2>
+        </div>
+        <button class="close-panel" data-panel="missions-panel">Zamknij</button>
+      </div>
+      <div id="mission-list" class="mission-list"></div>
+      <button id="reroll-missions">Wygeneruj nowe misje ($300)</button>
+    </div>
+    <div class="panel hidden" id="binds-panel" aria-label="Bindy">
+      <div class="panel-head">
+        <div>
+          <div class="muted">sterowanie</div>
+          <h2>Bindy</h2>
+        </div>
+        <button class="close-panel" data-panel="binds-panel">Zamknij</button>
+      </div>
+      <p class="panel-note">Pod klawiszem I mozesz zobaczyc i zmienic bindy. Kliknij akcje, potem nacisnij nowy klawisz.</p>
+      <div id="bind-list" class="bind-list"></div>
+    </div>
+    <div class="panel hidden" id="teams-panel" aria-label="Druzyny">
+      <div class="panel-head">
+        <div>
+          <div class="muted">sklady</div>
+          <h2>Druzyny</h2>
+        </div>
+        <button class="close-panel" data-panel="teams-panel">Zamknij</button>
+      </div>
+      <div id="team-list" class="team-list"></div>
+      <p class="panel-note">BOTY uzupelniaja sklad automatycznie. LAN pokazuje pokoj i przygotowanie pod graczy lokalnych.</p>
+    </div>
+    <div class="panel hidden" id="mapgen-panel" aria-label="Generator map">
+      <div class="panel-head">
+        <div>
+          <div class="muted">map creator</div>
+          <h2>Generator map</h2>
+        </div>
+        <button class="close-panel" data-panel="mapgen-panel">Zamknij</button>
+      </div>
+      <div class="settings-grid">
+        <label>
+          Seed
+          <input id="map-seed" value="potato">
+        </label>
+        <label>
+          Rozmiar mapy
+          <select id="map-size">
+            <option value="small">Small</option>
+            <option value="medium" selected>Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </label>
+      </div>
+      <button id="generate-map">Wygeneruj mape</button>
+      <p class="panel-note" id="mapgen-status">Nowa mapa pojawi sie w wyborze map jako Generated.</p>
+    </div>
+    <div class="panel hidden" id="editor-panel" aria-label="Edytor misji i map">
+      <div class="panel-head">
+        <div>
+          <div class="muted">story editor</div>
+          <h2>Edytor misji i map</h2>
+        </div>
+        <button class="close-panel" data-panel="editor-panel">Zamknij</button>
+      </div>
+      <div class="settings-grid">
+        <label>
+          Nazwa misji
+          <input id="editor-name" value="Moja misja">
+        </label>
+        <label>
+          Narzedzie
+          <select id="editor-tool">
+            <option value="wall">Dodaj sciane</option>
+            <option value="crate">Dodaj skrzynie</option>
+            <option value="cover">Dodaj oslone</option>
+            <option value="ramp">Dodaj rampe</option>
+            <option value="light">Dodaj swiatlo</option>
+            <option value="spawnPoint">Dodaj spawn point</option>
+            <option value="trigger">Dodaj trigger</option>
+            <option value="logic">Dodaj logike</option>
+            <option value="weaponPickup">Dodaj bron pickup</option>
+            <option value="prop">Dodaj prop</option>
+            <option value="siteA">Ustaw bombsite A</option>
+            <option value="siteB">Ustaw bombsite B</option>
+            <option value="tSpawn">Ustaw spawn T</option>
+            <option value="ctSpawn">Ustaw spawn CT</option>
+            <option value="delete">Usun obiekt</option>
+            <option value="move">Przesun obiekt</option>
+          </select>
+        </label>
+        <label>
+          Cel misji
+          <select id="editor-goal">
+            <option value="win">Wygraj runde</option>
+            <option value="plant">Podloz bombe</option>
+            <option value="defuse">Rozbroj bombe</option>
+            <option value="kills">Zdobadz fragi</option>
+          </select>
+        </label>
+        <label>
+          Wymagana liczba
+          <input id="editor-target" type="number" min="1" value="1">
+        </label>
+        <label>
+          Szerokosc
+          <input id="editor-width" type="range" min="30" max="460" value="120">
+        </label>
+        <label>
+          Wysokosc
+          <input id="editor-height" type="range" min="30" max="360" value="80">
+        </label>
+        <label>
+          Rotacja
+          <input id="editor-rotation" type="range" min="0" max="315" step="45" value="0">
+        </label>
+        <label>
+          Kolor obiektu
+          <input id="editor-color" type="color" value="#56614d">
+        </label>
+      </div>
+      <div class="menu-actions left">
+        <button id="editor-new">Nowa mapa</button>
+        <button id="editor-random">Losowa misja/mapa</button>
+        <button id="editor-save-map">Zapisz sama mape</button>
+        <button id="editor-save">Zapisz misje</button>
+        <button id="editor-load">Zaladuj zaznaczona</button>
+        <button id="editor-export">Pobierz misje</button>
+      </div>
+      <div class="settings-grid">
+        <label>
+          Wlasna tekstura
+          <input id="texture-file" type="file" accept="image/*">
+        </label>
+        <label>
+          Nazwa tekstury
+          <input id="texture-name" value="custom-texture">
+        </label>
+        <label>
+          Plik modu
+          <input id="mod-file" type="file" accept=".json,.js,text/javascript,application/json">
+        </label>
+        <label>
+          Tryb z kodu / JSON
+          <select id="mod-mode">
+            <option value="json" selected>JSON bezpieczny</option>
+            <option value="script">Script sandbox</option>
+          </select>
+        </label>
+      </div>
+      <textarea id="mod-code" class="code-box" spellcheck="false" placeholder='{"name":"My Mode","mode":"deathmatch","roundTime":180}'></textarea>
+      <div class="menu-actions left">
+        <button id="texture-import">Wgraj teksture</button>
+        <button id="mod-import">Wgraj mod/tryb</button>
+        <button id="mod-export">Pobierz mod</button>
+      </div>
+      <div id="asset-list" class="team-list"></div>
+      <div id="editor-properties" class="team-list"></div>
+      <div id="saved-missions" class="mission-list"></div>
+      <p class="panel-note">Gdy panel jest otwarty, klikaj na plansze: edytor doda/usunie/przesunie obiekty na mapie. Misje zapisuja sie lokalnie w przegladarce i dzialaja tez w buildzie offline.</p>
+    </div>
+    <div class="panel hidden" id="console-panel" aria-label="Komendy lobby">
+      <div class="panel-head">
+        <div>
+          <div class="muted">owner console</div>
+          <h2>Komendy lobby</h2>
+        </div>
+        <button class="close-panel" data-panel="console-panel">Zamknij</button>
+      </div>
+      <div class="settings-grid">
+        <label>
+          Komenda
+          <input id="command-input" placeholder="np. bot_add_ct, bot_kick, mp_restartgame, mp_freezetime 0">
+        </label>
+      </div>
+      <button id="run-command">Wykonaj</button>
+      <div id="command-log" class="command-log"></div>
+    </div>
+    <div id="pause-panel" class="panel hidden" aria-label="Pauza">
+      <div class="panel-head">
+        <div>
+          <div class="muted">pauza</div>
+          <h2>Gra zatrzymana</h2>
+        </div>
+      </div>
+      <div class="menu-actions">
+        <button id="resume-game">Wroc do gry</button>
+        <button id="pause-settings" class="secondary">Ustawienia</button>
+        <button id="pause-menu" class="secondary">Menu glowne</button>
+      </div>
+    </div>
+    <div class="panel hidden" id="network-panel" aria-label="Gra sieciowa">
+      <div class="panel-head">
+        <div>
+          <div class="muted">online / lan</div>
+          <h2>Tryb sieciowy</h2>
+        </div>
+        <button class="close-panel" data-panel="network-panel">Zamknij</button>
+      </div>
+      <div class="settings-grid">
+        <label>
+          Nick
+          <input id="player-name" value="Potato">
+        </label>
+        <label>
+          Pokoj LAN
+          <input id="lan-room" value="potato-lan">
+        </label>
+        <label>
+          Adres serwera
+          <input id="server-url" value="ws://localhost:8787">
+        </label>
+      </div>
+      <p class="panel-note" id="network-status">Offline z botami jest w pelni grywalny. Online/LAN ma menu i konfiguracje; do prawdziwych graczy trzeba uruchomic serwer WebSocket.</p>
+    </div>
+    <div id="mobile-controls" class="hidden" aria-label="Sterowanie mobilne">
+      <div class="mobile-stick">
+        <button data-touch-action="forward">W</button>
+        <div>
+          <button data-touch-action="left">A</button>
+          <button data-touch-action="back">S</button>
+          <button data-touch-action="right">D</button>
+        </div>
+      </div>
+      <div class="mobile-actions">
+        <button data-touch-action="fire">FIRE</button>
+        <button data-touch-action="use">E</button>
+        <button data-touch-action="reload">R</button>
+        <button data-touch-action="grenade">G</button>
+      </div>
+    </div>
+    <div id="menu">
+      <div id="player-menu" class="hidden">
+        <div class="muted">profil gracza</div>
+        <div id="profile-current">Potato / --</div>
+        <div class="profile-row">
+          <input id="profile-nick" placeholder="Nick nowego profilu" value="Potato">
+          <button id="profile-create">Nowy profil</button>
+        </div>
+        <div class="profile-row">
+          <select id="profile-list"></select>
+          <button id="profile-load">Wczytaj</button>
+        </div>
+        <div class="profile-row">
+          <button id="profile-export" class="secondary">Export profilu</button>
+          <button id="profile-import" class="secondary">Import profilu</button>
+          <input id="profile-file" class="hidden" type="file" accept="application/json">
+        </div>
+      </div>
+      <div class="menu-box">
+        <h1>Potato Strike</h1>
+        <p>CS-like dla slabych komputerow: misje, boty, bomba, sklep stron, 2D albo lekkie 3D. Pod I sa bindy, ktore mozna zobaczyc i zmienic.</p>
+        <div class="menu-grid">
+          <label>
+            Tryb
+            <select id="menu-mode">
+              <option value="offline">BOTY offline</option>
+              <option value="story">Tryb fabularny</option>
+              <option value="lan">LAN</option>
+              <option value="online">Online HTML</option>
+            </select>
+          </label>
+          <label>
+            Wersja
+            <select id="launch-target">
+              <option value="html" selected>HTML / przegladarka</option>
+              <option value="exe">Offline EXE</option>
+            </select>
+          </label>
+          <label>
+            Rozmiar meczu
+            <select id="match-size">
+              <option value="1">1v1</option>
+              <option value="2">2v2</option>
+              <option value="3">3v3</option>
+              <option value="4">4v4</option>
+              <option value="5" selected>5v5</option>
+              <option value="8">8v8</option>
+              <option value="10">10v10</option>
+            </select>
+          </label>
+          <label>
+            Uzupelnienie
+            <select id="fill-mode">
+              <option value="bots" selected>BOTY</option>
+              <option value="lan">LAN gracze + boty</option>
+            </select>
+          </label>
+          <label>
+            Strona startowa
+            <select id="menu-team">
+              <option value="random">Losowa</option>
+              <option value="T">Terrorists</option>
+              <option value="CT">Counter-Terrorists</option>
+            </select>
+          </label>
+          <label>
+            Mapa
+            <select id="menu-map">
+              <option value="dustyard">Dustyard</option>
+              <option value="officepark">Officepark</option>
+              <option value="cachebox">Cachebox</option>
+              <option value="dust2">Dust II style</option>
+              <option value="mirage">Mirage style</option>
+              <option value="inferno">Inferno style</option>
+              <option value="nuke">Nuke style</option>
+              <option value="overpass">Overpass style</option>
+              <option value="vertigo">Vertigo style</option>
+              <option value="ancient">Ancient style</option>
+              <option value="anubis">Anubis style</option>
+              <option value="train">Train style</option>
+              <option value="cache">Cache style</option>
+              <option value="office">Office style</option>
+              <option value="italy">Italy style</option>
+              <option value="tuscan">Tuscan style</option>
+              <option value="cobblestone">Cobblestone style</option>
+              <option value="assault">Assault style</option>
+              <option value="custom">Custom mission map</option>
+            </select>
+          </label>
+          <label>
+            Grafika
+            <select id="menu-graphics">
+              <option value="2d">2D top-down</option>
+              <option value="3d">3D potato</option>
+            </select>
+          </label>
+        </div>
+        <div class="menu-actions">
+          <button id="start">Graj</button>
+          <button id="quick-editor">EDYTOR</button>
+          <button id="open-profile" class="secondary">Profil</button>
+          <button id="open-settings" class="secondary">Ustawienia</button>
+          <button id="open-binds" class="secondary">Bindy</button>
+          <button id="open-teams" class="secondary">Druzyny</button>
+          <button id="open-mapgen" class="secondary">Generator map</button>
+          <button id="open-editor" class="secondary">Edytor fabuly</button>
+          <button id="open-console" class="secondary">Komendy</button>
+          <button id="open-network" class="secondary">Online/LAN</button>
+          <button id="download-game" class="secondary">Pobierz lokalnie</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d", { alpha: false });
 
@@ -1634,7 +2646,7 @@ function advanceMission(type, amount = 1, category = "") {
         mission.done = true;
         player.money += mission.reward;
         if (campaignTemplates.includes(mission) && state.campaignIndex < campaignTemplates.length - 1) state.campaignIndex += 1;
-        showMessage(`Misja wykonana: ${mission.title} +$${mission.reward}`);
+        showMessage(`Misja wykonana: ${mission.title} +${mission.reward}`);
       }
       changed = true;
     }
@@ -1673,7 +2685,7 @@ function renderMissions() {
     const pct = mission.done ? 100 : clamp((value / mission.target) * 100, 0, 100);
     const item = document.createElement("div");
     item.className = "mission-item";
-    item.innerHTML = `<div class="mission-title"><span>${mission.title}</span><span class="tag">+$${mission.reward}</span></div><div>${mission.text}: ${value}/${mission.target}</div><div class="mission-progress"><span style="width:${pct}%"></span></div>`;
+    item.innerHTML = `<div class="mission-title"><span>${mission.title}</span><span class="tag">+${mission.reward}</span></div><div>${mission.text}: ${value}/${mission.target}</div><div class="mission-progress"><span style="width:${pct}%"></span></div>`;
     hud.missionList.appendChild(item);
   }
   hud.missionPill.textContent = `MISJE ${done}/${list.length || 1}`;
@@ -1715,7 +2727,7 @@ function renderShop() {
   for (const weapon of visibleWeapons) {
     const item = document.createElement("div");
     item.className = `shop-item${weapon.owned ? " owned" : ""}`;
-    item.innerHTML = `<div class="shop-title"><span>${weapon.name}</span><span class="tag">${weapon.owned ? "Posiadane" : `$${weapon.price}`}</span></div><div class="muted">${weapon.side} / ${weapon.category}</div><div class="shop-stats"><span>DMG ${weapon.damage}</span><span>MAG ${weapon.magSize}</span><span>RECOIL ${Math.round(weapon.recoil * 100)}</span><span>SPREAD ${Math.round(weapon.spread * 100)}</span></div>`;
+    item.innerHTML = `<div class="shop-title"><span>${weapon.name}</span><span class="tag">${weapon.owned ? "Posiadane" : `${weapon.price}`}</span></div><div class="muted">${weapon.side} / ${weapon.category}</div><div class="shop-stats"><span>DMG ${weapon.damage}</span><span>MAG ${weapon.magSize}</span><span>RECOIL ${Math.round(weapon.recoil * 100)}</span><span>SPREAD ${Math.round(weapon.spread * 100)}</span></div>`;
     const button = document.createElement("button");
     button.textContent = weapon.owned ? "Wyposaz" : "Kup";
     button.disabled = !weapon.owned && player.money < weapon.price;
@@ -1727,7 +2739,7 @@ function renderShop() {
     const id = grenadeCatalog.indexOf(grenade);
     const item = document.createElement("div");
     item.className = "shop-item";
-    item.innerHTML = `<div class="shop-title"><span>${grenade.name}</span><span class="tag">$${grenade.price}</span></div><div class="muted">Grenade / ${grenade.side}</div><div class="shop-stats"><span>Posiadane ${player.grenades[grenade.name] || 0}</span><span>G - rzut</span></div>`;
+    item.innerHTML = `<div class="shop-title"><span>${grenade.name}</span><span class="tag">${grenade.price}</span></div><div class="muted">Grenade / ${grenade.side}</div><div class="shop-stats"><span>Posiadane ${player.grenades[grenade.name] || 0}</span><span>G - rzut</span></div>`;
     const button = document.createElement("button");
     button.textContent = "Kup";
     button.disabled = player.money < grenade.price;
@@ -2013,7 +3025,7 @@ function updateHud() {
   hud.team.textContent = `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
   hud.health.textContent = `HP ${Math.ceil(player.hp)}`;
   hud.armor.textContent = `ARMOR ${Math.ceil(player.armor)}`;
-  hud.money.textContent = `$${player.money}`;
+  hud.money.textContent = `${player.money}`;
   hud.round.textContent = `R ${state.round}/32`;
   hud.score.textContent = `T ${state.score.T} : ${state.score.CT} CT`;
   const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
@@ -2312,3 +3324,7 @@ renderAssetList();
 renderProfileMenu();
 loadStudioTestMap();
 requestAnimationFrame(tick);
+
+</script>
+</body>
+</html>

@@ -18,7 +18,7 @@ if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["
   process.exit(1);
 }
 
-for (const file of ["main.js", "preload.js", "editor.html", "editor.css", "editor.js", "launch-offline-window.bat", "scripts/package-offline.js", "mods/README.md"]) {
+for (const file of ["main.js", "preload.js", "editor.html", "editor.css", "editor.js", "launch-offline-window.bat", "scripts/package-offline.js", "scripts/build-single-html.js", "mods/README.md"]) {
   if (!fs.existsSync(file)) {
     console.error(`Missing required offline file: ${file}`);
     process.exit(1);
@@ -26,9 +26,8 @@ for (const file of ["main.js", "preload.js", "editor.html", "editor.css", "edito
 }
 
 for (const file of [
-  `dist/Potato Strike ${packageJson.version}.exe`,
-  "PotatoStrike.exe",
   "PotatoStrike.bat",
+  "PotatoStrike.html",
   "PotatoStrike-Window.bat",
   "PotatoStrike-Studio.bat",
   "configs/default-config.json",
@@ -60,6 +59,12 @@ if (!js.includes("userMaps()") || !js.includes("storyMissions: savedStoryMission
 const mainJs = fs.readFileSync("main.js", "utf8");
 if (!mainJs.includes("config:save") || !fs.readFileSync("preload.js", "utf8").includes("saveConfig")) {
   console.error("Electron config save bridge is missing");
+  process.exit(1);
+}
+
+const singleHtml = fs.readFileSync("PotatoStrike.html", "utf8");
+if (!singleHtml.includes("<style>") || !singleHtml.includes("<script>") || singleHtml.includes('src="game.js"') || singleHtml.includes('href="styles.css"')) {
+  console.error("Single-file HTML build is not self-contained");
   process.exit(1);
 }
 

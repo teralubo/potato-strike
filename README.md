@@ -12,7 +12,9 @@ Workflow repo:
 
 ## Uruchamianie w przegladarce
 
-- Kliknij dwa razy `index.html`, albo uruchom `launch-browser.bat`.
+- Najlzejsza wersja gry to jeden plik `PotatoStrike.html`. Kliknij go dwa razy albo uruchom `PotatoStrike.bat`.
+- Pliki developerskie `node_modules/`, `dist/`, `.git/` i lokalne `.exe` nie sa potrzebne do wersji przegladarkowej i nie powinny trafic do malej paczki gry.
+- Tryb developerski mozesz odpalic przez `index.html`, albo `launch-browser.bat`.
 - Alternatywnie uruchom lokalny serwer:
 
 ```powershell
@@ -46,7 +48,9 @@ Folder gry bez osobnego `release` ani lokalnego folderu `beta` przygotujesz kome
 npm run package:offline
 ```
 
-Wtedy glowny katalog projektu jest gotowym folderem gry: ma `PotatoStrike.exe`, `PotatoStrike.bat`, `PotatoStrike-Window.bat`, `PotatoStrike-Studio.bat`, `configs/` i `mods/`.
+Wtedy glowny katalog projektu dostaje lekki build `PotatoStrike.html` oraz launcher `PotatoStrike.bat`.
+Do wersji lokalnej w przegladarce wystarczy jeden plik `PotatoStrike.html`.
+Opcjonalny Electron/EXE nadal wymaga `npm install` i osobnego buildu, ale nie jest potrzebny do potato-wersji.
 Wersja testowa trafia na branch GitHuba `beta`, nie do folderu `beta/`.
 Po `npm install` launcher `PotatoStrike-Window.bat` uruchamia gre jako osobne okno/proces Electron, bez zwyklej karty przegladarki. Pelny plik `.exe` powstaje po `npm run build:win`.
 Launcher `PotatoStrike-Studio.bat` uruchamia osobne okno edytora Studio. Na Linuxie build jest w `dist/linux-unpacked/`, a edytor mozna uruchomic argumentem `--editor`.

@@ -8,6 +8,7 @@
   "scripts": {
     "serve": "node server.js",
     "verify": "node scripts/verify.js",
+    "build:single": "node scripts/build-single-html.js",
     "package:offline": "node scripts/package-offline.js",
     "start": "electron .",
     "start:editor": "electron . --editor",

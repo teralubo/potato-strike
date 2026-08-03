@@ -3,27 +3,12 @@ const path = require("path");
 
 const root = process.cwd();
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-const files = [
-  "index.html",
-  "editor.html",
-  "styles.css",
-  "editor.css",
-  "game.js",
-  "editor.js",
-  "main.js",
-  "preload.js",
-  "server.js",
-  "package.json",
-  "package-lock.json",
-  "README.md",
-  "launch-browser.bat",
-  "launch-offline-window.bat",
-];
 
 fs.mkdirSync(path.join(root, "configs"), { recursive: true });
 fs.mkdirSync(path.join(root, "mods"), { recursive: true });
+require("./build-single-html");
 
-fs.writeFileSync(path.join(root, "PotatoStrike.bat"), '@echo off\r\ncd /d "%~dp0"\r\nstart "" "index.html"\r\n');
+fs.writeFileSync(path.join(root, "PotatoStrike.bat"), '@echo off\r\ncd /d "%~dp0"\r\nstart "" "PotatoStrike.html"\r\n');
 fs.writeFileSync(path.join(root, "PotatoStrike-Window.bat"), '@echo off\r\ncd /d "%~dp0"\r\nif exist "node_modules\\electron\\dist\\electron.exe" (\r\n  start "" "node_modules\\electron\\dist\\electron.exe" .\r\n) else (\r\n  echo Electron runtime not found. Run npm install first.\r\n  pause\r\n)\r\n');
 fs.writeFileSync(path.join(root, "PotatoStrike-Studio.bat"), '@echo off\r\ncd /d "%~dp0"\r\nif exist "node_modules\\electron\\dist\\electron.exe" (\r\n  start "" "node_modules\\electron\\dist\\electron.exe" . --editor\r\n) else (\r\n  start "" "editor.html"\r\n)\r\n');
 
@@ -53,7 +38,10 @@ fs.writeFileSync(path.join(root, "BUILD-EXE.txt"), [
   "Potato Strike offline folder",
   "",
   "Browser/local process:",
-  "  Run PotatoStrike.bat",
+  "  Run PotatoStrike.bat or open PotatoStrike.html",
+  "",
+  "One-file browser build:",
+  "  PotatoStrike.html",
   "",
   "Separate offline game window:",
   "  Run PotatoStrike-Window.bat after npm install",
