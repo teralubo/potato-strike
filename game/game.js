@@ -188,9 +188,9 @@ const weaponCatalog = [
   { name: "P90", side: "BOTH", category: "SMG", price: 2350, magSize: 50, reserve: 100, damage: 19, fireDelay: 58, reloadTime: 1.85, spread: 0.115, recoil: 0.052, bulletSpeed: 1010, automatic: true, color: "#b9b68f" },
   { name: "PP-Bizon", side: "BOTH", category: "SMG", price: 1400, magSize: 64, reserve: 120, damage: 18, fireDelay: 70, reloadTime: 1.7, spread: 0.12, recoil: 0.043, bulletSpeed: 940, automatic: true, color: "#ada27f" },
   { name: "Galil AR", side: "T", category: "Rifle", price: 1800, magSize: 35, reserve: 90, damage: 28, fireDelay: 90, reloadTime: 1.6, spread: 0.088, recoil: 0.066, bulletSpeed: 1160, automatic: true, color: "#b08d57" },
-  { name: "FAMAS", side: "CT", category: "Rifle", price: 2050, magSize: 25, reserve: 90, damage: 27, fireDelay: 82, reloadTime: 1.6, spread: 0.071, recoil: 0.058, bulletSpeed: 1180, automatic: true, color: "#8f9b78" },
+  { name: "FAMAS", side: "CT", category: "Rifle", price: 1950, magSize: 25, reserve: 90, damage: 27, fireDelay: 82, reloadTime: 1.6, spread: 0.071, recoil: 0.058, bulletSpeed: 1180, automatic: true, color: "#8f9b78" },
   { name: "AK-47", side: "T", category: "Rifle", price: 2700, magSize: 30, reserve: 90, damage: 34, fireDelay: 102, reloadTime: 1.65, spread: 0.092, recoil: 0.078, bulletSpeed: 1220, automatic: true, color: "#c48a45" },
-  { name: "M4A4", side: "CT", category: "Rifle", price: 3100, magSize: 30, reserve: 90, damage: 29, fireDelay: 92, reloadTime: 1.55, spread: 0.074, recoil: 0.061, bulletSpeed: 1260, automatic: true, color: "#8ea9b8" },
+  { name: "M4A4", side: "CT", category: "Rifle", price: 2900, magSize: 30, reserve: 90, damage: 29, fireDelay: 92, reloadTime: 1.55, spread: 0.074, recoil: 0.061, bulletSpeed: 1260, automatic: true, color: "#8ea9b8" },
   { name: "M4A1-S", side: "CT", category: "Rifle", price: 2900, magSize: 25, reserve: 75, damage: 31, fireDelay: 105, reloadTime: 1.5, spread: 0.048, recoil: 0.045, bulletSpeed: 1230, automatic: true, color: "#a6ad9f" },
   { name: "SG 553", side: "T", category: "Rifle", price: 3000, magSize: 30, reserve: 90, damage: 32, fireDelay: 95, reloadTime: 1.7, spread: 0.066, recoil: 0.068, bulletSpeed: 1240, automatic: true, color: "#a98554" },
   { name: "AUG", side: "CT", category: "Rifle", price: 3300, magSize: 30, reserve: 90, damage: 30, fireDelay: 95, reloadTime: 1.7, spread: 0.058, recoil: 0.06, bulletSpeed: 1250, automatic: true, color: "#8aa0a3" },
@@ -212,7 +212,7 @@ const grenadeCatalog = [
   { name: "Flashbang", key: "flash", side: "BOTH", price: 200, color: "#e7ddaa" },
   { name: "Smoke", key: "smoke", side: "BOTH", price: 300, color: "#b7b7ad" },
   { name: "Molotov", key: "fire", side: "T", price: 400, color: "#de8746" },
-  { name: "Incendiary", key: "fire", side: "CT", price: 600, color: "#de8746" },
+  { name: "Incendiary", key: "fire", side: "CT", price: 500, color: "#de8746" },
   { name: "Decoy", key: "decoy", side: "BOTH", price: 50, color: "#8ab2d4" },
 ];
 
@@ -220,6 +220,7 @@ const equipmentCatalog = [
   { name: "Kevlar Vest", side: "BOTH", price: 650, key: "armor", value: 100, color: "#9aa48e" },
   { name: "Kevlar + Helmet", side: "BOTH", price: 1000, key: "helmet", value: 100, color: "#b8c3d6" },
   { name: "Defuse Kit", side: "CT", price: 400, key: "defuseKit", value: true, color: "#d7bd62" },
+  { name: "Zeus x27", side: "BOTH", price: 200, key: "zeus", value: true, color: "#8ab2d4" },
 ];
 
 const maps = {
@@ -675,6 +676,7 @@ const player = {
   armor: 0,
   helmet: false,
   defuseKit: false,
+  zeus: false,
   money: 800,
   speed: 250,
   dash: 0,
@@ -1638,6 +1640,15 @@ function sideAllows(item, team = state.team) {
   return item.side === "BOTH" || item.side === team;
 }
 
+function equipmentPrice(item) {
+  if (item.key === "helmet" && player.armor >= 100 && !player.helmet) return 350;
+  return item.price;
+}
+
+function defaultWeaponName(team) {
+  return team === "T" ? "Glock-18" : "USP-S";
+}
+
 function activeWeapon() {
   return weapons[player.weaponId] || weapons[0];
 }
@@ -1675,7 +1686,7 @@ function selectInventoryItem(item) {
 }
 
 function defaultWeaponId(team) {
-  const name = team === "T" ? "Glock-18" : "USP-S";
+  const name = defaultWeaponName(team);
   return weapons.find((weapon) => weapon.name === name)?.id || 0;
 }
 
@@ -1687,6 +1698,94 @@ function difficultyScale() {
   if (settings.difficulty === "easy") return 0.75;
   if (settings.difficulty === "hard") return 1.3;
   return 1;
+}
+
+function botRoundBudget(team) {
+  if (state.round <= 1) return 800;
+  const base = 800 + Math.min(4200, (state.round - 1) * 850);
+  const scoreBoost = Math.max(0, state.score[team] || 0) * 250;
+  return Math.min(16000, base + scoreBoost);
+}
+
+function chooseAffordableWeapon(team, budget) {
+  const defaultName = defaultWeaponName(team);
+  const affordable = weapons
+    .filter((weapon) => !weapon.melee && weapon.category !== "Melee" && sideAllows(weapon, team) && weapon.price <= budget)
+    .filter((weapon) => state.round > 1 || weapon.category === "Pistol")
+    .sort((a, b) => b.price - a.price);
+  if (!affordable.length) return weapons.find((weapon) => weapon.name === defaultName);
+  const premium = affordable.filter((weapon) => weapon.price >= Math.min(budget, state.round <= 1 ? 650 : 1800));
+  const pool = premium.length ? premium : affordable;
+  return pool[Math.floor(Math.random() * pool.length)] || weapons.find((weapon) => weapon.name === defaultName);
+}
+
+function makeBotLoadout(team) {
+  let money = botRoundBudget(team);
+  const defaultWeapon = weapons.find((weapon) => weapon.name === defaultWeaponName(team));
+  const weapon = chooseAffordableWeapon(team, money) || defaultWeapon;
+  money -= weapon?.name === defaultWeaponName(team) ? 0 : weapon?.price || 0;
+  const loadout = {
+    money: Math.max(0, money),
+    weapon: weapon?.name || defaultWeaponName(team),
+    weaponId: weapon?.id ?? defaultWeapon?.id ?? 0,
+    armor: 0,
+    helmet: false,
+    defuseKit: false,
+    zeus: false,
+    grenades: [],
+  };
+  const buyEquipment = (key) => {
+    const item = equipmentCatalog.find((entry) => entry.key === key && sideAllows(entry, team));
+    if (!item || money < item.price) return false;
+    money -= item.price;
+    if (key === "armor") loadout.armor = Math.max(loadout.armor, item.value);
+    if (key === "helmet") {
+      loadout.armor = Math.max(loadout.armor, item.value);
+      loadout.helmet = true;
+    }
+    if (key === "defuseKit") loadout.defuseKit = true;
+    if (key === "zeus") loadout.zeus = true;
+    return true;
+  };
+  if (state.round <= 1) {
+    if (Math.random() < 0.55) buyEquipment("armor");
+  } else if (money >= 1000) {
+    buyEquipment("helmet");
+  } else if (money >= 650) {
+    buyEquipment("armor");
+  }
+  if (team === "CT" && state.round > 1 && Math.random() < 0.45) buyEquipment("defuseKit");
+  if (state.round > 1 && Math.random() < 0.2) buyEquipment("zeus");
+  const utilityPool = grenadeCatalog.filter((grenade) => sideAllows(grenade, team)).sort((a, b) => a.price - b.price);
+  const maxGrenades = state.round <= 1 ? 1 : 3;
+  for (const grenade of utilityPool.sort(() => Math.random() - 0.5)) {
+    if (loadout.grenades.length >= maxGrenades) break;
+    if (money >= grenade.price && Math.random() < (state.round <= 1 ? 0.28 : 0.55)) {
+      money -= grenade.price;
+      loadout.grenades.push(grenade.name);
+    }
+  }
+  loadout.money = Math.max(0, money);
+  return loadout;
+}
+
+function weaponStatsByName(name) {
+  const weapon = weapons.find((item) => item.name === name);
+  return weapon || weapons[defaultWeaponId(state.enemyTeam)] || weapons[0];
+}
+
+function actorWeaponStats(actor) {
+  const weapon = weaponStatsByName(actor.weapon);
+  const scale = actor.source === "LAN" ? 1 : difficultyScale();
+  return {
+    damage: weapon.damage * (actor.hostile ? 0.42 : 0.36) * scale,
+    spread: (weapon.spread || 0.08) + (actor.hostile ? 0.05 : 0.06),
+    recoil: weapon.recoil || 0,
+    bulletSpeed: Math.max(720, (weapon.bulletSpeed || 950) * 0.72),
+    fireDelay: weapon.fireDelay || 520,
+    pellets: weapon.pellets || 1,
+    automatic: weapon.automatic,
+  };
 }
 
 function pointInRect(x, y, o) {
@@ -2056,6 +2155,7 @@ function resetLoadout() {
   player.grenades = {};
   player.helmet = false;
   player.defuseKit = false;
+  player.zeus = false;
   const knifeId = knifeWeaponId();
   weapons[knifeId].owned = true;
   weapons[knifeId].ammo = weapons[knifeId].magSize;
@@ -2111,16 +2211,24 @@ function spawnBots() {
   const enemySpawn = findSafePoint(state.enemyTeam === "T" ? state.map.tSpawn : state.map.ctSpawn);
   for (let i = 0; i < count; i += 1) {
     const spawn = findSafePoint({ x: enemySpawn.x + (Math.random() - 0.5) * 180, y: enemySpawn.y + (Math.random() - 0.5) * 180 });
+    const loadout = makeBotLoadout(state.enemyTeam);
     bots.push({
       x: spawn.x,
       y: spawn.y,
       r: 15,
       hp: 78 + state.round * 2 * difficultyScale(),
+      armor: loadout.armor,
+      helmet: loadout.helmet,
+      defuseKit: loadout.defuseKit,
+      grenades: loadout.grenades,
+      zeus: loadout.zeus,
       team: state.enemyTeam,
+      hostile: true,
       angle: 0,
       speed: (92 + Math.random() * 22) * difficultyScale(),
       fire: 450 + Math.random() * 700,
-      weapon: state.enemyTeam === "T" ? "AK-47" : "M4A4",
+      weapon: loadout.weapon,
+      loadout,
       name: `ENEMY ${i + 1}`,
       source: "BOT",
       flashed: 0,
@@ -2129,16 +2237,24 @@ function spawnBots() {
   const allySpawn = findSafePoint(state.team === "T" ? state.map.tSpawn : state.map.ctSpawn);
   for (let i = 1; i < count; i += 1) {
     const spawn = findSafePoint({ x: allySpawn.x + (Math.random() - 0.5) * 170, y: allySpawn.y + (Math.random() - 0.5) * 170 });
+    const loadout = makeBotLoadout(state.team);
     allies.push({
       x: spawn.x,
       y: spawn.y,
       r: 15,
       hp: 82,
+      armor: loadout.armor,
+      helmet: loadout.helmet,
+      defuseKit: loadout.defuseKit,
+      grenades: loadout.grenades,
+      zeus: loadout.zeus,
       team: state.team,
+      hostile: false,
       angle: 0,
       speed: 92 + Math.random() * 18,
       fire: 520 + Math.random() * 760,
-      weapon: state.team === "T" ? "AK-47" : "M4A4",
+      weapon: loadout.weapon,
+      loadout,
       name: `BOT ${i}`,
       source: "BOT",
       flashed: 0,
@@ -2149,16 +2265,24 @@ function spawnBots() {
 
 function makeTeamBot(team, index = 1, source = "BOT") {
   const spawn = findSafePoint(team === "T" ? state.map.tSpawn : state.map.ctSpawn);
+  const loadout = makeBotLoadout(team);
   return {
     x: spawn.x + (Math.random() - 0.5) * 170,
     y: spawn.y + (Math.random() - 0.5) * 170,
     r: 15,
     hp: source === "LAN" ? 100 : 82,
+    armor: loadout.armor,
+    helmet: loadout.helmet,
+    defuseKit: loadout.defuseKit,
+    grenades: loadout.grenades,
+    zeus: loadout.zeus,
     team,
+    hostile: team === state.enemyTeam,
     angle: 0,
     speed: source === "LAN" ? 0 : 92 + Math.random() * 18,
     fire: 520 + Math.random() * 760,
-    weapon: team === "T" ? "AK-47" : "M4A4",
+    weapon: loadout.weapon,
+    loadout,
     name: `${source} ${index}`,
     source,
     flashed: 0,
@@ -2225,6 +2349,7 @@ function newMatch() {
   player.armor = 0;
   player.helmet = false;
   player.defuseKit = false;
+  player.zeus = false;
   player.kills = 0;
   player.hits = 0;
   player.plants = 0;
@@ -2401,14 +2526,16 @@ function buyItem(type, id) {
   if (type === "equipment") {
     const item = equipmentCatalog[id];
     if (!item || !sideAllows(item)) return;
-    if (player.money < item.price) return showMessage("Za malo kasy");
-    player.money -= item.price;
+    const price = equipmentPrice(item);
+    if (player.money < price) return showMessage("Za malo kasy");
+    player.money -= price;
     if (item.key === "armor") player.armor = Math.max(player.armor, item.value);
     if (item.key === "helmet") {
       player.armor = Math.max(player.armor, item.value);
       player.helmet = true;
     }
     if (item.key === "defuseKit") player.defuseKit = true;
+    if (item.key === "zeus") player.zeus = true;
     emitAudioEvent("buy", { x: player.x, y: player.y });
     showMessage(`Kupiono: ${item.name}`);
   }
@@ -2598,7 +2725,7 @@ function explodeGrenade(grenade) {
   if (grenade.type === "he" || grenade.type === "fire") {
     for (const bot of bots) {
       if (bot.hp > 0 && dist(grenade.x, grenade.y, bot.x, bot.y) < 120) {
-        bot.hp -= grenade.type === "he" ? 60 : 35;
+        damageActor(bot, grenade.type === "he" ? 60 : 35);
         if (bot.hp <= 0) dropActorLoadoutOnDeath(bot);
       }
     }
@@ -2650,7 +2777,7 @@ function meleeAttack(owner, angle, weapon, hostile = false) {
     if (d <= reach && rel <= arc && hasLineOfSight(owner.x, owner.y, bot.x, bot.y) && (!best || d < best.d)) best = { bot, d };
   }
   if (best) {
-    best.bot.hp -= weapon.damage;
+    damageActor(best.bot, weapon.damage);
     awardPlayerHit(best.bot);
   } else {
     emitAudioEvent("dryfire", { x: owner.x, y: owner.y }, false);
@@ -2686,9 +2813,9 @@ function shoot(owner, angle, weapon, hostile = false) {
       bullets.push({
         x: owner.x + Math.cos(a) * (owner.r + 18),
         y: owner.y + Math.sin(a) * (owner.r + 18),
-        vx: Math.cos(a) * (hostile ? 760 * difficultyScale() : weapon.bulletSpeed),
-        vy: Math.sin(a) * (hostile ? 760 * difficultyScale() : weapon.bulletSpeed),
-        damage: hostile ? 10 * difficultyScale() : weapon.damage,
+        vx: Math.cos(a) * (hostile ? weapon.bulletSpeed || 760 * difficultyScale() : weapon.bulletSpeed),
+        vy: Math.sin(a) * (hostile ? weapon.bulletSpeed || 760 * difficultyScale() : weapon.bulletSpeed),
+        damage: hostile ? weapon.damage || 10 * difficultyScale() : weapon.damage,
         hostile,
         life: 0.95,
         color: hostile ? "#f06d58" : "#f5df88",
@@ -2766,8 +2893,9 @@ function updateBots(dt) {
     }
     bot.fire -= dt * 1000;
     if (bot.fire <= 0 && los && d < 740 && player.alive && bot.flashed <= 0) {
-      shoot(bot, a, { damage: 10, spread: 0.1, recoil: 0, bulletSpeed: 780, pellets: 1 }, true);
-      bot.fire = 520 / difficultyScale() + Math.random() * 440;
+      const weapon = actorWeaponStats(bot);
+      shoot(bot, a, weapon, true);
+      bot.fire = Math.max(260, (weapon.fireDelay || 520) / difficultyScale()) + Math.random() * 440;
     }
     if (d < bot.r + player.r) damagePlayer(16 * dt * difficultyScale());
   }
@@ -2790,8 +2918,9 @@ function updateAllies(dt) {
     }
     ally.fire -= dt * 1000;
     if (ally.fire <= 0 && los && d < 680) {
-      shoot(ally, a, { damage: 11, spread: 0.12, recoil: 0, bulletSpeed: 760, pellets: 1, automatic: true }, false);
-      ally.fire = 620 + Math.random() * 460;
+      const weapon = actorWeaponStats(ally);
+      shoot(ally, a, weapon, false);
+      ally.fire = Math.max(300, weapon.fireDelay || 620) + Math.random() * 460;
     }
   }
 }
@@ -2893,6 +3022,13 @@ function damagePlayer(amount) {
   }
 }
 
+function damageActor(actor, amount) {
+  const armor = Number(actor.armor || 0);
+  const armorBlock = Math.min(armor, amount * 0.45);
+  actor.armor = Math.max(0, armor - armorBlock);
+  actor.hp -= amount - armorBlock;
+}
+
 function updateBullets(dt) {
   for (let i = bullets.length - 1; i >= 0; i -= 1) {
     const b = bullets[i];
@@ -2908,7 +3044,7 @@ function updateBullets(dt) {
     if (!remove && b.hostile) {
       for (const ally of allies) {
         if (ally.hp > 0 && dist(b.x, b.y, ally.x, ally.y) < ally.r) {
-          ally.hp -= b.damage;
+          damageActor(ally, b.damage);
           if (ally.hp <= 0) dropActorLoadoutOnDeath(ally);
           emitAudioEvent(ally.hp <= 0 ? "death" : "hit", { x: ally.x, y: ally.y }, false);
           remove = true;
@@ -2919,7 +3055,7 @@ function updateBullets(dt) {
     if (!remove && !b.hostile) {
       for (const bot of bots) {
         if (bot.hp > 0 && dist(b.x, b.y, bot.x, bot.y) < bot.r) {
-          bot.hp -= b.damage;
+          damageActor(bot, b.damage);
           awardPlayerHit(bot);
           remove = true;
           break;
@@ -2956,7 +3092,7 @@ function updateGrenades(dt) {
     if (effects[i].type === "fire") {
       for (const bot of bots) {
         if (bot.hp > 0 && dist(effects[i].x, effects[i].y, bot.x, bot.y) < effects[i].r) {
-          bot.hp -= 16 * dt;
+          damageActor(bot, 16 * dt);
           if (bot.hp <= 0) dropActorLoadoutOnDeath(bot);
         }
       }
@@ -3037,12 +3173,12 @@ function renderMissions() {
 function renderTeams() {
   if (!hud.teamList) return;
   hud.teamList.innerHTML = "";
-  const localSlots = [{ name: tr("you"), team: state.team, hp: player.hp, source: "player" }, ...allies.map((bot) => ({ name: bot.name, team: state.team, hp: bot.hp, source: settings.fillMode === "lan" ? "LAN/BOT" : "BOT" }))];
-  const enemySlots = bots.map((bot, index) => ({ name: bot.name || `ENEMY ${index + 1}`, team: state.enemyTeam, hp: bot.hp, source: bot.source || (settings.fillMode === "lan" ? "LAN/BOT" : "BOT") }));
+  const localSlots = [{ name: tr("you"), team: state.team, hp: player.hp, source: "player", weapon: activeWeapon().name, armor: player.armor }, ...allies.map((bot) => ({ name: bot.name, team: state.team, hp: bot.hp, source: settings.fillMode === "lan" ? "LAN/BOT" : "BOT", weapon: bot.weapon, armor: bot.armor }))];
+  const enemySlots = bots.map((bot, index) => ({ name: bot.name || `ENEMY ${index + 1}`, team: state.enemyTeam, hp: bot.hp, source: bot.source || (settings.fillMode === "lan" ? "LAN/BOT" : "BOT"), weapon: bot.weapon, armor: bot.armor }));
   for (const slot of [...localSlots, ...enemySlots]) {
     const item = document.createElement("div");
     item.className = "team-item";
-    item.innerHTML = `<span>${slot.name} / ${slot.team}</span><span class="tag">${slot.source} ${Math.max(0, Math.ceil(slot.hp))}HP</span>`;
+    item.innerHTML = `<span>${slot.name} / ${slot.team}</span><span class="tag">${slot.source} ${slot.weapon || "pistol"} ${Math.max(0, Math.ceil(slot.hp))}HP ${Math.ceil(slot.armor || 0)}AR</span>`;
     hud.teamList.appendChild(item);
   }
 }
@@ -3108,14 +3244,17 @@ function renderShop() {
   }
   for (const gear of equipmentCatalog.filter((item) => sideAllows(item))) {
     const id = equipmentCatalog.indexOf(gear);
-    const owned = (gear.key === "armor" && player.armor >= 100) || (gear.key === "helmet" && player.helmet) || (gear.key === "defuseKit" && player.defuseKit);
+    const owned = (gear.key === "armor" && player.armor >= 100) || (gear.key === "helmet" && player.helmet) || (gear.key === "defuseKit" && player.defuseKit) || (gear.key === "zeus" && player.zeus);
+    const price = equipmentPrice(gear);
+    const stat = gear.key === "defuseKit" ? "DEFUSE 2.5s" : gear.key === "zeus" ? "TASER" : "ARMOR 100";
+    const tag = gear.key === "helmet" ? "HELMET" : gear.key === "zeus" ? "ZEUS" : "GEAR";
     const item = document.createElement("div");
     item.className = `shop-item${owned ? " owned" : ""}`;
-    item.innerHTML = `<div class="shop-title"><span>${gear.name}</span><span class="tag">${owned ? tr("owned") : `$${gear.price}`}</span></div><div class="muted">${gear.side} / Equipment</div><div class="shop-stats"><span>${gear.key === "defuseKit" ? "DEFUSE 2.5s" : "ARMOR 100"}</span><span>${gear.key === "helmet" ? "HELMET" : "GEAR"}</span></div>`;
+    item.innerHTML = `<div class="shop-title"><span>${gear.name}</span><span class="tag">${owned ? tr("owned") : `$${price}`}</span></div><div class="muted">${gear.side} / Equipment</div><div class="shop-stats"><span>${stat}</span><span>${tag}</span></div>`;
     const button = document.createElement("button");
     button.textContent = owned ? tr("owned") : tr("buy");
-    button.disabled = owned || !buyingOpen || player.money < gear.price;
-    button.title = !buyingOpen ? buyBlockMessage() : player.money < gear.price ? "Za malo kasy" : "";
+    button.disabled = owned || !buyingOpen || player.money < price;
+    button.title = !buyingOpen ? buyBlockMessage() : player.money < price ? "Za malo kasy" : "";
     button.addEventListener("click", () => buyItem("equipment", id));
     item.appendChild(button);
     utility.appendChild(item);
@@ -3872,7 +4011,7 @@ function updateHud() {
   hud.mode.textContent = state.gameMode.toUpperCase();
   hud.team.textContent = spectated ? `SPECTATE ${spectated.name} ${living.length ? state.spectator.index + 1 : 0}/${living.length}${spectated.source === "LAN" ? "" : " / E TAKEOVER"}` : `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
   hud.health.textContent = spectated ? `OBS HP ${Math.ceil(spectated.hp)}` : `HP ${Math.ceil(player.hp)}`;
-  hud.armor.textContent = `${tr("armor")} ${Math.ceil(player.armor)}${player.helmet ? " +H" : ""}${player.defuseKit ? " KIT" : ""}`;
+  hud.armor.textContent = `${tr("armor")} ${Math.ceil(player.armor)}${player.helmet ? " +H" : ""}${player.defuseKit ? " KIT" : ""}${player.zeus ? " ZEUS" : ""}`;
   hud.money.textContent = `$${player.money}`;
   hud.round.textContent = `R ${state.round}/32`;
   hud.score.textContent = `T ${state.score.T} : ${state.score.CT} CT`;
