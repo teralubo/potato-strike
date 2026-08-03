@@ -116,6 +116,8 @@ for (const snippet of [
   "renderProfileMenu",
   "applyProfile",
   "renderThirdPerson",
+  "drawThirdPersonWorld3d",
+  "drawThirdPersonBox",
   "drawThirdPersonPlayer",
   "camera.pitch",
   "normalizeGraphicsMode",
@@ -136,6 +138,7 @@ for (const snippet of [
   "i18n",
   "bindLabel",
   "setOptionText",
+  "3D FPS",
 ]) {
   if (!js.includes(snippet)) {
     console.error(`Missing required runtime feature: ${snippet}`);
@@ -159,7 +162,7 @@ for (const snippet of ["wrap.dataset.view", "canvas.style.width = \"100%\"", "dr
 }
 
 const editorHtml = fs.readFileSync("game/editor.html", "utf8");
-for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "Kamera testu", "<option value=\"third\">Third person</option>"]) {
+for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "Kamera testu", "<option value=\"third\">3D third person</option>"]) {
   if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
     console.error(`Missing required Studio editor graphics separation: ${snippet}`);
     process.exit(1);
