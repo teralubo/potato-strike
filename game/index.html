@@ -203,6 +203,25 @@
         <button class="close-panel" data-panel="teams-panel">Zamknij</button>
       </div>
       <div id="team-list" class="team-list"></div>
+      <div class="menu-actions left">
+        <button id="team-add-ally">Dodaj bota ally</button>
+        <button id="team-add-enemy">Dodaj bota enemy</button>
+        <button id="team-remove-ally" class="secondary">Usun ally</button>
+        <button id="team-remove-enemy" class="secondary">Usun enemy</button>
+        <button id="team-add-lan" class="secondary">Dodaj slot LAN</button>
+        <button id="team-remove-lan" class="secondary">Usun slot LAN</button>
+        <button id="team-balance" class="secondary">Wyrownaj</button>
+      </div>
+      <div class="settings-grid">
+        <label>
+          Trudnosc teamu
+          <select id="team-difficulty">
+            <option value="easy">Easy</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+      </div>
       <p class="panel-note">BOTY uzupelniaja sklad automatycznie. LAN pokazuje pokoj i przygotowanie pod graczy lokalnych.</p>
     </div>
     <div class="panel hidden" id="mapgen-panel" aria-label="Generator map">

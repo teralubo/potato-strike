@@ -16,6 +16,7 @@ Workflow repo:
 - Pliki developerskie `node_modules/`, `dist/`, `.git/` i lokalne `.exe` nie sa potrzebne do wersji przegladarkowej i nie powinny trafic do malej paczki gry.
 - Edytowalne zrodla gry sa w folderze `game/`, a narzedzia modderskie w `DEV-tools/`.
 - Tryb developerski mozesz odpalic przez `game/index.html`, albo `launch-browser.bat`.
+- Gracze nie musza miec npm. Npm jest potrzebny tylko devom do Electron/buildow; pomocniczy skrypt jest w `DEV-tools/install-dev-deps.bat`.
 - Alternatywnie uruchom lokalny serwer:
 
 ```powershell

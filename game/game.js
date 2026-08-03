@@ -25,6 +25,14 @@ const hud = {
   bindList: $("bind-list"),
   teamsPanel: $("teams-panel"),
   teamList: $("team-list"),
+  teamAddAlly: $("team-add-ally"),
+  teamAddEnemy: $("team-add-enemy"),
+  teamRemoveAlly: $("team-remove-ally"),
+  teamRemoveEnemy: $("team-remove-enemy"),
+  teamAddLan: $("team-add-lan"),
+  teamRemoveLan: $("team-remove-lan"),
+  teamBalance: $("team-balance"),
+  teamDifficulty: $("team-difficulty"),
   mapgenPanel: $("mapgen-panel"),
   mapSeed: $("map-seed"),
   mapSize: $("map-size"),
@@ -1261,6 +1269,45 @@ function spawnBots() {
   renderTeams();
 }
 
+function makeTeamBot(team, index = 1, source = "BOT") {
+  const spawn = team === "T" ? state.map.tSpawn : state.map.ctSpawn;
+  return {
+    x: spawn.x + (Math.random() - 0.5) * 170,
+    y: spawn.y + (Math.random() - 0.5) * 170,
+    r: 15,
+    hp: source === "LAN" ? 100 : 82,
+    team,
+    angle: 0,
+    speed: source === "LAN" ? 0 : 92 + Math.random() * 18,
+    fire: 520 + Math.random() * 760,
+    name: `${source} ${index}`,
+    source,
+    flashed: 0,
+  };
+}
+
+function addTeamSlot(side, source = "BOT") {
+  if (side === "ally") allies.push(makeTeamBot(state.team, allies.length + 1, source));
+  else bots.push(makeTeamBot(state.enemyTeam, bots.length + 1, source));
+  settings.matchSize = Math.max(settings.matchSize, Math.max(bots.length, allies.length + 1));
+  renderTeams();
+  saveConfig();
+}
+
+function removeTeamSlot(side, source = "") {
+  const list = side === "ally" ? allies : bots;
+  const index = source ? list.findIndex((slot) => slot.source === source) : list.length - 1;
+  if (index >= 0) list.splice(index, 1);
+  renderTeams();
+  saveConfig();
+}
+
+function balanceTeams() {
+  while (allies.length + 1 < bots.length) addTeamSlot("ally");
+  while (bots.length < allies.length + 1) addTeamSlot("enemy");
+  renderTeams();
+}
+
 function newMatch() {
   state.gameMode = hud.menuMode.value;
   ensurePlayerId();
@@ -1744,7 +1791,7 @@ function renderTeams() {
   if (!hud.teamList) return;
   hud.teamList.innerHTML = "";
   const localSlots = [{ name: "TY", team: state.team, hp: player.hp, source: "player" }, ...allies.map((bot) => ({ name: bot.name, team: state.team, hp: bot.hp, source: settings.fillMode === "lan" ? "LAN/BOT" : "BOT" }))];
-  const enemySlots = bots.map((bot, index) => ({ name: `ENEMY ${index + 1}`, team: state.enemyTeam, hp: bot.hp, source: settings.fillMode === "lan" ? "LAN/BOT" : "BOT" }));
+  const enemySlots = bots.map((bot, index) => ({ name: bot.name || `ENEMY ${index + 1}`, team: state.enemyTeam, hp: bot.hp, source: bot.source || (settings.fillMode === "lan" ? "LAN/BOT" : "BOT") }));
   for (const slot of [...localSlots, ...enemySlots]) {
     const item = document.createElement("div");
     item.className = "team-item";
@@ -2132,6 +2179,7 @@ function togglePanel(panel) {
 
 function closePanels() {
   state.overlayOpen = false;
+  hud.playerMenu?.classList.add("hidden");
   hud.shopPanel.classList.add("hidden");
   hud.settingsPanel.classList.add("hidden");
   hud.bindsPanel.classList.add("hidden");
@@ -2233,10 +2281,26 @@ hud.quickEditor.addEventListener("click", openStandaloneEditor);
 hud.openEditor.addEventListener("click", openStandaloneEditor);
 hud.openConsole.addEventListener("click", openOwnerConsole);
 hud.openNetwork.addEventListener("click", () => togglePanel(hud.networkPanel));
-hud.openProfile.addEventListener("click", () => hud.playerMenu?.classList.toggle("hidden"));
+hud.openProfile.addEventListener("click", () => {
+  const shouldOpen = hud.playerMenu?.classList.contains("hidden");
+  closePanels();
+  hud.playerMenu?.classList.toggle("hidden", !shouldOpen);
+});
 hud.openMods.addEventListener("click", () => {
   togglePanel(hud.modsPanel);
   renderModManager();
+});
+hud.teamAddAlly.addEventListener("click", () => addTeamSlot("ally"));
+hud.teamAddEnemy.addEventListener("click", () => addTeamSlot("enemy"));
+hud.teamRemoveAlly.addEventListener("click", () => removeTeamSlot("ally"));
+hud.teamRemoveEnemy.addEventListener("click", () => removeTeamSlot("enemy"));
+hud.teamAddLan.addEventListener("click", () => addTeamSlot("ally", "LAN"));
+hud.teamRemoveLan.addEventListener("click", () => removeTeamSlot("ally", "LAN"));
+hud.teamBalance.addEventListener("click", balanceTeams);
+hud.teamDifficulty.addEventListener("change", () => {
+  settings.difficulty = hud.teamDifficulty.value;
+  hud.difficulty.value = settings.difficulty;
+  saveConfig();
 });
 hud.downloadGame.addEventListener("click", downloadLauncher);
 hud.generateMap.addEventListener("click", generateMapFromMenu);
