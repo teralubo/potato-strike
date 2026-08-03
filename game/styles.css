@@ -319,6 +319,24 @@ button:disabled {
   letter-spacing: 0;
 }
 
+.shop-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(119, 181, 111, 0.45);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(119, 181, 111, 0.1);
+  color: #f2f0df;
+  font-weight: 800;
+}
+
+.shop-status.closed {
+  border-color: rgba(213, 95, 78, 0.45);
+  background: rgba(213, 95, 78, 0.12);
+}
+
 .shop-item,
 .mission-item,
 .bind-item,

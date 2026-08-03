@@ -345,6 +345,7 @@ const state = {
   score: { T: 0, CT: 0 },
   roundTime: 115,
   freezeTime: 5,
+  buyTime: 20,
   phase: "freeze",
   paused: false,
   winner: "",
@@ -1920,6 +1921,7 @@ function resetRoundPositions() {
   leaveSpectator();
   state.roundTime = 115;
   state.freezeTime = 5;
+  state.buyTime = 20;
   state.phase = "freeze";
   state.winner = "";
   state.bomb.timer = 40;
@@ -2152,6 +2154,7 @@ function updateRoundRules(dt) {
   }
   if (state.phase !== "live") return;
   state.roundTime -= dt;
+  state.buyTime = Math.max(0, state.buyTime - dt);
   if (state.bomb.status === "planted") {
     state.bomb.timer -= dt;
     const beepDelay = state.bomb.timer < 10 ? 360 : state.bomb.timer < 20 ? 620 : 980;
@@ -2171,8 +2174,9 @@ function updateRoundRules(dt) {
 }
 
 function buyItem(type, id) {
-  if (state.phase !== "freeze") {
-    showMessage("Kupowanie tylko na freeze time");
+  if (!canBuyNow()) {
+    showMessage(buyBlockMessage());
+    renderShop();
     return;
   }
   if (type === "weapon") {
@@ -2216,6 +2220,14 @@ function buyItem(type, id) {
   }
   renderShop();
   updateHud();
+}
+
+function canBuyNow() {
+  return state.phase === "freeze" || (state.phase === "live" && state.buyTime > 0);
+}
+
+function buyBlockMessage() {
+  return "Czas kupowania minal";
 }
 
 function throwGrenade() {
@@ -2658,6 +2670,11 @@ function renderBinds() {
 
 function renderShop() {
   hud.shopList.innerHTML = "";
+  const buyingOpen = canBuyNow();
+  const status = document.createElement("div");
+  status.className = `shop-status${buyingOpen ? "" : " closed"}`;
+  status.innerHTML = `<strong>$${player.money}</strong><span>${buyingOpen ? `Buy time ${state.phase === "freeze" ? Math.ceil(state.freezeTime) : Math.ceil(state.buyTime)}s` : buyBlockMessage()}</span>`;
+  hud.shopList.appendChild(status);
   const sectionOrder = ["Pistol", "SMG", "Rifle", "Sniper", "Heavy"];
   for (const category of sectionOrder) {
     const section = document.createElement("div");
@@ -2669,7 +2686,8 @@ function renderShop() {
       item.innerHTML = `<div class="shop-title"><span>${weapon.name}</span><span class="tag">${weapon.owned ? tr("owned") : `$${weapon.price}`}</span></div><div class="muted">${weapon.side} / ${weapon.category}</div><div class="shop-stats"><span>DMG ${weapon.damage}</span><span>MAG ${weapon.magSize}</span><span>ROF ${Math.round(1000 / weapon.fireDelay * 60)}</span><span>SPREAD ${Math.round(weapon.spread * 100)}</span></div>`;
       const button = document.createElement("button");
       button.textContent = weapon.owned ? tr("equip") : tr("buy");
-      button.disabled = !weapon.owned && player.money < weapon.price;
+      button.disabled = !buyingOpen || (!weapon.owned && player.money < weapon.price);
+      button.title = !buyingOpen ? buyBlockMessage() : (!weapon.owned && player.money < weapon.price) ? "Za malo kasy" : "";
       button.addEventListener("click", () => buyItem("weapon", weapon.id));
       item.appendChild(button);
       section.appendChild(item);
@@ -2686,7 +2704,8 @@ function renderShop() {
     item.innerHTML = `<div class="shop-title"><span>${grenade.name}</span><span class="tag">$${grenade.price}</span></div><div class="muted">${tr("grenade")} / ${grenade.side}</div><div class="shop-stats"><span>${tr("owned")} ${player.grenades[grenade.name] || 0}</span><span>${tr("throwKey")}</span></div>`;
     const button = document.createElement("button");
     button.textContent = tr("buy");
-    button.disabled = player.money < grenade.price;
+    button.disabled = !buyingOpen || player.money < grenade.price;
+    button.title = !buyingOpen ? buyBlockMessage() : player.money < grenade.price ? "Za malo kasy" : "";
     button.addEventListener("click", () => buyItem("grenade", id));
     item.appendChild(button);
     utility.appendChild(item);
@@ -2699,7 +2718,8 @@ function renderShop() {
     item.innerHTML = `<div class="shop-title"><span>${gear.name}</span><span class="tag">${owned ? tr("owned") : `$${gear.price}`}</span></div><div class="muted">${gear.side} / Equipment</div><div class="shop-stats"><span>${gear.key === "defuseKit" ? "DEFUSE 2.5s" : "ARMOR 100"}</span><span>${gear.key === "helmet" ? "HELMET" : "GEAR"}</span></div>`;
     const button = document.createElement("button");
     button.textContent = owned ? tr("owned") : tr("buy");
-    button.disabled = owned || player.money < gear.price;
+    button.disabled = owned || !buyingOpen || player.money < gear.price;
+    button.title = !buyingOpen ? buyBlockMessage() : player.money < gear.price ? "Za malo kasy" : "";
     button.addEventListener("click", () => buyItem("equipment", id));
     item.appendChild(button);
     utility.appendChild(item);
