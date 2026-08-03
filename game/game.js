@@ -363,6 +363,16 @@ const settings = {
   autoReload: true,
 };
 
+const simple3dTextures = {
+  white: { base: "#f1f1ea", seam: "rgba(35,35,31,0.18)", mark: "rgba(255,255,255,0.28)", mode: "panel" },
+  concrete: { base: "#d5d5cb", seam: "rgba(45,45,40,0.2)", mark: "rgba(255,255,255,0.18)", mode: "panel" },
+  brick: { base: "#c8b9a1", seam: "rgba(54,37,28,0.24)", mark: "rgba(255,245,220,0.16)", mode: "brick" },
+  crate: { base: "#a98255", seam: "rgba(49,30,17,0.28)", mark: "rgba(255,230,176,0.18)", mode: "crate" },
+  metal: { base: "#aeb7ba", seam: "rgba(22,35,38,0.24)", mark: "rgba(255,255,255,0.24)", mode: "metal" },
+  glass: { base: "#b8d2d8", seam: "rgba(33,67,74,0.2)", mark: "rgba(255,255,255,0.35)", mode: "glass" },
+  terrain: { base: "#343f32", seam: "rgba(242,240,223,0.1)", mark: "rgba(255,255,255,0.08)", mode: "terrain" },
+};
+
 const bindings = {
   forward: "KeyW",
   back: "KeyS",
@@ -1151,6 +1161,8 @@ function normalizeMap(rawMap, fallback = maps.custom) {
       z: clamp(Number(obj.z) || 64, 0, 512),
       rot: Number(obj.rot) || 0,
       color: obj.color || "",
+      texture: obj.texture || obj.material || "",
+      material: obj.material || obj.texture || "",
     }))
     .filter((obj) => obj.w > 0 && obj.h > 0);
   map.name = source.name || fallback.name || "Custom Mission";
@@ -2380,13 +2392,13 @@ function castRayHit(angle) {
 }
 
 function wallBaseColor(hit) {
-  if (!hit) return "#5f6c58";
-  if (hit.color) return hit.color;
-  if (hit.type === "crate") return "#8a6f49";
-  if (hit.type === "cover") return "#68785f";
-  if (hit.type === "light") return "#d7bd62";
-  if (hit.type === "ramp") return "#70785f";
-  return "#64705c";
+  return textureForHit(hit).base;
+}
+
+function textureForHit(hit) {
+  if (!hit) return simple3dTextures.white;
+  const key = hit.texture || hit.material || (hit.type === "crate" ? "crate" : hit.type === "light" ? "glass" : hit.type === "cover" ? "concrete" : "white");
+  return simple3dTextures[key] || simple3dTextures.white;
 }
 
 function shadeHex(color, amount) {
@@ -2400,17 +2412,27 @@ function shadeHex(color, amount) {
 }
 
 function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column) {
-  const base = shadeHex(wallBaseColor(hit), shade - 150);
+  const texture = textureForHit(hit);
+  const baseColor = hit?.color && hit.texture === "custom-color" ? hit.color : wallBaseColor(hit);
+  const base = shadeHex(baseColor, shade - 150);
   ctx.fillStyle = base;
   ctx.fillRect(x, y, colW + 1, wallH);
-  const mortar = hit?.type === "crate" ? 18 : 34;
-  if (settings.quality !== "low" && column % mortar < 2) {
-    ctx.fillStyle = "rgba(255,245,190,0.12)";
+  const stripe = texture.mode === "crate" ? 16 : texture.mode === "brick" ? 28 : texture.mode === "metal" ? 42 : 36;
+  if (settings.quality !== "low" && column % stripe < 2) {
+    ctx.fillStyle = texture.seam;
     ctx.fillRect(x, y, Math.max(1, colW), wallH);
   }
-  if (settings.quality !== "low" && hit?.type === "crate" && column % 14 < 2) {
+  if (settings.quality !== "low" && texture.mode === "brick") {
+    ctx.fillStyle = "rgba(70,48,35,0.16)";
+    for (let row = y + Math.max(12, wallH / 5); row < y + wallH; row += Math.max(12, wallH / 5)) ctx.fillRect(x, row, colW + 1, 1);
+  }
+  if (settings.quality !== "low" && texture.mode === "crate") {
     ctx.fillStyle = "rgba(40,28,18,0.28)";
-    ctx.fillRect(x, y + wallH * 0.08, Math.max(1, colW), wallH * 0.84);
+    ctx.fillRect(x, y + wallH * 0.48, colW + 1, Math.max(1, wallH * 0.05));
+  }
+  if (settings.quality !== "low" && texture.mode === "glass") {
+    ctx.fillStyle = "rgba(255,255,255,0.2)";
+    ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.08));
   }
   ctx.fillStyle = `rgba(255,255,255,${clamp(0.11 - distance / 9000, 0.015, 0.09)})`;
   ctx.fillRect(x, y, Math.max(1, colW * 0.35), wallH);
@@ -2426,13 +2448,7 @@ function render3d() {
   sky.addColorStop(1, "#202a2d");
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h / 2);
-  const floor = ctx.createLinearGradient(0, h / 2, 0, h);
-  floor.addColorStop(0, "#48523f");
-  floor.addColorStop(0.45, "#30392d");
-  floor.addColorStop(1, "#151a15");
-  ctx.fillStyle = floor;
-  ctx.fillRect(0, h / 2, w, h / 2);
-  draw3dFloorGuides(w, h);
+  draw3dTerrain(w, h);
   const fov = Math.PI / 2.9;
   const cols = settings.quality === "low" ? 100 : settings.quality === "high" ? 260 : 170;
   const colW = w / cols;
@@ -2468,10 +2484,20 @@ function render3d() {
     draw3dCharacter(sx, h / 2, size, s.color);
   }
   draw3dSiteMarkers(w, h, fov, depth, colW);
-  if (player.alive && !state.spectator.active) draw3dPlayerAvatar(w, h);
+  if (player.alive && !state.spectator.active) draw3dPlayerObject(w, h);
   draw3dWeapon(w, h);
   drawMinimap();
   drawCrosshair();
+}
+
+function draw3dTerrain(w, h) {
+  const floor = ctx.createLinearGradient(0, h / 2, 0, h);
+  floor.addColorStop(0, "#55614c");
+  floor.addColorStop(0.48, simple3dTextures.terrain.base);
+  floor.addColorStop(1, "#171d17");
+  ctx.fillStyle = floor;
+  ctx.fillRect(0, h / 2, w, h / 2);
+  draw3dFloorGuides(w, h);
 }
 
 function draw3dFloorGuides(w, h) {
@@ -2538,16 +2564,19 @@ function draw3dCharacter(x, y, size, color) {
   ctx.fillRect(x + size * 0.04, y + size * 0.18, size * 0.16, size * 0.42);
 }
 
-function draw3dPlayerAvatar(w, h) {
+function draw3dPlayerObject(w, h) {
   const x = w / 2;
-  const y = h - 190 + camera.shake;
-  const size = clamp(h * 0.18, 74, 142);
+  const y = h - 184 + camera.shake;
+  const size = clamp(h * 0.2, 82, 154);
   const color = state.team === "T" ? "#c48a45" : "#8ea9b8";
   ctx.save();
   ctx.fillStyle = "rgba(0,0,0,0.42)";
   ctx.beginPath();
-  ctx.ellipse(x, y + size * 0.76, size * 0.46, size * 0.1, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + size * 0.78, size * 0.5, size * 0.11, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.strokeStyle = "rgba(242,240,223,0.58)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x - size * 0.31, y - size * 0.39, size * 0.62, size * 0.58);
   ctx.fillStyle = "#20231e";
   ctx.fillRect(x - size * 0.18, y + size * 0.12, size * 0.12, size * 0.54);
   ctx.fillRect(x + size * 0.06, y + size * 0.12, size * 0.12, size * 0.54);
@@ -2564,6 +2593,10 @@ function draw3dPlayerAvatar(w, h) {
   ctx.textAlign = "center";
   ctx.fillText("YOU", x, y - size * 0.72);
   ctx.restore();
+}
+
+function draw3dPlayerAvatar(w, h) {
+  draw3dPlayerObject(w, h);
 }
 
 function draw3dWeapon(w, h) {

@@ -86,6 +86,10 @@ if (!mainJs.includes("playersDir") || !mainJs.includes("profile.json") || !mainJ
 for (const snippet of [
   "draw3dCharacter",
   "draw3dPlayerAvatar",
+  "draw3dPlayerObject",
+  "simple3dTextures",
+  "textureForHit",
+  "draw3dTerrain",
   "draw3dFloorGuides",
   "drawPotatoWallColumn",
   "castRayHit",
@@ -155,6 +159,13 @@ for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "studioS
 for (const snippet of ["TEREN / ADVANCED", "applyTerrainSettings", "snapPoint", "terrainColor", "moddingMode", "autosave-map"]) {
   if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
     console.error(`Missing required Studio advanced terrain/modding feature: ${snippet}`);
+    process.exit(1);
+  }
+}
+
+for (const snippet of ["default-texture", "textureOptions", "studioTexturePalette", "[\"texture\", \"texture\"]", "defaultTexture"]) {
+  if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
+    console.error(`Missing required simple texture Studio feature: ${snippet}`);
     process.exit(1);
   }
 }

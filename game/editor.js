@@ -31,6 +31,7 @@ const ui = {
   defaultZ: $("default-z"),
   terrainColor: $("terrain-color"),
   ambientColor: $("ambient-color"),
+  defaultTexture: $("default-texture"),
   moddingMode: $("modding-mode"),
   autosaveMap: $("autosave-map"),
   applyTerrain: $("apply-terrain"),
@@ -71,6 +72,25 @@ let studioSettings = loadJson("potatoStrikeStudioSettings", {
 });
 studioSettings.viewportMode = studioSettings.viewportMode === "3d" ? "3d" : "2d";
 
+const textureOptions = [
+  ["white", "White wall"],
+  ["concrete", "Concrete"],
+  ["brick", "Brick"],
+  ["crate", "Crate wood"],
+  ["metal", "Metal"],
+  ["glass", "Glass"],
+  ["custom-color", "Custom color"],
+];
+
+const studioTexturePalette = {
+  white: "#f1f1ea",
+  concrete: "#d5d5cb",
+  brick: "#c8b9a1",
+  crate: "#a98255",
+  metal: "#aeb7ba",
+  glass: "#b8d2d8",
+};
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -99,7 +119,7 @@ function emptyMap() {
     tSpawn: { x: 180, y: 1220 },
     ctSpawn: { x: 2020, y: 180 },
     sites: { A: { x: 1650, y: 1000, r: 115 }, B: { x: 560, y: 330, r: 110 } },
-    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", moddingMode: "safe", autosave: true },
+    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", defaultTexture: "white", moddingMode: "safe", autosave: true },
     obstacles: [],
   };
 }
@@ -118,6 +138,8 @@ function makeMap(name, w, h, seed) {
       z: 96,
       rot: 0,
       color: i % 3 === 0 ? "#7d6648" : "#56614d",
+      texture: i % 3 === 0 ? "crate" : "white",
+      material: i % 3 === 0 ? "crate" : "white",
     });
   }
   return {
@@ -127,7 +149,7 @@ function makeMap(name, w, h, seed) {
     tSpawn: { x: 180, y: h - 180 },
     ctSpawn: { x: w - 180, y: 180 },
     sites: { A: { x: Math.floor(w * 0.74), y: Math.floor(h * 0.72), r: 115 }, B: { x: Math.floor(w * 0.32), y: Math.floor(h * 0.26), r: 110 } },
-    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", moddingMode: "safe", autosave: true },
+    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", defaultTexture: "white", moddingMode: "safe", autosave: true },
     obstacles,
   };
 }
@@ -171,7 +193,8 @@ function normalizeStudioMap(rawMap) {
       z: clamp(Number(obj.z) || 64, 0, 512),
       rot: Number(obj.rot) || 0,
       color: obj.color || "#56614d",
-      texture: obj.texture || "",
+      texture: obj.texture || obj.material || source.meta?.defaultTexture || "white",
+      material: obj.material || obj.texture || source.meta?.defaultTexture || "white",
       script: obj.script || "",
     })),
   };
@@ -286,7 +309,7 @@ function isoPoint(x, y, originX, originY, scale) {
 
 function convertMapForViewport(mode) {
   map = normalizeStudioMap(map);
-  map.meta = { ...(map.meta || {}), editorViewport: mode, format: "potato-map-3d-lite" };
+  map.meta = { ...(map.meta || {}), defaultTexture: map.meta?.defaultTexture || "white", editorViewport: mode, format: "potato-map-3d-lite" };
   map.obstacles = map.obstacles.map((obj, index) => ({
     id: obj.id || `obj-${Date.now().toString(36)}-${index}`,
     type: obj.type || "wall",
@@ -297,8 +320,8 @@ function convertMapForViewport(mode) {
     z: Number(obj.z ?? (obj.type === "light" ? 10 : obj.type === "cover" ? 46 : obj.type === "crate" ? 64 : 96)),
     rot: Number(obj.rot || 0),
     color: obj.color || "#56614d",
-    material: obj.material || "potato-concrete",
-    texture: obj.texture || "",
+    material: obj.material || obj.texture || map.meta.defaultTexture,
+    texture: obj.texture || obj.material || map.meta.defaultTexture,
   }));
   map = normalizeStudioMap(map);
 }
@@ -417,7 +440,7 @@ function drawIsoBox(obj, originX, originY, scale) {
   const p2 = isoPoint(obj.x + obj.w, obj.y, originX, originY, scale);
   const p3 = isoPoint(obj.x + obj.w, obj.y + obj.h, originX, originY, scale);
   const p4 = isoPoint(obj.x, obj.y + obj.h, originX, originY, scale);
-  const base = obj.color || "#56614d";
+  const base = objectBaseColor(obj);
   ctx.fillStyle = "rgba(0,0,0,0.22)";
   ctx.beginPath();
   ctx.moveTo(p1.x + 12, p1.y + 8);
@@ -467,6 +490,11 @@ function drawIsoBox(obj, originX, originY, scale) {
       ctx.stroke();
     }
   }
+}
+
+function objectBaseColor(obj) {
+  if (obj.texture === "custom-color") return obj.color || "#56614d";
+  return studioTexturePalette[obj.texture || obj.material] || obj.color || "#56614d";
 }
 
 function shadeColor(color, amount) {
@@ -520,7 +548,7 @@ function drawObject(obj) {
   ctx.save();
   ctx.translate(obj.x + obj.w / 2, obj.y + obj.h / 2);
   ctx.rotate((obj.rot || 0) * Math.PI / 180);
-  ctx.fillStyle = obj.color || "#56614d";
+  ctx.fillStyle = objectBaseColor(obj);
   ctx.fillRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
   ctx.fillStyle = "rgba(255,255,255,0.12)";
   for (let x = -obj.w / 2; x < obj.w / 2; x += 18) ctx.fillRect(x, -obj.h / 2, 2, obj.h);
@@ -572,7 +600,8 @@ function addObject(type, x, y) {
     prop: [110, 90, 36, "#8d846b"],
   };
   const p = presets[type] || presets.wall;
-  const obj = { id: `obj-${Date.now().toString(36)}`, type, x: x - p[0] / 2, y: y - p[1] / 2, w: p[0], h: p[1], z: type === "wall" || type === "prop" ? Number(map.meta?.defaultZ || p[2]) : p[2], rot: 0, color: p[3] };
+  const texture = type === "crate" ? "crate" : map.meta?.defaultTexture || "white";
+  const obj = { id: `obj-${Date.now().toString(36)}`, type, x: x - p[0] / 2, y: y - p[1] / 2, w: p[0], h: p[1], z: type === "wall" || type === "prop" ? Number(map.meta?.defaultZ || p[2]) : p[2], rot: 0, color: p[3], texture, material: texture };
   map.obstacles.push(obj);
   selectedId = obj.id;
   renderUi();
@@ -609,6 +638,7 @@ function syncAdvancedFields() {
   ui.defaultZ.value = String(map.meta.defaultZ || 96);
   ui.terrainColor.value = map.meta.terrainColor || "#303a2f";
   ui.ambientColor.value = map.meta.ambientColor || "#3d555d";
+  ui.defaultTexture.value = map.meta.defaultTexture || "white";
   ui.moddingMode.value = map.meta.moddingMode || "safe";
   ui.autosaveMap.checked = map.meta.autosave !== false;
 }
@@ -634,6 +664,7 @@ function applyTerrainSettings() {
     defaultZ: clamp(Number(ui.defaultZ.value) || 96, 0, 512),
     terrainColor: ui.terrainColor.value || "#303a2f",
     ambientColor: ui.ambientColor.value || "#3d555d",
+    defaultTexture: ui.defaultTexture.value || "white",
     moddingMode: ui.moddingMode.value || "safe",
     autosave: ui.autosaveMap.checked,
   };
@@ -648,16 +679,26 @@ function renderProperties() {
   const selected = map.obstacles.find((obj) => obj.id === selectedId);
   const target = selected || map;
   const fields = selected
-    ? [["type", "text"], ["x", "number"], ["y", "number"], ["w", "number"], ["h", "number"], ["z", "number"], ["rot", "number"], ["color", "color"]]
+    ? [["type", "text"], ["x", "number"], ["y", "number"], ["w", "number"], ["h", "number"], ["z", "number"], ["rot", "number"], ["texture", "texture"], ["color", "color"]]
     : [["name", "text"], ["w", "number"], ["h", "number"]];
   for (const [key, type] of fields) {
     const label = document.createElement("label");
     label.textContent = key;
-    const input = document.createElement("input");
-    input.type = type;
+    const input = document.createElement(type === "texture" ? "select" : "input");
+    if (type === "texture") {
+      for (const [value, text] of textureOptions) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = text;
+        input.appendChild(option);
+      }
+    } else {
+      input.type = type;
+    }
     input.value = target[key] ?? "";
     input.addEventListener("input", () => {
       target[key] = type === "number" ? Number(input.value) : input.value;
+      if (key === "texture") target.material = input.value;
       if (target === map && key === "name") ui.name.value = target[key];
       draw();
       renderObjects();
@@ -718,6 +759,7 @@ function saveMap() {
     defaultZ: Number(ui.defaultZ.value || 96),
     terrainColor: ui.terrainColor.value || "#303a2f",
     ambientColor: ui.ambientColor.value || "#3d555d",
+    defaultTexture: ui.defaultTexture.value || "white",
     moddingMode: ui.moddingMode.value || "safe",
     autosave: ui.autosaveMap.checked,
     license: "GNU GPL 3.0",
@@ -917,7 +959,7 @@ ui.gameMode.addEventListener("change", () => { map.meta = { ...(map.meta || {}),
 ui.matchSize.addEventListener("change", () => { map.meta = { ...(map.meta || {}), matchSize: Number(ui.matchSize.value) }; });
 ui.defaultWeapon.addEventListener("change", () => { map.meta = { ...(map.meta || {}), defaultWeapon: ui.defaultWeapon.value }; });
 ui.applyTerrain.addEventListener("click", applyTerrainSettings);
-["terrainWidth", "terrainHeight", "snapGrid", "defaultZ", "terrainColor", "ambientColor", "moddingMode"].forEach((key) => {
+["terrainWidth", "terrainHeight", "snapGrid", "defaultZ", "terrainColor", "ambientColor", "defaultTexture", "moddingMode"].forEach((key) => {
   ui[key].addEventListener("change", () => {
     map.meta = { ...(map.meta || {}), autosave: ui.autosaveMap.checked };
     if (ui.autosaveMap.checked) applyTerrainSettings();
