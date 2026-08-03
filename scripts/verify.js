@@ -87,6 +87,8 @@ for (const snippet of [
   "draw3dCharacter",
   "draw3dPlayerAvatar",
   "draw3dFloorGuides",
+  "drawPotatoWallColumn",
+  "castRayHit",
   "draw3dWeapon",
   "draw3dSiteMarkers",
   "openOwnerConsole",

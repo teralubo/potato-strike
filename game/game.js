@@ -2365,6 +2365,59 @@ function castRay(angle) {
   return 1200;
 }
 
+function castRayHit(angle) {
+  let x = player.x, y = player.y, d = 0;
+  const step = settings.quality === "low" ? 24 : 14;
+  while (d < 1200) {
+    x += Math.cos(angle) * step;
+    y += Math.sin(angle) * step;
+    d += step;
+    if (x < 0 || y < 0 || x > state.map.w || y > state.map.h) return { d, hit: null, edge: true };
+    const hit = state.map.obstacles.find((obj) => x >= obj.x && y >= obj.y && x <= obj.x + obj.w && y <= obj.y + obj.h);
+    if (hit) return { d, hit, edge: false, x, y };
+  }
+  return { d: 1200, hit: null, edge: false };
+}
+
+function wallBaseColor(hit) {
+  if (!hit) return "#5f6c58";
+  if (hit.color) return hit.color;
+  if (hit.type === "crate") return "#8a6f49";
+  if (hit.type === "cover") return "#68785f";
+  if (hit.type === "light") return "#d7bd62";
+  if (hit.type === "ramp") return "#70785f";
+  return "#64705c";
+}
+
+function shadeHex(color, amount) {
+  const hex = String(color || "#64705c").replace("#", "");
+  if (hex.length !== 6) return color;
+  const value = parseInt(hex, 16);
+  const r = clamp((value >> 16) + amount, 0, 255);
+  const g = clamp(((value >> 8) & 255) + amount, 0, 255);
+  const b = clamp((value & 255) + amount, 0, 255);
+  return `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+}
+
+function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column) {
+  const base = shadeHex(wallBaseColor(hit), shade - 150);
+  ctx.fillStyle = base;
+  ctx.fillRect(x, y, colW + 1, wallH);
+  const mortar = hit?.type === "crate" ? 18 : 34;
+  if (settings.quality !== "low" && column % mortar < 2) {
+    ctx.fillStyle = "rgba(255,245,190,0.12)";
+    ctx.fillRect(x, y, Math.max(1, colW), wallH);
+  }
+  if (settings.quality !== "low" && hit?.type === "crate" && column % 14 < 2) {
+    ctx.fillStyle = "rgba(40,28,18,0.28)";
+    ctx.fillRect(x, y + wallH * 0.08, Math.max(1, colW), wallH * 0.84);
+  }
+  ctx.fillStyle = `rgba(255,255,255,${clamp(0.11 - distance / 9000, 0.015, 0.09)})`;
+  ctx.fillRect(x, y, Math.max(1, colW * 0.35), wallH);
+  ctx.fillStyle = `rgba(0,0,0,${clamp(distance / 2200, 0.04, 0.4)})`;
+  ctx.fillRect(x, y + wallH * 0.72, colW + 1, Math.max(1, wallH * 0.12));
+}
+
 function render3d() {
   camera.shake *= 0.88;
   const w = window.innerWidth, h = window.innerHeight;
@@ -2386,23 +2439,17 @@ function render3d() {
   const depth = [];
   for (let i = 0; i < cols; i += 1) {
     const ray = player.angle - fov / 2 + (i / cols) * fov;
-    const raw = castRay(ray);
-    const d = raw * Math.cos(ray - player.angle);
+    const hitInfo = castRayHit(ray);
+    const d = hitInfo.d * Math.cos(ray - player.angle);
     depth[i] = d;
     const wallH = clamp((h * 700) / d, 10, h * 1.65);
     const shade = clamp(245 - d * 0.11, 68, 220);
     const x = i * colW;
     const y = h / 2 - wallH / 2 + camera.shake;
-    const stripe = i % 8 < 4 ? 1 : 0.88;
-    ctx.fillStyle = `rgb(${Math.floor(shade * 0.62 * stripe)},${Math.floor(shade * 0.78 * stripe)},${Math.floor(shade * 0.58 * stripe)})`;
-    ctx.fillRect(x, y, colW + 1, wallH);
-    ctx.fillStyle = `rgba(255,255,255,${clamp(0.11 - d / 9000, 0.015, 0.09)})`;
-    ctx.fillRect(x, y, Math.max(1, colW * 0.35), wallH);
+    drawPotatoWallColumn(x, y, colW, wallH, hitInfo.hit, shade, d, i);
     if (settings.quality !== "low" && i % 2 === 0) {
       ctx.fillStyle = `rgba(255,245,190,${clamp(0.2 - d / 8500, 0.03, 0.16)})`;
       ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.06));
-      ctx.fillStyle = `rgba(0,0,0,${clamp(d / 2200, 0.04, 0.38)})`;
-      ctx.fillRect(x, y + wallH * 0.72, colW + 1, Math.max(1, wallH * 0.12));
     }
   }
   const sprites = [
