@@ -198,6 +198,12 @@ const grenadeCatalog = [
   { name: "Decoy", key: "decoy", side: "BOTH", price: 50, color: "#8ab2d4" },
 ];
 
+const equipmentCatalog = [
+  { name: "Kevlar Vest", side: "BOTH", price: 650, key: "armor", value: 100, color: "#9aa48e" },
+  { name: "Kevlar + Helmet", side: "BOTH", price: 1000, key: "helmet", value: 100, color: "#b8c3d6" },
+  { name: "Defuse Kit", side: "CT", price: 400, key: "defuseKit", value: true, color: "#d7bd62" },
+];
+
 const maps = {
   dustyard: {
     name: "Dustyard",
@@ -625,6 +631,8 @@ const player = {
   r: 16,
   hp: 100,
   armor: 0,
+  helmet: false,
+  defuseKit: false,
   money: 800,
   speed: 250,
   dash: 0,
@@ -1808,6 +1816,8 @@ function resetLoadout() {
     weapon.reloading = 0;
   }
   player.grenades = {};
+  player.helmet = false;
+  player.defuseKit = false;
   const id = defaultWeaponId(state.team);
   weapons[id].owned = true;
   player.weaponId = id;
@@ -1957,6 +1967,9 @@ function newMatch() {
   camera.pitch = 0;
   setGraphicsMode(hud.menuGraphics.value);
   player.money = 800;
+  player.armor = 0;
+  player.helmet = false;
+  player.defuseKit = false;
   player.kills = 0;
   player.hits = 0;
   player.plants = 0;
@@ -2034,7 +2047,8 @@ function defuseBomb(dt) {
   }
   state.bomb.defuse += dt;
   if (Math.floor(state.bomb.defuse * 4) !== Math.floor((state.bomb.defuse - dt) * 4)) emitAudioEvent("defuse", { x: state.bomb.x, y: state.bomb.y }, false);
-  if (state.bomb.defuse >= 5) {
+  const defuseTime = player.defuseKit ? 2.5 : 5;
+  if (state.bomb.defuse >= defuseTime) {
     player.defuses += 1;
     advanceMission("defuses", 1);
     endRound("CT", "bomba rozbrojona");
@@ -2105,6 +2119,20 @@ function buyItem(type, id) {
     player.grenades[grenade.name] = count + 1;
     emitAudioEvent("buy", { x: player.x, y: player.y });
     showMessage(`Kupiono: ${grenade.name}`);
+  }
+  if (type === "equipment") {
+    const item = equipmentCatalog[id];
+    if (!item || !sideAllows(item)) return;
+    if (player.money < item.price) return showMessage("Za malo kasy");
+    player.money -= item.price;
+    if (item.key === "armor") player.armor = Math.max(player.armor, item.value);
+    if (item.key === "helmet") {
+      player.armor = Math.max(player.armor, item.value);
+      player.helmet = true;
+    }
+    if (item.key === "defuseKit") player.defuseKit = true;
+    emitAudioEvent("buy", { x: player.x, y: player.y });
+    showMessage(`Kupiono: ${item.name}`);
   }
   renderShop();
   updateHud();
@@ -2548,18 +2576,27 @@ function renderBinds() {
 
 function renderShop() {
   hud.shopList.innerHTML = "";
-  const visibleWeapons = weapons.filter((weapon) => sideAllows(weapon));
-  for (const weapon of visibleWeapons) {
-    const item = document.createElement("div");
-    item.className = `shop-item${weapon.owned ? " owned" : ""}`;
-    item.innerHTML = `<div class="shop-title"><span>${weapon.name}</span><span class="tag">${weapon.owned ? tr("owned") : `$${weapon.price}`}</span></div><div class="muted">${weapon.side} / ${weapon.category}</div><div class="shop-stats"><span>DMG ${weapon.damage}</span><span>MAG ${weapon.magSize}</span><span>RECOIL ${Math.round(weapon.recoil * 100)}</span><span>SPREAD ${Math.round(weapon.spread * 100)}</span></div>`;
-    const button = document.createElement("button");
-    button.textContent = weapon.owned ? tr("equip") : tr("buy");
-    button.disabled = !weapon.owned && player.money < weapon.price;
-    button.addEventListener("click", () => buyItem("weapon", weapon.id));
-    item.appendChild(button);
-    hud.shopList.appendChild(item);
+  const sectionOrder = ["Pistol", "SMG", "Rifle", "Sniper", "Heavy"];
+  for (const category of sectionOrder) {
+    const section = document.createElement("div");
+    section.className = "shop-section";
+    section.innerHTML = `<div class="shop-section-title">${category}</div>`;
+    for (const weapon of weapons.filter((item) => item.category === category && sideAllows(item))) {
+      const item = document.createElement("div");
+      item.className = `shop-item${weapon.owned ? " owned" : ""}`;
+      item.innerHTML = `<div class="shop-title"><span>${weapon.name}</span><span class="tag">${weapon.owned ? tr("owned") : `$${weapon.price}`}</span></div><div class="muted">${weapon.side} / ${weapon.category}</div><div class="shop-stats"><span>DMG ${weapon.damage}</span><span>MAG ${weapon.magSize}</span><span>ROF ${Math.round(1000 / weapon.fireDelay * 60)}</span><span>SPREAD ${Math.round(weapon.spread * 100)}</span></div>`;
+      const button = document.createElement("button");
+      button.textContent = weapon.owned ? tr("equip") : tr("buy");
+      button.disabled = !weapon.owned && player.money < weapon.price;
+      button.addEventListener("click", () => buyItem("weapon", weapon.id));
+      item.appendChild(button);
+      section.appendChild(item);
+    }
+    hud.shopList.appendChild(section);
   }
+  const utility = document.createElement("div");
+  utility.className = "shop-section";
+  utility.innerHTML = `<div class="shop-section-title">Utility / Gear</div>`;
   for (const grenade of grenadeCatalog.filter((item) => sideAllows(item))) {
     const id = grenadeCatalog.indexOf(grenade);
     const item = document.createElement("div");
@@ -2570,8 +2607,22 @@ function renderShop() {
     button.disabled = player.money < grenade.price;
     button.addEventListener("click", () => buyItem("grenade", id));
     item.appendChild(button);
-    hud.shopList.appendChild(item);
+    utility.appendChild(item);
   }
+  for (const gear of equipmentCatalog.filter((item) => sideAllows(item))) {
+    const id = equipmentCatalog.indexOf(gear);
+    const owned = (gear.key === "armor" && player.armor >= 100) || (gear.key === "helmet" && player.helmet) || (gear.key === "defuseKit" && player.defuseKit);
+    const item = document.createElement("div");
+    item.className = `shop-item${owned ? " owned" : ""}`;
+    item.innerHTML = `<div class="shop-title"><span>${gear.name}</span><span class="tag">${owned ? tr("owned") : `$${gear.price}`}</span></div><div class="muted">${gear.side} / Equipment</div><div class="shop-stats"><span>${gear.key === "defuseKit" ? "DEFUSE 2.5s" : "ARMOR 100"}</span><span>${gear.key === "helmet" ? "HELMET" : "GEAR"}</span></div>`;
+    const button = document.createElement("button");
+    button.textContent = owned ? tr("owned") : tr("buy");
+    button.disabled = owned || player.money < gear.price;
+    button.addEventListener("click", () => buyItem("equipment", id));
+    item.appendChild(button);
+    utility.appendChild(item);
+  }
+  hud.shopList.appendChild(utility);
 }
 
 function drawMap2d() {
@@ -2865,6 +2916,7 @@ function render3d() {
     const size = clamp((h * 94) / s.d, 14, 180);
     draw3dCharacter(sx, horizon, size, s.color);
   }
+  draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon);
   draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
   draw3dWeapon(w, h);
   drawFpsStatusStrip(w, h);
@@ -2921,25 +2973,84 @@ function drawFpsStatusStrip(w, h) {
   ctx.fillText("3D FPS", 67, h - 26);
 }
 
+function projectWorldToFps(wx, wy, fov, depth, colW, horizon, verticalOffset = 0, occlusionPad = 70) {
+  const d = dist(player.x, player.y, wx, wy);
+  let rel = angleTo(player.x, player.y, wx, wy) - player.angle;
+  while (rel < -Math.PI) rel += Math.PI * 2;
+  while (rel > Math.PI) rel -= Math.PI * 2;
+  if (Math.abs(rel) > fov / 1.25) return null;
+  const sx = (0.5 + rel / fov) * window.innerWidth;
+  const col = clamp(Math.floor(sx / colW), 0, depth.length - 1);
+  if (d > depth[col] + occlusionPad) return null;
+  return {
+    x: sx,
+    y: horizon + clamp((window.innerHeight * (190 + verticalOffset)) / Math.max(1, d), -160, 160),
+    d,
+    scale: clamp(window.innerHeight / Math.max(1, d), 0.08, 2.4),
+  };
+}
+
+function draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon) {
+  for (const b of bullets) {
+    const p = projectWorldToFps(b.x, b.y, fov, depth, colW, horizon, -18, 25);
+    if (!p) continue;
+    ctx.strokeStyle = b.color || "#f6d98e";
+    ctx.lineWidth = clamp(14 / p.d, 1, 3);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x - Math.cos(player.angle) * clamp(900 / p.d, 3, 24), p.y + clamp(170 / p.d, 1, 8));
+    ctx.stroke();
+  }
+  for (const e of effects) {
+    const p = projectWorldToFps(e.x, e.y, fov, depth, colW, horizon, 6, 160);
+    if (!p) continue;
+    const size = clamp((h * e.r) / Math.max(1, p.d), 14, e.type === "smoke" ? 190 : 96);
+    ctx.globalAlpha = clamp(e.life / (e.type === "smoke" ? 7 : 1.5), 0.2, 0.7);
+    ctx.fillStyle = e.type === "smoke" ? "#a8aaa1" : e.color;
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y - size * 0.2, size * 0.65, size * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  for (const g of grenades) {
+    const p = projectWorldToFps(g.x, g.y, fov, depth, colW, horizon, -12, 55);
+    if (!p) continue;
+    const size = clamp((h * 14) / Math.max(1, p.d), 5, 18);
+    ctx.fillStyle = g.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(17,18,12,0.55)";
+    ctx.stroke();
+  }
+  if (state.bomb.status === "planted" || state.bomb.status === "hidden") {
+    const p = projectWorldToFps(state.bomb.x, state.bomb.y, fov, depth, colW, horizon, -10, 75);
+    if (p) {
+      const size = clamp((h * 28) / Math.max(1, p.d), 10, 34);
+      ctx.fillStyle = "#d75f4f";
+      ctx.fillRect(p.x - size * 0.55, p.y - size * 0.45, size * 1.1, size * 0.9);
+      ctx.fillStyle = "#171812";
+      ctx.fillRect(p.x - size * 0.28, p.y - size * 0.2, size * 0.56, size * 0.16);
+      ctx.fillStyle = "#f2f0df";
+      ctx.font = "800 11px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(state.bomb.status === "planted" ? "C4" : "BOMB", p.x, p.y - size * 0.72);
+    }
+  }
+}
+
 function draw3dSiteMarkers(w, h, fov, depth, colW, horizon = h / 2) {
   for (const [key, site] of Object.entries(state.map.sites)) {
-    const d = dist(player.x, player.y, site.x, site.y);
-    let rel = angleTo(player.x, player.y, site.x, site.y) - player.angle;
-    while (rel < -Math.PI) rel += Math.PI * 2;
-    while (rel > Math.PI) rel -= Math.PI * 2;
-    if (Math.abs(rel) > fov / 1.25) continue;
-    const sx = (0.5 + rel / fov) * w;
-    const col = clamp(Math.floor(sx / colW), 0, depth.length - 1);
-    if (d > depth[col] + 110) continue;
-    const y = horizon + clamp((h * 180) / d, 18, 130);
+    const p = projectWorldToFps(site.x, site.y, fov, depth, colW, horizon, 0, 110);
+    if (!p) continue;
     ctx.fillStyle = key === "A" ? "rgba(215,189,98,0.86)" : "rgba(119,181,111,0.86)";
     ctx.beginPath();
-    ctx.arc(sx, y, clamp((h * 22) / d, 8, 24), 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, clamp((h * 22) / p.d, 8, 24), 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#171812";
     ctx.font = "700 14px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(key, sx, y + 5);
+    ctx.fillText(key, p.x, p.y + 5);
   }
 }
 
@@ -2969,26 +3080,72 @@ function draw3dCharacter(x, y, size, color) {
   ctx.restore();
 }
 
+function weaponViewModel(weapon) {
+  const longGun = ["Rifle", "Sniper", "Heavy", "SMG"].includes(weapon.category);
+  return {
+    body: longGun ? 170 : 88,
+    barrel: weapon.category === "Sniper" ? 172 : weapon.category === "Heavy" ? 132 : longGun ? 116 : 58,
+    stock: ["Rifle", "Sniper", "Heavy"].includes(weapon.category),
+    scope: weapon.category === "Sniper" || ["AUG", "SG 553"].includes(weapon.name),
+    grip: weapon.category !== "Pistol",
+    magazine: weapon.category === "Heavy" ? 48 : weapon.category === "Pistol" ? 24 : 36,
+  };
+}
+
+function drawWeaponPart(x, y, w, h, color, stroke = "rgba(17,18,12,0.72)") {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h);
+}
+
+function drawWeaponHands(x, y, scale) {
+  ctx.fillStyle = "#d8c19a";
+  ctx.beginPath();
+  ctx.ellipse(x - 28 * scale, y + 52 * scale, 28 * scale, 18 * scale, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x + 84 * scale, y + 58 * scale, 24 * scale, 16 * scale, 0.15, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawWeaponMuzzleFlash(x, y, scale) {
+  if (camera.shake < 1.4 || activeWeapon().cooldown <= 0) return;
+  ctx.fillStyle = "rgba(255,214,111,0.78)";
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + 34 * scale, y - 12 * scale);
+  ctx.lineTo(x + 26 * scale, y + 12 * scale);
+  ctx.closePath();
+  ctx.fill();
+}
+
 function draw3dWeapon(w, h) {
   const weapon = activeWeapon();
-  const x = w / 2 + 46;
-  const y = h - 126 + camera.shake;
-  ctx.fillStyle = weapon.color;
-  ctx.fillRect(x, y + 24, 146, 28);
-  ctx.fillStyle = "rgba(255,255,255,0.22)";
-  ctx.fillRect(x + 10, y + 28, 92, 4);
-  ctx.fillStyle = "#1a1d18";
-  ctx.fillRect(x + 64, y + 12, 150, 13);
-  ctx.fillStyle = "#2f332d";
-  ctx.fillRect(x + 34, y + 50, 28, 56);
-  ctx.fillStyle = "#d8c19a";
-  ctx.fillRect(x - 34, y + 58, 48, 34);
-  if (weapon.category === "Sniper") {
-    ctx.fillStyle = "#111";
-    ctx.fillRect(x + 42, y, 82, 12);
+  const model = weaponViewModel(weapon);
+  const scale = clamp(w / 1280, 0.78, 1.15);
+  const sway = Math.sin(performance.now() / 140) * player.speedFactor * 10;
+  const recoilDrop = camera.shake * 1.8;
+  const x = w / 2 + (weapon.category === "Pistol" ? 84 : 44) * scale + sway;
+  const y = h - (weapon.category === "Pistol" ? 132 : 150) * scale + recoilDrop;
+  const bodyH = (weapon.category === "Pistol" ? 28 : 34) * scale;
+  drawWeaponHands(x, y, scale);
+  if (model.stock) drawWeaponPart(x - 82 * scale, y + 26 * scale, 80 * scale, 22 * scale, "#2d332f");
+  drawWeaponPart(x, y + 20 * scale, model.body * scale, bodyH, weapon.color);
+  drawWeaponPart(x + model.body * scale - 8 * scale, y + 28 * scale, model.barrel * scale, 10 * scale, "#1a1d18");
+  drawWeaponPart(x + 26 * scale, y + 48 * scale, model.magazine * scale, 54 * scale, "#30352f");
+  if (model.grip) drawWeaponPart(x + 92 * scale, y + 48 * scale, 22 * scale, 42 * scale, "#242821");
+  if (model.scope) {
+    drawWeaponPart(x + 58 * scale, y + 2 * scale, 88 * scale, 18 * scale, "#111412");
+    ctx.fillStyle = "#7fb3c7";
+    ctx.fillRect(x + 86 * scale, y + 6 * scale, 20 * scale, 10 * scale);
   }
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.fillRect(x + 12 * scale, y + 26 * scale, model.body * 0.55 * scale, 4 * scale);
   ctx.fillStyle = "rgba(0,0,0,0.28)";
-  ctx.fillRect(x + 4, y + 52, 118, 5);
+  ctx.fillRect(x + 6 * scale, y + 54 * scale, model.body * 0.7 * scale, 5 * scale);
+  drawWeaponMuzzleFlash(x + (model.body + model.barrel - 8) * scale, y + 33 * scale, scale);
 }
 
 function updateHud() {
@@ -2998,7 +3155,7 @@ function updateHud() {
   hud.mode.textContent = state.gameMode.toUpperCase();
   hud.team.textContent = spectated ? `SPECTATE ${spectated.name} ${living.length ? state.spectator.index + 1 : 0}/${living.length}${spectated.source === "LAN" ? "" : " / E TAKEOVER"}` : `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
   hud.health.textContent = spectated ? `OBS HP ${Math.ceil(spectated.hp)}` : `HP ${Math.ceil(player.hp)}`;
-  hud.armor.textContent = `${tr("armor")} ${Math.ceil(player.armor)}`;
+  hud.armor.textContent = `${tr("armor")} ${Math.ceil(player.armor)}${player.helmet ? " +H" : ""}${player.defuseKit ? " KIT" : ""}`;
   hud.money.textContent = `$${player.money}`;
   hud.round.textContent = `R ${state.round}/32`;
   hud.score.textContent = `T ${state.score.T} : ${state.score.CT} CT`;

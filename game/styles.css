@@ -294,6 +294,26 @@ button:disabled {
   gap: 10px;
 }
 
+.shop-list {
+  grid-template-columns: 1fr;
+}
+
+.shop-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.shop-section-title {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid rgba(242, 240, 223, 0.16);
+  padding: 4px 0 8px;
+  color: #d7bd62;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
 .shop-item,
 .mission-item,
 .bind-item,
