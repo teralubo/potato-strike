@@ -128,6 +128,13 @@ for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "is
   }
 }
 
+for (const snippet of ["wrap.dataset.view", "canvas.style.width = \"100%\"", "drawViewLabel(\"3D EDIT\"", "window.addEventListener(\"resize\", draw)"]) {
+  if (!editorJs.includes(snippet)) {
+    console.error(`Missing required persistent Studio viewport feature: ${snippet}`);
+    process.exit(1);
+  }
+}
+
 for (const snippet of ["showFatalError", "normalizeMap", "findSafePoint", "showFatalError(fallbackError, \"renderu\")", "normalizeMap(maps[state.mapKey]"]) {
   if (!js.includes(snippet)) {
     console.error(`Missing required runtime safety guard: ${snippet}`);

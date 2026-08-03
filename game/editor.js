@@ -60,6 +60,7 @@ let studioSettings = loadJson("potatoStrikeStudioSettings", {
   matchSize: 5,
   defaultWeapon: "side-default",
 });
+studioSettings.viewportMode = studioSettings.viewportMode === "3d" ? "3d" : "2d";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -201,6 +202,19 @@ function refreshMapList() {
 }
 
 function fitCanvas() {
+  const wrap = document.querySelector(".studio-canvas-wrap");
+  wrap.dataset.view = studioSettings.viewportMode.toUpperCase();
+  wrap.classList.toggle("preview-3d", studioSettings.viewportMode === "3d");
+  if (studioSettings.viewportMode === "3d") {
+    const rect = wrap.getBoundingClientRect();
+    const width = Math.max(640, Math.floor(rect.width || window.innerWidth));
+    const height = Math.max(420, Math.floor(rect.height || window.innerHeight));
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    return;
+  }
   canvas.width = map.w;
   canvas.height = map.h;
   canvas.style.width = `${map.w}px`;
@@ -209,7 +223,6 @@ function fitCanvas() {
 
 function draw() {
   fitCanvas();
-  document.querySelector(".studio-canvas-wrap").classList.toggle("preview-3d", studioSettings.viewportMode === "3d");
   if (studioSettings.viewportMode === "3d") {
     draw3dPreview();
     return;
@@ -264,6 +277,7 @@ function draw3dPreview() {
   drawIsoMarker("B", map.sites.B, "#77b56f", originX, originY, scale);
   drawIsoMarker("T", map.tSpawn, "#c48a45", originX, originY, scale);
   drawIsoMarker("CT", map.ctSpawn, "#8ea9b8", originX, originY, scale);
+  drawViewLabel("3D EDIT", "izometryczny podglad calej mapy");
 }
 
 function isoPoint(x, y, originX, originY, scale) {
@@ -293,8 +307,24 @@ function isoLayout() {
   return {
     originX: canvas.width / 2,
     originY: canvas.height * 0.18,
-    scale: Math.min(canvas.width / map.w, canvas.height / map.h) * 0.86,
+    scale: Math.min(canvas.width / (map.w + map.h), canvas.height / (map.w + map.h) * 2.1) * 1.72,
   };
+}
+
+function drawViewLabel(title, subtitle) {
+  ctx.save();
+  ctx.fillStyle = "rgba(17,20,17,0.82)";
+  ctx.strokeStyle = "rgba(242,240,223,0.18)";
+  ctx.lineWidth = 1;
+  ctx.fillRect(14, 14, 210, 54);
+  ctx.strokeRect(14.5, 14.5, 209, 53);
+  ctx.fillStyle = "#f2f0df";
+  ctx.font = "800 18px Arial";
+  ctx.fillText(title, 28, 38);
+  ctx.fillStyle = "#d8d5bf";
+  ctx.font = "12px Arial";
+  ctx.fillText(subtitle, 28, 57);
+  ctx.restore();
 }
 
 function isoCanvasPoint(screenX, screenY) {
@@ -718,7 +748,7 @@ window.addEventListener("keydown", (event) => {
 });
 ui.name.addEventListener("input", () => { map.name = ui.name.value; });
 ui.viewportMode.addEventListener("change", () => {
-  studioSettings.viewportMode = ui.viewportMode.value;
+  studioSettings.viewportMode = ui.viewportMode.value === "3d" ? "3d" : "2d";
   convertMapForViewport(studioSettings.viewportMode);
   saveJson("potatoStrikeStudioSettings", studioSettings);
   renderUi();
@@ -752,3 +782,4 @@ convertMapForViewport(studioSettings.viewportMode);
 refreshMapList();
 renderUi();
 document.querySelector('[data-tool="select"]').classList.add("active");
+window.addEventListener("resize", draw);
