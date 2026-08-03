@@ -74,6 +74,22 @@
   font-weight: 700;
 }
 
+.advanced-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.check-row {
+  display: flex !important;
+  align-items: center;
+  grid-template-columns: none !important;
+}
+
+.check-row input {
+  width: auto;
+}
+
 .studio-panel input,
 .studio-panel select,
 .property-grid input,
@@ -84,6 +100,10 @@
   padding: 9px;
   background: #222820;
   color: #f2f0df;
+}
+
+.studio-panel .check-row input {
+  width: auto;
 }
 
 .studio-section {

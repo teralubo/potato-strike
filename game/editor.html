@@ -42,6 +42,48 @@
       </label>
       <button id="load-map" class="secondary">Otworz mape</button>
       <div class="studio-section">
+        <div class="muted">TEREN / ADVANCED</div>
+        <div class="advanced-grid">
+          <label>
+            Szerokosc
+            <input id="terrain-width" type="number" min="900" max="5000" step="50" value="2200">
+          </label>
+          <label>
+            Wysokosc
+            <input id="terrain-height" type="number" min="700" max="4000" step="50" value="1400">
+          </label>
+          <label>
+            Snap grid
+            <input id="snap-grid" type="number" min="1" max="256" step="1" value="16">
+          </label>
+          <label>
+            Wys. obiektu
+            <input id="default-z" type="number" min="0" max="512" step="4" value="96">
+          </label>
+          <label>
+            Kolor terenu
+            <input id="terrain-color" type="color" value="#303a2f">
+          </label>
+          <label>
+            Ambient 3D
+            <input id="ambient-color" type="color" value="#3d555d">
+          </label>
+        </div>
+        <label>
+          Tryb modowania
+          <select id="modding-mode">
+            <option value="safe" selected>Safe JSON</option>
+            <option value="script">Script sandbox</option>
+            <option value="full">Full mod</option>
+          </select>
+        </label>
+        <label class="check-row">
+          <input id="autosave-map" type="checkbox" checked>
+          Autosave mapy w Studio
+        </label>
+        <button id="apply-terrain" class="secondary">Zastosuj teren</button>
+      </div>
+      <div class="studio-section">
         <div class="muted">SANDBOX GRY</div>
         <label>
           Tryb gry

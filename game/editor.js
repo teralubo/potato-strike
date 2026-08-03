@@ -25,6 +25,15 @@ const ui = {
   testGraphics: $("test-graphics"),
   matchSize: $("match-size"),
   defaultWeapon: $("default-weapon"),
+  terrainWidth: $("terrain-width"),
+  terrainHeight: $("terrain-height"),
+  snapGrid: $("snap-grid"),
+  defaultZ: $("default-z"),
+  terrainColor: $("terrain-color"),
+  ambientColor: $("ambient-color"),
+  moddingMode: $("modding-mode"),
+  autosaveMap: $("autosave-map"),
+  applyTerrain: $("apply-terrain"),
   properties: $("properties"),
   objects: $("object-list"),
   assets: $("asset-list"),
@@ -90,7 +99,7 @@ function emptyMap() {
     tSpawn: { x: 180, y: 1220 },
     ctSpawn: { x: 2020, y: 180 },
     sites: { A: { x: 1650, y: 1000, r: 115 }, B: { x: 560, y: 330, r: 110 } },
-    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5 },
+    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", moddingMode: "safe", autosave: true },
     obstacles: [],
   };
 }
@@ -118,7 +127,7 @@ function makeMap(name, w, h, seed) {
     tSpawn: { x: 180, y: h - 180 },
     ctSpawn: { x: w - 180, y: 180 },
     sites: { A: { x: Math.floor(w * 0.74), y: Math.floor(h * 0.72), r: 115 }, B: { x: Math.floor(w * 0.32), y: Math.floor(h * 0.26), r: 110 } },
-    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5 },
+    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", moddingMode: "safe", autosave: true },
     obstacles,
   };
 }
@@ -256,7 +265,7 @@ function draw3dPreview() {
   ctx.fillStyle = "#151916";
   ctx.fillRect(0, 0, w, h);
   const sky = ctx.createLinearGradient(0, 0, 0, h * 0.45);
-  sky.addColorStop(0, "#3d555d");
+  sky.addColorStop(0, map.meta?.ambientColor || "#3d555d");
   sky.addColorStop(0.7, "#27363a");
   sky.addColorStop(1, "#202620");
   ctx.fillStyle = sky;
@@ -326,7 +335,7 @@ function drawIsoFloor(originX, originY, scale) {
     isoPoint(0, map.h, originX, originY, scale),
   ];
   const floor = ctx.createLinearGradient(0, originY, 0, canvas.height);
-  floor.addColorStop(0, "#303a2f");
+  floor.addColorStop(0, map.meta?.terrainColor || "#303a2f");
   floor.addColorStop(1, "#1f271f");
   ctx.fillStyle = floor;
   ctx.beginPath();
@@ -525,8 +534,16 @@ function drawObject(obj) {
 
 function canvasPoint(event) {
   const screen = eventCanvasPixel(event);
-  if (studioSettings.viewportMode === "3d") return isoCanvasPoint(screen.x, screen.y);
-  return screen;
+  const point = studioSettings.viewportMode === "3d" ? isoCanvasPoint(screen.x, screen.y) : screen;
+  return snapPoint(point);
+}
+
+function snapPoint(point) {
+  const grid = Math.max(1, Number(map.meta?.snapGrid || 1));
+  return {
+    x: clamp(Math.round(point.x / grid) * grid, 0, map.w),
+    y: clamp(Math.round(point.y / grid) * grid, 0, map.h),
+  };
 }
 
 function hitObject(x, y) {
@@ -555,7 +572,7 @@ function addObject(type, x, y) {
     prop: [110, 90, 36, "#8d846b"],
   };
   const p = presets[type] || presets.wall;
-  const obj = { id: `obj-${Date.now().toString(36)}`, type, x: x - p[0] / 2, y: y - p[1] / 2, w: p[0], h: p[1], z: p[2], rot: 0, color: p[3] };
+  const obj = { id: `obj-${Date.now().toString(36)}`, type, x: x - p[0] / 2, y: y - p[1] / 2, w: p[0], h: p[1], z: type === "wall" || type === "prop" ? Number(map.meta?.defaultZ || p[2]) : p[2], rot: 0, color: p[3] };
   map.obstacles.push(obj);
   selectedId = obj.id;
   renderUi();
@@ -571,6 +588,7 @@ function renderUi() {
   ui.testGraphics.value = studioSettings.viewportMode;
   ui.matchSize.value = String(map.meta.matchSize || studioSettings.matchSize);
   ui.defaultWeapon.value = map.meta.defaultWeapon || studioSettings.defaultWeapon;
+  syncAdvancedFields();
   renderProperties();
   renderObjects();
   renderAssets();
@@ -582,6 +600,47 @@ function renderUi() {
     draw();
     status(`Blad renderu Studio: ${error?.message || "naprawiono mape"}`);
   }
+}
+
+function syncAdvancedFields() {
+  ui.terrainWidth.value = String(map.w);
+  ui.terrainHeight.value = String(map.h);
+  ui.snapGrid.value = String(map.meta.snapGrid || 16);
+  ui.defaultZ.value = String(map.meta.defaultZ || 96);
+  ui.terrainColor.value = map.meta.terrainColor || "#303a2f";
+  ui.ambientColor.value = map.meta.ambientColor || "#3d555d";
+  ui.moddingMode.value = map.meta.moddingMode || "safe";
+  ui.autosaveMap.checked = map.meta.autosave !== false;
+}
+
+function applyTerrainSettings() {
+  const oldW = map.w;
+  const oldH = map.h;
+  map.w = clamp(Number(ui.terrainWidth.value) || map.w, 900, 5000);
+  map.h = clamp(Number(ui.terrainHeight.value) || map.h, 700, 4000);
+  const scaleX = oldW ? map.w / oldW : 1;
+  const scaleY = oldH ? map.h / oldH : 1;
+  for (const obj of map.obstacles) {
+    obj.x = clamp(obj.x * scaleX, 0, map.w - obj.w);
+    obj.y = clamp(obj.y * scaleY, 0, map.h - obj.h);
+  }
+  map.tSpawn = { x: clamp(map.tSpawn.x * scaleX, 24, map.w - 24), y: clamp(map.tSpawn.y * scaleY, 24, map.h - 24) };
+  map.ctSpawn = { x: clamp(map.ctSpawn.x * scaleX, 24, map.w - 24), y: clamp(map.ctSpawn.y * scaleY, 24, map.h - 24) };
+  map.sites.A = { ...map.sites.A, x: clamp(map.sites.A.x * scaleX, 24, map.w - 24), y: clamp(map.sites.A.y * scaleY, 24, map.h - 24) };
+  map.sites.B = { ...map.sites.B, x: clamp(map.sites.B.x * scaleX, 24, map.w - 24), y: clamp(map.sites.B.y * scaleY, 24, map.h - 24) };
+  map.meta = {
+    ...(map.meta || {}),
+    snapGrid: clamp(Number(ui.snapGrid.value) || 16, 1, 256),
+    defaultZ: clamp(Number(ui.defaultZ.value) || 96, 0, 512),
+    terrainColor: ui.terrainColor.value || "#303a2f",
+    ambientColor: ui.ambientColor.value || "#3d555d",
+    moddingMode: ui.moddingMode.value || "safe",
+    autosave: ui.autosaveMap.checked,
+  };
+  map = normalizeStudioMap(map);
+  renderUi();
+  if (map.meta.autosave) localStorage.setItem("potatoStrikeStudioLastMap", JSON.stringify(map));
+  status(`Teren ${map.w}x${map.h}, grid ${map.meta.snapGrid}`);
 }
 
 function renderProperties() {
@@ -655,6 +714,12 @@ function saveMap() {
     defaultWeapon: ui.defaultWeapon.value,
     matchSize: Number(ui.matchSize.value || 5),
     testGraphics: ui.testGraphics.value,
+    snapGrid: Number(ui.snapGrid.value || 16),
+    defaultZ: Number(ui.defaultZ.value || 96),
+    terrainColor: ui.terrainColor.value || "#303a2f",
+    ambientColor: ui.ambientColor.value || "#3d555d",
+    moddingMode: ui.moddingMode.value || "safe",
+    autosave: ui.autosaveMap.checked,
     license: "GNU GPL 3.0",
   };
   const id = `studio-${map.name.replace(/[^a-z0-9_-]/gi, "-").toLowerCase() || Date.now().toString(36)}`;
@@ -851,6 +916,14 @@ ui.viewportMode.addEventListener("change", () => {
 ui.gameMode.addEventListener("change", () => { map.meta = { ...(map.meta || {}), gameMode: ui.gameMode.value }; });
 ui.matchSize.addEventListener("change", () => { map.meta = { ...(map.meta || {}), matchSize: Number(ui.matchSize.value) }; });
 ui.defaultWeapon.addEventListener("change", () => { map.meta = { ...(map.meta || {}), defaultWeapon: ui.defaultWeapon.value }; });
+ui.applyTerrain.addEventListener("click", applyTerrainSettings);
+["terrainWidth", "terrainHeight", "snapGrid", "defaultZ", "terrainColor", "ambientColor", "moddingMode"].forEach((key) => {
+  ui[key].addEventListener("change", () => {
+    map.meta = { ...(map.meta || {}), autosave: ui.autosaveMap.checked };
+    if (ui.autosaveMap.checked) applyTerrainSettings();
+  });
+});
+ui.autosaveMap.addEventListener("change", () => { map.meta = { ...(map.meta || {}), autosave: ui.autosaveMap.checked }; });
 ui.newMap.addEventListener("click", () => { map = emptyMap(); selectedId = ""; renderUi(); status("Nowa mapa"); });
 ui.generate.addEventListener("click", generateMap);
 ui.save.addEventListener("click", saveMap);

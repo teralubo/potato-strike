@@ -148,6 +148,13 @@ for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "studioS
   }
 }
 
+for (const snippet of ["TEREN / ADVANCED", "applyTerrainSettings", "snapPoint", "terrainColor", "moddingMode", "autosave-map"]) {
+  if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
+    console.error(`Missing required Studio advanced terrain/modding feature: ${snippet}`);
+    process.exit(1);
+  }
+}
+
 for (const snippet of ["hitIsoObject", "isoBoxFaces", "hitObjectAtEvent", "pointInPolygon"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio 3D editing feature: ${snippet}`);
