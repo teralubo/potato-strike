@@ -130,6 +130,13 @@ for (const snippet of ["showFatalError", "normalizeMap", "findSafePoint", "showF
   }
 }
 
+for (const snippet of ["cycleSpectatorTarget", "spectatorNext", "OBS HP", "po dead strzalki lub klik"]) {
+  if (!js.includes(snippet) && !html.includes(snippet)) {
+    console.error(`Missing required spectator feature: ${snippet}`);
+    process.exit(1);
+  }
+}
+
 for (const snippet of ["normalizeStudioMap", "map = normalizeStudioMap(map);", "Nie udalo sie zaimportowac mapy", "Mapa przekonwertowana do edycji"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio safety guard: ${snippet}`);

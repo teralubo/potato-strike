@@ -365,6 +365,8 @@ const bindings = {
   dash: "Space",
   pause: "KeyP",
   console: "Backquote",
+  spectatorNext: "ArrowRight",
+  spectatorPrev: "ArrowLeft",
 };
 
 const actionLabels = {
@@ -384,6 +386,8 @@ const actionLabels = {
   dash: "Dash",
   pause: "Pauza",
   console: "Komendy lobby",
+  spectatorNext: "Spectator nastepny",
+  spectatorPrev: "Spectator poprzedni",
 };
 
 const player = {
@@ -1907,6 +1911,20 @@ function currentSpectatorTarget() {
   return state.spectator.target;
 }
 
+function cycleSpectatorTarget(direction = 1) {
+  if (!state.spectator.active || player.alive) return;
+  const living = livingTeamBots();
+  if (!living.length) {
+    currentSpectatorTarget();
+    return;
+  }
+  state.spectator.index = (state.spectator.index + direction + living.length) % living.length;
+  state.spectator.target = living[state.spectator.index];
+  const target = state.spectator.target;
+  const takeoverHint = target.source === "LAN" ? "slot LAN tylko obserwacja" : "E przejmuje bota";
+  showMessage(`Obserwujesz ${target.name} (${state.spectator.index + 1}/${living.length}) - ${takeoverHint}`);
+}
+
 function enterSpectator() {
   if (state.phase === "ended") return;
   state.spectator.active = true;
@@ -1919,7 +1937,8 @@ function enterSpectator() {
     endRound(state.enemyTeam, "twoja druzyna wyeliminowana");
     return;
   }
-  showMessage(`Nie zyjesz - obserwujesz ${target.name}. Wcisnij E, aby przejac bota.`);
+  const takeoverHint = target.source === "LAN" ? "slot LAN tylko obserwacja" : "E przejmuje bota";
+  showMessage(`Nie zyjesz - obserwujesz ${target.name}. Strzalki/klik zmieniaja cel, ${takeoverHint}.`);
 }
 
 function leaveSpectator() {
@@ -2450,9 +2469,10 @@ function draw3dWeapon(w, h) {
 function updateHud() {
   const weapon = activeWeapon();
   const spectated = state.spectator.active ? currentSpectatorTarget() : null;
+  const living = state.spectator.active ? livingTeamBots() : [];
   hud.mode.textContent = state.gameMode.toUpperCase();
-  hud.team.textContent = spectated ? `SPECTATE ${spectated.name}${spectated.source === "LAN" ? "" : " / E TAKEOVER"}` : `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
-  hud.health.textContent = `HP ${Math.ceil(player.hp)}`;
+  hud.team.textContent = spectated ? `SPECTATE ${spectated.name} ${living.length ? state.spectator.index + 1 : 0}/${living.length}${spectated.source === "LAN" ? "" : " / E TAKEOVER"}` : `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
+  hud.health.textContent = spectated ? `OBS HP ${Math.ceil(spectated.hp)}` : `HP ${Math.ceil(player.hp)}`;
   hud.armor.textContent = `ARMOR ${Math.ceil(player.armor)}`;
   hud.money.textContent = `$${player.money}`;
   hud.round.textContent = `R ${state.round}/32`;
@@ -2561,7 +2581,7 @@ window.addEventListener("keydown", (event) => {
     renderBinds();
     return;
   }
-  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash].includes(event.code)) event.preventDefault();
+  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.spectatorNext, bindings.spectatorPrev].includes(event.code)) event.preventDefault();
   keys.add(event.code);
   if (event.code === "Escape") closePanels();
   if (event.code === bindings.shop) togglePanel(hud.shopPanel);
@@ -2573,6 +2593,11 @@ window.addEventListener("keydown", (event) => {
   if (event.code === bindings.console) openOwnerConsole();
   if (event.code === bindings.pause) setPaused(!state.paused);
   if (state.overlayOpen) return;
+  if (state.spectator.active && !player.alive) {
+    if (event.code === bindings.spectatorNext) cycleSpectatorTarget(1);
+    if (event.code === bindings.spectatorPrev) cycleSpectatorTarget(-1);
+    return;
+  }
   if (event.code === bindings.reload) reload();
   if (event.code === bindings.grenade) { throwGrenade(); advanceMission("grenade", 1); }
   if (event.code.startsWith("Digit")) equipHotkey(Number(event.code.slice(5)));
@@ -2597,10 +2622,18 @@ canvas.addEventListener("mousemove", (event) => {
 canvas.addEventListener("mousedown", async (event) => {
   if (editMapAt(event)) return;
   if (state.overlayOpen) return;
+  if (state.spectator.active && !player.alive) {
+    cycleSpectatorTarget(event.button === 2 ? -1 : 1);
+    event.preventDefault();
+    return;
+  }
   ensureAudio();
   mouse.down = true;
   mouse.clicked = true;
   try { await canvas.requestPointerLock(); } catch { /* optional */ }
+});
+canvas.addEventListener("contextmenu", (event) => {
+  if (state.spectator.active && !player.alive) event.preventDefault();
 });
 window.addEventListener("mouseup", () => { mouse.down = false; });
 

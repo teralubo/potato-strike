@@ -7,6 +7,17 @@ const windows = {
   editor: null,
 };
 
+if (process.env.POTATO_SOFTWARE_RENDER === "1") {
+  app.disableHardwareAcceleration();
+}
+
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+app.commandLine.appendSwitch("disable-background-timer-throttling");
+if (process.platform === "linux") {
+  app.commandLine.appendSwitch("disable-gpu-compositing");
+  app.commandLine.appendSwitch("enable-wayland-ime");
+}
+
 function configDir() {
   const dir = path.join(__dirname, "configs");
   fs.mkdirSync(dir, { recursive: true });
@@ -39,6 +50,7 @@ function createWindow(options = {}) {
     backgroundColor: "#141816",
     autoHideMenuBar: true,
     webPreferences: {
+      backgroundThrottling: false,
       contextIsolation: true,
       nodeIntegration: false,
       preload: path.join(__dirname, "preload.js"),
@@ -67,6 +79,7 @@ function createEditorWindow() {
     autoHideMenuBar: true,
     title: "Potato Strike Studio",
     webPreferences: {
+      backgroundThrottling: false,
       contextIsolation: true,
       nodeIntegration: false,
       preload: path.join(__dirname, "preload.js"),

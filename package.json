@@ -13,7 +13,7 @@
     "start": "electron .",
     "start:editor": "electron . --editor",
     "build:win": "electron-builder --win portable",
-    "build:linux": "electron-builder --linux dir"
+    "build:linux": "electron-builder --linux dir AppImage"
   },
   "devDependencies": {
     "electron": "^31.0.0",
@@ -39,7 +39,10 @@
       "target": "portable"
     },
     "linux": {
-      "target": "dir",
+      "target": [
+        "dir",
+        "AppImage"
+      ],
       "category": "Game"
     }
   }
