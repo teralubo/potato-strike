@@ -170,6 +170,13 @@ for (const snippet of ["default-texture", "textureOptions", "studioTexturePalett
   }
 }
 
+for (const snippet of ["texture-paint-canvas", "paint-color", "paint-size", "savePaintTexture", "applyPaintTextureToSelected", "textureColor"]) {
+  if (!editorJs.includes(snippet) && !editorHtml.includes(snippet) && !js.includes(snippet)) {
+    console.error(`Missing required mini-paint texture feature: ${snippet}`);
+    process.exit(1);
+  }
+}
+
 for (const snippet of ["hitIsoObject", "isoBoxFaces", "hitObjectAtEvent", "pointInPolygon"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio 3D editing feature: ${snippet}`);

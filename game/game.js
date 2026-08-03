@@ -1163,6 +1163,7 @@ function normalizeMap(rawMap, fallback = maps.custom) {
       color: obj.color || "",
       texture: obj.texture || obj.material || "",
       material: obj.material || obj.texture || "",
+      textureColor: obj.textureColor || "",
     }))
     .filter((obj) => obj.w > 0 && obj.h > 0);
   map.name = source.name || fallback.name || "Custom Mission";
@@ -2392,6 +2393,8 @@ function castRayHit(angle) {
 }
 
 function wallBaseColor(hit) {
+  const known = simple3dTextures[hit?.texture || hit?.material || ""];
+  if (!known && (hit?.textureColor || hit?.color)) return hit.textureColor || hit.color;
   return textureForHit(hit).base;
 }
 

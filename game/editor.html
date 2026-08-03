@@ -160,6 +160,28 @@
         </label>
         <input id="texture-name" value="custom-texture">
         <button id="import-texture" class="secondary">Wgraj teksture</button>
+        <div class="texture-paint">
+          <canvas id="texture-paint-canvas" width="64" height="64" aria-label="Mini paint tekstury"></canvas>
+          <div class="paint-controls">
+            <label>
+              Baza
+              <input id="paint-base-color" type="color" value="#f1f1ea">
+            </label>
+            <label>
+              Pedzel
+              <input id="paint-color" type="color" value="#56614d">
+            </label>
+            <label>
+              Rozmiar
+              <input id="paint-size" type="range" min="1" max="14" value="4">
+            </label>
+          </div>
+        </div>
+        <div class="paint-actions">
+          <button id="paint-clear" class="secondary">Wyczysc</button>
+          <button id="paint-save" class="secondary">Zapisz paint</button>
+          <button id="paint-apply" class="secondary">Na obiekt</button>
+        </div>
         <label>
           Pliki sandboxa
           <input id="asset-files" type="file" multiple accept="image/*,.json,.js,.txt,.css">

@@ -17,6 +17,13 @@ const ui = {
   textureFile: $("texture-file"),
   textureName: $("texture-name"),
   importTexture: $("import-texture"),
+  paintCanvas: $("texture-paint-canvas"),
+  paintBaseColor: $("paint-base-color"),
+  paintColor: $("paint-color"),
+  paintSize: $("paint-size"),
+  paintClear: $("paint-clear"),
+  paintSave: $("paint-save"),
+  paintApply: $("paint-apply"),
   assetFiles: $("asset-files"),
   importAssets: $("import-assets"),
   modCode: $("mod-code"),
@@ -63,6 +70,7 @@ let map = emptyMap();
 let textures = loadJson("potatoStrikeStudioTextures", []);
 let mods = loadJson("potatoStrikeStudioMods", []);
 let files = loadJson("potatoStrikeStudioFiles", []);
+let paintDown = false;
 let studioSettings = loadJson("potatoStrikeStudioSettings", {
   viewportMode: "2d",
   gameMode: "sandbox",
@@ -90,6 +98,13 @@ const studioTexturePalette = {
   metal: "#aeb7ba",
   glass: "#b8d2d8",
 };
+
+function allTextureOptions() {
+  return [
+    ...textureOptions,
+    ...textures.map((item) => [item.id, item.name || item.id]),
+  ];
+}
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -195,6 +210,7 @@ function normalizeStudioMap(rawMap) {
       color: obj.color || "#56614d",
       texture: obj.texture || obj.material || source.meta?.defaultTexture || "white",
       material: obj.material || obj.texture || source.meta?.defaultTexture || "white",
+      textureColor: obj.textureColor || obj.color || "",
       script: obj.script || "",
     })),
   };
@@ -322,6 +338,7 @@ function convertMapForViewport(mode) {
     color: obj.color || "#56614d",
     material: obj.material || obj.texture || map.meta.defaultTexture,
     texture: obj.texture || obj.material || map.meta.defaultTexture,
+    textureColor: obj.textureColor || obj.color || "",
   }));
   map = normalizeStudioMap(map);
 }
@@ -494,6 +511,8 @@ function drawIsoBox(obj, originX, originY, scale) {
 
 function objectBaseColor(obj) {
   if (obj.texture === "custom-color") return obj.color || "#56614d";
+  const custom = textures.find((item) => item.id === obj.texture || item.id === obj.material);
+  if (custom) return custom.baseColor || obj.textureColor || obj.color || "#f1f1ea";
   return studioTexturePalette[obj.texture || obj.material] || obj.color || "#56614d";
 }
 
@@ -686,7 +705,7 @@ function renderProperties() {
     label.textContent = key;
     const input = document.createElement(type === "texture" ? "select" : "input");
     if (type === "texture") {
-      for (const [value, text] of textureOptions) {
+      for (const [value, text] of allTextureOptions()) {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = text;
@@ -698,7 +717,14 @@ function renderProperties() {
     input.value = target[key] ?? "";
     input.addEventListener("input", () => {
       target[key] = type === "number" ? Number(input.value) : input.value;
-      if (key === "texture") target.material = input.value;
+      if (key === "texture") {
+        const custom = textures.find((item) => item.id === input.value);
+        target.material = input.value;
+        if (custom) {
+          target.color = custom.baseColor || target.color;
+          target.textureColor = custom.baseColor || target.textureColor || target.color;
+        }
+      }
       if (target === map && key === "name") ui.name.value = target[key];
       draw();
       renderObjects();
@@ -744,6 +770,71 @@ function addAssetRow(kind, name) {
   row.className = "object-row";
   row.innerHTML = `<span>${kind}</span><span class="tag">${name}</span>`;
   ui.assets.appendChild(row);
+}
+
+function paintContext() {
+  return ui.paintCanvas.getContext("2d", { willReadFrequently: true });
+}
+
+function resetPaintTexture() {
+  const paint = paintContext();
+  paint.fillStyle = ui.paintBaseColor.value || "#f1f1ea";
+  paint.fillRect(0, 0, ui.paintCanvas.width, ui.paintCanvas.height);
+  paint.strokeStyle = "rgba(0,0,0,0.12)";
+  paint.lineWidth = 1;
+  for (let x = 0; x <= ui.paintCanvas.width; x += 16) {
+    paint.beginPath();
+    paint.moveTo(x, 0);
+    paint.lineTo(x, ui.paintCanvas.height);
+    paint.stroke();
+  }
+  for (let y = 0; y <= ui.paintCanvas.height; y += 16) {
+    paint.beginPath();
+    paint.moveTo(0, y);
+    paint.lineTo(ui.paintCanvas.width, y);
+    paint.stroke();
+  }
+}
+
+function paintTextureAt(event) {
+  const rect = ui.paintCanvas.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * ui.paintCanvas.width;
+  const y = ((event.clientY - rect.top) / rect.height) * ui.paintCanvas.height;
+  const paint = paintContext();
+  paint.fillStyle = ui.paintColor.value || "#56614d";
+  paint.beginPath();
+  paint.arc(x, y, Number(ui.paintSize.value || 4), 0, Math.PI * 2);
+  paint.fill();
+}
+
+function savePaintTexture() {
+  const id = `paint-${Date.now().toString(36)}`;
+  const name = ui.textureName.value || "paint-texture";
+  const texture = {
+    id,
+    name,
+    dataUrl: ui.paintCanvas.toDataURL("image/png"),
+    baseColor: ui.paintBaseColor.value || "#f1f1ea",
+    kind: "paint",
+  };
+  textures.push(texture);
+  saveJson("potatoStrikeStudioTextures", textures);
+  renderAssets();
+  renderProperties();
+  status(`Zapisano teksture paint: ${name}`);
+  return texture;
+}
+
+function applyPaintTextureToSelected() {
+  const selected = map.obstacles.find((obj) => obj.id === selectedId);
+  if (!selected) return status("Najpierw wybierz obiekt");
+  const texture = savePaintTexture();
+  selected.texture = texture.id;
+  selected.material = texture.id;
+  selected.color = texture.baseColor;
+  selected.textureColor = texture.baseColor;
+  renderUi();
+  status(`Tekstura ${texture.name} przypisana do ${selected.type}`);
 }
 
 function saveMap() {
@@ -826,7 +917,7 @@ async function importTexture() {
     reader.onload = () => resolve(reader.result);
     reader.readAsDataURL(file);
   });
-  textures.push({ id: `tex-${Date.now().toString(36)}`, name: ui.textureName.value || file.name, dataUrl });
+  textures.push({ id: `tex-${Date.now().toString(36)}`, name: ui.textureName.value || file.name, dataUrl, baseColor: ui.paintBaseColor.value || "#f1f1ea", kind: "upload" });
   saveJson("potatoStrikeStudioTextures", textures);
   renderAssets();
   status("Tekstura dodana do Studio");
@@ -977,6 +1068,20 @@ ui.load.addEventListener("click", loadSelectedMap);
 ui.importTexture.addEventListener("click", importTexture);
 ui.importAssets.addEventListener("click", importAssets);
 ui.saveMod.addEventListener("click", saveMod);
+ui.paintCanvas.addEventListener("pointerdown", (event) => {
+  paintDown = true;
+  ui.paintCanvas.setPointerCapture?.(event.pointerId);
+  paintTextureAt(event);
+});
+ui.paintCanvas.addEventListener("pointermove", (event) => {
+  if (paintDown) paintTextureAt(event);
+});
+ui.paintCanvas.addEventListener("pointerup", () => { paintDown = false; });
+ui.paintCanvas.addEventListener("pointercancel", () => { paintDown = false; });
+ui.paintClear.addEventListener("click", resetPaintTexture);
+ui.paintSave.addEventListener("click", savePaintTexture);
+ui.paintApply.addEventListener("click", applyPaintTextureToSelected);
+ui.paintBaseColor.addEventListener("input", resetPaintTexture);
 
 try {
   map = normalizeStudioMap(JSON.parse(localStorage.getItem("potatoStrikeStudioLastMap") || "null") || emptyMap());
@@ -984,6 +1089,7 @@ try {
   map = normalizeStudioMap(emptyMap());
 }
 convertMapForViewport(studioSettings.viewportMode);
+resetPaintTexture();
 refreshMapList();
 renderUi();
 document.querySelector('[data-tool="select"]').classList.add("active");

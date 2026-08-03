@@ -121,6 +121,36 @@
   outline: 2px solid #77b56f;
 }
 
+.texture-paint {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 10px;
+  align-items: start;
+  margin: 8px 0;
+}
+
+#texture-paint-canvas {
+  width: 84px;
+  height: 84px;
+  border: 1px solid rgba(242, 240, 223, 0.22);
+  border-radius: 8px;
+  background: #f1f1ea;
+  image-rendering: pixelated;
+  cursor: crosshair;
+}
+
+.paint-controls {
+  display: grid;
+  gap: 6px;
+}
+
+.paint-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
 .studio-canvas-wrap {
   position: relative;
   overflow: auto;
