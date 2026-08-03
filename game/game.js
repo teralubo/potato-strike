@@ -474,6 +474,17 @@ function showMessage(text) {
   showMessage.timer = setTimeout(() => hud.message.classList.remove("show"), 1600);
 }
 
+function showFatalError(error, context = "runtime") {
+  console.error(error);
+  const message = error?.message || String(error || "nieznany blad");
+  state.running = false;
+  state.paused = false;
+  state.overlayOpen = false;
+  hud.menu.classList.remove("hidden");
+  hud.pausePanel?.classList.add("hidden");
+  showMessage(`Blad ${context}: ${message}`);
+}
+
 function actionDown(action) {
   return keys.has(bindings[action]) || touchActions.has(action);
 }
@@ -830,6 +841,7 @@ function writeUserMaps(list) {
 function registerUserMap(map, id = `map-${Date.now().toString(36)}`) {
   const list = userMaps().filter((item) => item.id !== id);
   const record = { id, map: JSON.parse(JSON.stringify(map)) };
+  record.map = normalizeMap(record.map);
   list.push(record);
   writeUserMaps(list);
   maps[id] = record.map;
@@ -846,7 +858,7 @@ function registerUserMap(map, id = `map-${Date.now().toString(36)}`) {
 function loadUserMapsFromStorage() {
   for (const item of userMaps()) {
     if (!item?.id || !item?.map) continue;
-    maps[item.id] = item.map;
+    maps[item.id] = normalizeMap(item.map);
     if (![...hud.menuMap.options].some((option) => option.value === item.id)) {
       const option = document.createElement("option");
       option.value = item.id;
@@ -862,7 +874,7 @@ function loadStudioTestMap() {
   try {
     const testMap = JSON.parse(localStorage.getItem("potatoStrikeStudioTestMap") || "null");
     if (!testMap?.obstacles) return false;
-    maps.studioTest = testMap;
+    maps.studioTest = normalizeMap(testMap);
     if (![...hud.menuMap.options].some((option) => option.value === "studioTest")) {
       const option = document.createElement("option");
       option.value = "studioTest";
@@ -883,6 +895,8 @@ function loadStudioTestMap() {
     showMessage("Test mapy ze Studio");
     return true;
   } catch {
+    state.running = false;
+    hud.menu.classList.remove("hidden");
     showMessage("Nie udalo sie zaladowac testu Studio");
     return false;
   }
@@ -903,7 +917,7 @@ function restoreUserContent(config) {
   const mapList = config.userMaps || [];
   writeUserMaps(mapList);
   for (const item of mapList) {
-    maps[item.id] = item.map;
+    maps[item.id] = normalizeMap(item.map);
     if (![...hud.menuMap.options].some((option) => option.value === item.id)) {
       const option = document.createElement("option");
       option.value = item.id;
@@ -1074,6 +1088,54 @@ function currentSite(x = player.x, y = player.y) {
   if (inSite("A", x, y)) return "A";
   if (inSite("B", x, y)) return "B";
   return "";
+}
+
+function normalizeMap(rawMap, fallback = maps.custom) {
+  const source = rawMap && typeof rawMap === "object" ? rawMap : fallback;
+  const map = {
+    ...fallback,
+    ...source,
+    w: clamp(Number(source.w) || fallback.w || 2000, 900, 5000),
+    h: clamp(Number(source.h) || fallback.h || 1400, 700, 4000),
+  };
+  const point = (value, fallbackPoint) => ({
+    x: clamp(Number(value?.x) || fallbackPoint.x, 32, map.w - 32),
+    y: clamp(Number(value?.y) || fallbackPoint.y, 32, map.h - 32),
+  });
+  map.tSpawn = point(source.tSpawn, fallback.tSpawn || { x: 180, y: map.h - 180 });
+  map.ctSpawn = point(source.ctSpawn, fallback.ctSpawn || { x: map.w - 180, y: 180 });
+  map.sites = {
+    A: { ...point(source.sites?.A, fallback.sites?.A || { x: map.w * 0.72, y: map.h * 0.72 }), r: clamp(Number(source.sites?.A?.r) || 115, 48, 260) },
+    B: { ...point(source.sites?.B, fallback.sites?.B || { x: map.w * 0.3, y: map.h * 0.28 }), r: clamp(Number(source.sites?.B?.r) || 110, 48, 260) },
+  };
+  map.obstacles = (Array.isArray(source.obstacles) ? source.obstacles : [])
+    .map((obj, index) => ({
+      id: obj.id || `obj-${index}`,
+      type: obj.type || "wall",
+      x: clamp(Number(obj.x) || 0, 0, map.w - 24),
+      y: clamp(Number(obj.y) || 0, 0, map.h - 24),
+      w: clamp(Math.abs(Number(obj.w) || 96), 12, map.w),
+      h: clamp(Math.abs(Number(obj.h) || 96), 12, map.h),
+      z: clamp(Number(obj.z) || 64, 0, 512),
+      rot: Number(obj.rot) || 0,
+      color: obj.color || "",
+    }))
+    .filter((obj) => obj.w > 0 && obj.h > 0);
+  map.name = source.name || fallback.name || "Custom Mission";
+  return map;
+}
+
+function findSafePoint(origin = { x: state.map.w / 2, y: state.map.h / 2 }) {
+  const start = { x: clamp(Number(origin.x) || state.map.w / 2, 32, state.map.w - 32), y: clamp(Number(origin.y) || state.map.h / 2, 32, state.map.h - 32) };
+  if (!pointInObstacle(start.x, start.y)) return start;
+  for (let r = 36; r <= 420; r += 36) {
+    for (let i = 0; i < 16; i += 1) {
+      const a = (i / 16) * Math.PI * 2;
+      const p = { x: clamp(start.x + Math.cos(a) * r, 32, state.map.w - 32), y: clamp(start.y + Math.sin(a) * r, 32, state.map.h - 32) };
+      if (!pointInObstacle(p.x, p.y)) return p;
+    }
+  }
+  return start;
 }
 
 function hasLineOfSight(ax, ay, bx, by) {
@@ -1372,7 +1434,7 @@ function resetLoadout() {
 }
 
 function resetRoundPositions() {
-  const spawn = state.team === "T" ? state.map.tSpawn : state.map.ctSpawn;
+  const spawn = findSafePoint(state.team === "T" ? state.map.tSpawn : state.map.ctSpawn);
   player.x = spawn.x;
   player.y = spawn.y;
   player.hp = 100;
@@ -1408,11 +1470,12 @@ function spawnBots() {
   bots.length = 0;
   allies.length = 0;
   const count = Math.max(1, Number(settings.matchSize));
-  const enemySpawn = state.enemyTeam === "T" ? state.map.tSpawn : state.map.ctSpawn;
+  const enemySpawn = findSafePoint(state.enemyTeam === "T" ? state.map.tSpawn : state.map.ctSpawn);
   for (let i = 0; i < count; i += 1) {
+    const spawn = findSafePoint({ x: enemySpawn.x + (Math.random() - 0.5) * 180, y: enemySpawn.y + (Math.random() - 0.5) * 180 });
     bots.push({
-      x: enemySpawn.x + (Math.random() - 0.5) * 180,
-      y: enemySpawn.y + (Math.random() - 0.5) * 180,
+      x: spawn.x,
+      y: spawn.y,
       r: 15,
       hp: 78 + state.round * 2 * difficultyScale(),
       team: state.enemyTeam,
@@ -1425,11 +1488,12 @@ function spawnBots() {
       flashed: 0,
     });
   }
-  const allySpawn = state.team === "T" ? state.map.tSpawn : state.map.ctSpawn;
+  const allySpawn = findSafePoint(state.team === "T" ? state.map.tSpawn : state.map.ctSpawn);
   for (let i = 1; i < count; i += 1) {
+    const spawn = findSafePoint({ x: allySpawn.x + (Math.random() - 0.5) * 170, y: allySpawn.y + (Math.random() - 0.5) * 170 });
     allies.push({
-      x: allySpawn.x + (Math.random() - 0.5) * 170,
-      y: allySpawn.y + (Math.random() - 0.5) * 170,
+      x: spawn.x,
+      y: spawn.y,
       r: 15,
       hp: 82,
       team: state.team,
@@ -1445,7 +1509,7 @@ function spawnBots() {
 }
 
 function makeTeamBot(team, index = 1, source = "BOT") {
-  const spawn = team === "T" ? state.map.tSpawn : state.map.ctSpawn;
+  const spawn = findSafePoint(team === "T" ? state.map.tSpawn : state.map.ctSpawn);
   return {
     x: spawn.x + (Math.random() - 0.5) * 170,
     y: spawn.y + (Math.random() - 0.5) * 170,
@@ -1504,7 +1568,7 @@ function newMatch() {
       state.mapKey = "custom";
     }
   }
-  state.map = maps[state.mapKey] || maps.custom;
+  state.map = normalizeMap(maps[state.mapKey] || maps.custom);
   state.round = 1;
   state.half = 1;
   state.score = { T: 0, CT: 0 };
@@ -2425,9 +2489,13 @@ function tick(now) {
       settings.graphicsMode = "2d";
       hud.menuGraphics.value = "2d";
       hud.graphicsMode.value = "2d";
-      render2d();
+      try {
+        render2d();
+      } catch (fallbackError) {
+        showFatalError(fallbackError, "renderu");
+      }
     }
-    updateHud();
+    if (state.running) updateHud();
   }
   requestAnimationFrame(tick);
 }
@@ -2612,19 +2680,23 @@ hud.pauseMenu.addEventListener("click", () => {
   hud.menu.classList.remove("hidden");
 });
 hud.start.addEventListener("click", async () => {
-  ensureAudio();
-  hud.menu.classList.add("hidden");
-  closePanels();
-  state.running = true;
-  mouse.x = window.innerWidth / 2;
-  mouse.y = window.innerHeight / 2;
-  newMatch();
-  if (settings.graphicsMode === "3d") render3d(); else render2d();
-  if (state.gameMode !== "offline") {
-    hud.networkStatus.textContent = `${state.gameMode.toUpperCase()} jest przygotowany w menu. Aktualny build gra lokalnie z botami, dopoki nie zostanie podpiety serwer.`;
-    showMessage(`${state.gameMode.toUpperCase()}: fallback do botow`);
+  try {
+    ensureAudio();
+    closePanels();
+    state.running = true;
+    mouse.x = window.innerWidth / 2;
+    mouse.y = window.innerHeight / 2;
+    newMatch();
+    if (settings.graphicsMode === "3d") render3d(); else render2d();
+    hud.menu.classList.add("hidden");
+    if (state.gameMode !== "offline") {
+      hud.networkStatus.textContent = `${state.gameMode.toUpperCase()} jest przygotowany w menu. Aktualny build gra lokalnie z botami, dopoki nie zostanie podpiety serwer.`;
+      showMessage(`${state.gameMode.toUpperCase()}: fallback do botow`);
+    }
+    try { await canvas.requestPointerLock(); } catch { /* optional */ }
+  } catch (error) {
+    showFatalError(error, "startu gry");
   }
-  try { await canvas.requestPointerLock(); } catch { /* optional */ }
 });
 
 hud.graphicsMode.addEventListener("change", () => { settings.graphicsMode = hud.graphicsMode.value; hud.menuGraphics.value = settings.graphicsMode; });

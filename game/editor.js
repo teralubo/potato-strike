@@ -122,6 +122,51 @@ function makeMap(name, w, h, seed) {
   };
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function normalizeStudioMap(rawMap) {
+  const fallback = emptyMap();
+  const source = rawMap && typeof rawMap === "object" ? rawMap : fallback;
+  const w = clamp(Number(source.w) || fallback.w, 900, 5000);
+  const h = clamp(Number(source.h) || fallback.h, 700, 4000);
+  const point = (value, fallbackPoint) => ({
+    x: clamp(Number(value?.x) || fallbackPoint.x, 24, w - 24),
+    y: clamp(Number(value?.y) || fallbackPoint.y, 24, h - 24),
+  });
+  return {
+    ...fallback,
+    ...source,
+    name: source.name || fallback.name,
+    w,
+    h,
+    tSpawn: point(source.tSpawn, { x: 180, y: h - 180 }),
+    ctSpawn: point(source.ctSpawn, { x: w - 180, y: 180 }),
+    sites: {
+      A: { ...point(source.sites?.A, { x: Math.floor(w * 0.74), y: Math.floor(h * 0.72) }), r: clamp(Number(source.sites?.A?.r) || 115, 48, 260) },
+      B: { ...point(source.sites?.B, { x: Math.floor(w * 0.32), y: Math.floor(h * 0.26) }), r: clamp(Number(source.sites?.B?.r) || 110, 48, 260) },
+    },
+    meta: {
+      ...fallback.meta,
+      ...(source.meta || {}),
+    },
+    obstacles: (Array.isArray(source.obstacles) ? source.obstacles : []).map((obj, index) => ({
+      id: obj.id || `obj-${Date.now().toString(36)}-${index}`,
+      type: obj.type || "wall",
+      x: clamp(Number(obj.x) || 0, 0, w - 12),
+      y: clamp(Number(obj.y) || 0, 0, h - 12),
+      w: clamp(Math.abs(Number(obj.w) || 96), 12, w),
+      h: clamp(Math.abs(Number(obj.h) || 96), 12, h),
+      z: clamp(Number(obj.z) || 64, 0, 512),
+      rot: Number(obj.rot) || 0,
+      color: obj.color || "#56614d",
+      texture: obj.texture || "",
+      script: obj.script || "",
+    })),
+  };
+}
+
 function seededRandom(seed) {
   let value = 2166136261;
   for (let i = 0; i < seed.length; i += 1) value = Math.imul(value ^ seed.charCodeAt(i), 16777619);
@@ -226,6 +271,7 @@ function isoPoint(x, y, originX, originY, scale) {
 }
 
 function convertMapForViewport(mode) {
+  map = normalizeStudioMap(map);
   map.meta = { ...(map.meta || {}), editorViewport: mode, format: "potato-map-3d-lite" };
   map.obstacles = map.obstacles.map((obj, index) => ({
     id: obj.id || `obj-${Date.now().toString(36)}-${index}`,
@@ -240,6 +286,7 @@ function convertMapForViewport(mode) {
     material: obj.material || "potato-concrete",
     texture: obj.texture || "",
   }));
+  map = normalizeStudioMap(map);
 }
 
 function isoLayout() {
@@ -393,6 +440,7 @@ function addObject(type, x, y) {
 }
 
 function renderUi() {
+  map = normalizeStudioMap(map);
   ui.name.value = map.name;
   map.meta = map.meta || {};
   ui.viewportMode.value = studioSettings.viewportMode;
@@ -403,7 +451,14 @@ function renderUi() {
   renderProperties();
   renderObjects();
   renderAssets();
-  draw();
+  try {
+    draw();
+  } catch (error) {
+    console.error(error);
+    map = normalizeStudioMap(emptyMap());
+    draw();
+    status(`Blad renderu Studio: ${error?.message || "naprawiono mape"}`);
+  }
 }
 
 function renderProperties() {
@@ -469,6 +524,7 @@ function addAssetRow(kind, name) {
 }
 
 function saveMap() {
+  map = normalizeStudioMap(map);
   map.name = ui.name.value || map.name || "Studio Map";
   map.meta = {
     ...(map.meta || {}),
@@ -480,7 +536,7 @@ function saveMap() {
   };
   const id = `studio-${map.name.replace(/[^a-z0-9_-]/gi, "-").toLowerCase() || Date.now().toString(36)}`;
   const list = userMaps().filter((item) => item.id !== id);
-  list.push({ id, map: clone(map) });
+  list.push({ id, map: normalizeStudioMap(clone(map)) });
   writeUserMaps(list);
   localStorage.setItem("potatoStrikeStudioLastMap", JSON.stringify(map));
   refreshMapList();
@@ -490,10 +546,10 @@ function saveMap() {
 
 function loadSelectedMap() {
   const [kind, id] = ui.list.value.split(":");
-  if (kind === "base") map = clone(baseMaps[id]);
+  if (kind === "base") map = normalizeStudioMap(clone(baseMaps[id]));
   else {
     const item = userMaps().find((entry) => entry.id === id);
-    if (item) map = clone(item.map);
+    if (item) map = normalizeStudioMap(clone(item.map));
   }
   selectedId = "";
   renderUi();
@@ -520,12 +576,16 @@ function exportMap() {
 async function importMapFile() {
   const file = ui.importFile.files[0];
   if (!file) return;
-  const data = JSON.parse(await file.text());
-  map = data.map || data;
-  if (!map.obstacles) map = emptyMap();
-  selectedId = "";
-  renderUi();
-  status(`Zaimportowano: ${map.name || file.name}`);
+  try {
+    const data = JSON.parse(await file.text());
+    map = normalizeStudioMap(data.map || data);
+    selectedId = "";
+    renderUi();
+    status(`Zaimportowano: ${map.name || file.name}`);
+  } catch (error) {
+    console.error(error);
+    status(`Nie udalo sie zaimportowac mapy: ${error?.message || "bledny plik"}`);
+  }
 }
 
 async function importTexture() {
@@ -661,9 +721,7 @@ ui.viewportMode.addEventListener("change", () => {
   studioSettings.viewportMode = ui.viewportMode.value;
   convertMapForViewport(studioSettings.viewportMode);
   saveJson("potatoStrikeStudioSettings", studioSettings);
-  draw();
-  renderProperties();
-  renderObjects();
+  renderUi();
   status(`Mapa przekonwertowana do edycji ${studioSettings.viewportMode.toUpperCase()}`);
 });
 ui.gameMode.addEventListener("change", () => { map.meta = { ...(map.meta || {}), gameMode: ui.gameMode.value }; });
@@ -686,9 +744,9 @@ ui.importAssets.addEventListener("click", importAssets);
 ui.saveMod.addEventListener("click", saveMod);
 
 try {
-  map = JSON.parse(localStorage.getItem("potatoStrikeStudioLastMap") || "null") || emptyMap();
+  map = normalizeStudioMap(JSON.parse(localStorage.getItem("potatoStrikeStudioLastMap") || "null") || emptyMap());
 } catch {
-  map = emptyMap();
+  map = normalizeStudioMap(emptyMap());
 }
 convertMapForViewport(studioSettings.viewportMode);
 refreshMapList();

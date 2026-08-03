@@ -123,6 +123,20 @@ for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "is
   }
 }
 
+for (const snippet of ["showFatalError", "normalizeMap", "findSafePoint", "showFatalError(fallbackError, \"renderu\")", "normalizeMap(maps[state.mapKey]"]) {
+  if (!js.includes(snippet)) {
+    console.error(`Missing required runtime safety guard: ${snippet}`);
+    process.exit(1);
+  }
+}
+
+for (const snippet of ["normalizeStudioMap", "map = normalizeStudioMap(map);", "Nie udalo sie zaimportowac mapy", "Mapa przekonwertowana do edycji"]) {
+  if (!editorJs.includes(snippet)) {
+    console.error(`Missing required Studio safety guard: ${snippet}`);
+    process.exit(1);
+  }
+}
+
 console.log(`DOM IDs OK: ${new Set(ids).size}`);
 console.log("package.json OK");
 console.log("config/offline requirements OK");
