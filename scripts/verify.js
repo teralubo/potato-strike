@@ -85,10 +85,9 @@ if (!mainJs.includes("playersDir") || !mainJs.includes("profile.json") || !mainJ
 
 for (const snippet of [
   "draw3dCharacter",
-  "draw3dPlayerAvatar",
-  "draw3dPlayerObject",
   "simple3dTextures",
   "textureForHit",
+  "sideColorForHit",
   "draw3dTerrain",
   "draw3dFloorGuides",
   "drawPotatoWallColumn",
@@ -115,14 +114,11 @@ for (const snippet of [
   "createPlayerProfile",
   "renderProfileMenu",
   "applyProfile",
-  "renderThirdPerson",
-  "drawThirdPersonWorld3d",
-  "drawThirdPersonBox",
-  "drawThirdPersonPlayer",
   "camera.pitch",
   "normalizeGraphicsMode",
   "isPerspectiveMode",
   "renderGameView",
+  "3D FPS",
   "renderModManager",
   "sortedMods",
   "enterSpectator",
@@ -147,7 +143,7 @@ for (const snippet of [
 }
 
 const editorJs = fs.readFileSync("game/editor.js", "utf8");
-for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "isoCanvasPoint", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps", "third", "testGraphics"]) {
+for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "isoCanvasPoint", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps", "testGraphics"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio feature: ${snippet}`);
     process.exit(1);
@@ -162,7 +158,7 @@ for (const snippet of ["wrap.dataset.view", "canvas.style.width = \"100%\"", "dr
 }
 
 const editorHtml = fs.readFileSync("game/editor.html", "utf8");
-for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "Kamera testu", "<option value=\"third\">3D third person</option>"]) {
+for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "Kamera testu", "<option value=\"3d\">3D FPS</option>"]) {
   if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
     console.error(`Missing required Studio editor graphics separation: ${snippet}`);
     process.exit(1);

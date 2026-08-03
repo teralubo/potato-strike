@@ -598,16 +598,15 @@ function bindLabel(action) {
 }
 
 function normalizeGraphicsMode(mode) {
-  return ["2d", "3d", "third"].includes(mode) ? mode : "2d";
+  return ["2d", "3d"].includes(mode) ? mode : "2d";
 }
 
 function isPerspectiveMode() {
-  return settings.graphicsMode === "3d" || settings.graphicsMode === "third";
+  return settings.graphicsMode === "3d";
 }
 
 function renderGameView() {
   if (settings.graphicsMode === "3d") render3d();
-  else if (settings.graphicsMode === "third") renderThirdPerson();
   else render2d();
 }
 
@@ -804,8 +803,6 @@ function applyLanguage() {
     setOptionText("menu-graphics", "2d", "2D top-down");
     setOptionText("menu-graphics", "3d", "3D FPS");
     setOptionText("graphics-mode", "3d", "3D FPS");
-    setOptionText("menu-graphics", "third", "3D third person");
-    setOptionText("graphics-mode", "third", "3D third person");
     setOptionText("control-mode", "keyboard", "Keyboard + mouse");
     setOptionText("control-mode", "mobile", "Phone / touch screen");
   } else {
@@ -823,8 +820,6 @@ function applyLanguage() {
     setOptionText("menu-graphics", "2d", "2D top-down");
     setOptionText("menu-graphics", "3d", "3D FPS");
     setOptionText("graphics-mode", "3d", "3D FPS");
-    setOptionText("menu-graphics", "third", "3D trzecia osoba");
-    setOptionText("graphics-mode", "third", "3D trzecia osoba");
     setOptionText("control-mode", "keyboard", "Klawiatura + mysz");
     setOptionText("control-mode", "mobile", "Telefon / ekran dotykowy");
   }
@@ -1503,8 +1498,8 @@ function normalizeMap(rawMap, fallback = maps.custom) {
       z: clamp(Number(obj.z) || 64, 0, 512),
       rot: Number(obj.rot) || 0,
       color: obj.color || "",
-      texture: obj.texture || obj.material || "",
-      material: obj.material || obj.texture || "",
+      texture: obj.texture || obj.material || defaultTextureForType(obj.type),
+      material: obj.material || obj.texture || defaultTextureForType(obj.type),
       textureColor: obj.textureColor || "",
     }))
     .filter((obj) => obj.w > 0 && obj.h > 0);
@@ -2710,177 +2705,6 @@ function render2d() {
   drawCrosshair();
 }
 
-function renderThirdPerson() {
-  camera.shake *= 0.88;
-  const lead = 190;
-  const shakeX = (Math.random() - 0.5) * camera.shake;
-  const shakeY = (Math.random() - 0.5) * camera.shake;
-  camera.x = clamp(player.x + Math.cos(player.angle) * lead - window.innerWidth / 2 + shakeX, 0, Math.max(0, state.map.w - window.innerWidth));
-  camera.y = clamp(player.y + Math.sin(player.angle) * lead - window.innerHeight / 2 + camera.pitch + shakeY, 0, Math.max(0, state.map.h - window.innerHeight));
-  drawThirdPersonWorld3d();
-  drawProjectiles2d();
-  for (const ally of allies) if (ally.hp > 0) drawActor(ally, state.team === "T" ? "#c48a45" : "#8ea9b8", ally === state.spectator.target ? "OBS" : state.team);
-  for (const bot of bots) if (bot.hp > 0) drawActor(bot, state.enemyTeam === "T" ? "#b84d42" : "#557bb0", state.enemyTeam);
-  if (player.alive) drawThirdPersonPlayer();
-  drawThirdPersonCameraHud();
-  drawMinimap();
-  drawCrosshair();
-}
-
-function drawThirdPersonWorld3d() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  const floor = ctx.createLinearGradient(0, 0, 0, h);
-  floor.addColorStop(0, "#4c5b45");
-  floor.addColorStop(1, "#1d251d");
-  ctx.fillStyle = floor;
-  ctx.fillRect(0, 0, w, h);
-  if (settings.quality !== "low") {
-    ctx.strokeStyle = "rgba(242,240,223,0.075)";
-    ctx.lineWidth = 1;
-    for (let x = -camera.x % 96; x < w; x += 96) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-      ctx.stroke();
-    }
-    for (let y = -camera.y % 96; y < h; y += 96) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-  }
-  for (const [key, site] of Object.entries(state.map.sites)) {
-    ctx.fillStyle = key === "A" ? "rgba(215,189,98,0.2)" : "rgba(119,181,111,0.2)";
-    ctx.beginPath();
-    ctx.arc(site.x - camera.x, site.y - camera.y, site.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#f2f0df";
-    ctx.font = "800 22px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(key, site.x - camera.x, site.y - camera.y + 8);
-  }
-  const depth = clamp(24 - camera.pitch * 0.03, 14, 38);
-  const visible = state.map.obstacles
-    .filter((o) => o.x + o.w > camera.x - 80 && o.x < camera.x + w + 80 && o.y + o.h > camera.y - 120 && o.y < camera.y + h + 120)
-    .sort((a, b) => (a.y + a.h) - (b.y + b.h));
-  for (const obj of visible) drawThirdPersonBox(obj, depth);
-  ctx.strokeStyle = "#786544";
-  ctx.lineWidth = 12;
-  ctx.strokeRect(-camera.x, -camera.y - depth, state.map.w, state.map.h + depth);
-}
-
-function drawThirdPersonBox(obj, depth) {
-  const x = obj.x - camera.x;
-  const y = obj.y - camera.y;
-  const z = clamp((obj.z || 64) / 96, 0.25, 4) * depth;
-  const base = wallBaseColor(obj);
-  const side = sideColorForHit(obj);
-  ctx.fillStyle = "rgba(0,0,0,0.28)";
-  ctx.fillRect(x + 10, y + 10, obj.w, obj.h);
-  ctx.fillStyle = side;
-  ctx.beginPath();
-  ctx.moveTo(x + obj.w, y - z);
-  ctx.lineTo(x + obj.w + z * 0.45, y - z * 0.65);
-  ctx.lineTo(x + obj.w + z * 0.45, y + obj.h - z * 0.65);
-  ctx.lineTo(x + obj.w, y + obj.h - z);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = shadeHex(base, 18);
-  ctx.beginPath();
-  ctx.moveTo(x, y - z);
-  ctx.lineTo(x + obj.w, y - z);
-  ctx.lineTo(x + obj.w + z * 0.45, y - z * 0.65);
-  ctx.lineTo(x + z * 0.45, y - z * 0.65);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = base;
-  ctx.fillRect(x, y - z, obj.w, obj.h);
-  if (settings.quality !== "low") drawThirdPersonTextureLines(obj, x, y - z, obj.w, obj.h);
-  ctx.strokeStyle = "rgba(20,24,20,0.42)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x, y - z, obj.w, obj.h);
-}
-
-function drawThirdPersonTextureLines(obj, x, y, w, h) {
-  const texture = textureForHit(obj);
-  ctx.strokeStyle = texture.seam;
-  ctx.lineWidth = 1;
-  const step = texture.mode === "crate" ? 18 : texture.mode === "brick" ? 24 : texture.mode === "metal" ? 40 : 32;
-  for (let tx = x + step; tx < x + w; tx += step) {
-    ctx.beginPath();
-    ctx.moveTo(tx, y);
-    ctx.lineTo(tx, y + h);
-    ctx.stroke();
-  }
-  if (texture.mode === "brick" || texture.mode === "panel") {
-    for (let ty = y + step * 0.65; ty < y + h; ty += step * 0.65) {
-      ctx.beginPath();
-      ctx.moveTo(x, ty);
-      ctx.lineTo(x + w, ty);
-      ctx.stroke();
-    }
-  }
-  if (texture.mode === "crate") {
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + w, y + h);
-    ctx.moveTo(x + w, y);
-    ctx.lineTo(x, y + h);
-    ctx.stroke();
-  }
-}
-
-function drawThirdPersonPlayer() {
-  const x = player.x - camera.x;
-  const y = player.y - camera.y;
-  const color = state.team === "T" ? "#c48a45" : "#8ea9b8";
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(player.angle || 0);
-  ctx.fillStyle = "rgba(0,0,0,0.34)";
-  ctx.beginPath();
-  ctx.ellipse(0, 9, 24, 12, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(242,240,223,0.72)";
-  ctx.lineWidth = 3;
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.roundRect?.(-16, -18, 32, 36, 6);
-  if (ctx.roundRect) ctx.fill(); else ctx.fillRect(-16, -18, 32, 36);
-  ctx.strokeRect(-16, -18, 32, 36);
-  ctx.fillStyle = "#1a1d18";
-  ctx.fillRect(8, -5, 38, 10);
-  ctx.fillStyle = "#ede2b7";
-  ctx.fillRect(42, -2, 15, 4);
-  ctx.restore();
-  ctx.fillStyle = "#f2f0df";
-  ctx.font = "800 12px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText(tr("you"), x, y - 30);
-}
-
-function drawThirdPersonCameraHud() {
-  if (settings.quality === "low") return;
-  const cx = window.innerWidth / 2;
-  const cy = window.innerHeight / 2 + camera.pitch * 0.28;
-  ctx.strokeStyle = "rgba(242,240,223,0.12)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy + 32);
-  ctx.lineTo(player.x - camera.x, player.y - camera.y);
-  ctx.stroke();
-  ctx.fillStyle = "rgba(17,20,17,0.5)";
-  ctx.fillRect(14, window.innerHeight - 44, 184, 28);
-  ctx.fillStyle = "#f2f0df";
-  ctx.font = "800 12px Arial";
-  ctx.fillText("3D THIRD PERSON", 106, window.innerHeight - 26);
-  ctx.fillStyle = "rgba(242,240,223,0.72)";
-  ctx.fillRect(cx - 1, cy - 44, 2, 18);
-  ctx.fillRect(cx - 1, cy + 26, 2, 18);
-}
-
 function castRay(angle) {
   let x = player.x, y = player.y, d = 0;
   const step = settings.quality === "low" ? 24 : 14;
@@ -2906,14 +2730,22 @@ function castRayHit(angle) {
 }
 
 function wallBaseColor(hit) {
-  const known = simple3dTextures[hit?.texture || hit?.material || ""];
-  if (!known && (hit?.textureColor || hit?.color)) return hit.textureColor || hit.color;
+  if (hit?.textureColor) return hit.textureColor;
+  if (hit?.texture === "custom-color" && hit.color) return hit.color;
   return textureForHit(hit).base;
+}
+
+function defaultTextureForType(type) {
+  if (type === "crate") return "crate";
+  if (type === "cover") return "concrete";
+  if (type === "light") return "glass";
+  if (type === "ramp") return "metal";
+  return "white";
 }
 
 function textureForHit(hit) {
   if (!hit) return simple3dTextures.white;
-  const key = hit.texture || hit.material || (hit.type === "crate" ? "crate" : hit.type === "light" ? "glass" : hit.type === "cover" ? "concrete" : "white");
+  const key = hit.texture || hit.material || defaultTextureForType(hit.type);
   return simple3dTextures[key] || simple3dTextures.white;
 }
 
@@ -2940,7 +2772,7 @@ function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column) {
   ctx.fillStyle = base;
   ctx.fillRect(x, y, colW + 1, wallH);
   const stripe = texture.mode === "crate" ? 16 : texture.mode === "brick" ? 28 : texture.mode === "metal" ? 42 : 36;
-  if (settings.quality !== "low" && column % stripe < 2) {
+  if (settings.quality !== "low" && column % stripe < 3) {
     ctx.fillStyle = texture.seam;
     ctx.fillRect(x, y, Math.max(1, colW), wallH);
   }
@@ -2956,7 +2788,10 @@ function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column) {
     ctx.fillStyle = "rgba(255,255,255,0.2)";
     ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.08));
   }
-  ctx.fillStyle = `rgba(255,255,255,${clamp(0.11 - distance / 9000, 0.015, 0.09)})`;
+  ctx.strokeStyle = `rgba(0,0,0,${clamp(0.22 + distance / 4600, 0.18, 0.42)})`;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, colW, wallH);
+  ctx.fillStyle = `rgba(255,255,255,${clamp(0.16 - distance / 8500, 0.025, 0.12)})`;
   ctx.fillRect(x, y, Math.max(1, colW * 0.35), wallH);
   ctx.fillStyle = `rgba(0,0,0,${clamp(distance / 2200, 0.04, 0.4)})`;
   ctx.fillRect(x, y + wallH * 0.72, colW + 1, Math.max(1, wallH * 0.12));
@@ -3007,7 +2842,6 @@ function render3d() {
     draw3dCharacter(sx, horizon, size, s.color);
   }
   draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
-  if (player.alive && !state.spectator.active) draw3dPlayerObject(w, h);
   draw3dWeapon(w, h);
   drawMinimap();
   drawCrosshair();
@@ -3085,41 +2919,6 @@ function draw3dCharacter(x, y, size, color) {
   ctx.fillStyle = "#2b2d28";
   ctx.fillRect(x - size * 0.2, y + size * 0.18, size * 0.16, size * 0.42);
   ctx.fillRect(x + size * 0.04, y + size * 0.18, size * 0.16, size * 0.42);
-}
-
-function draw3dPlayerObject(w, h) {
-  const x = w / 2;
-  const y = h - 184 + camera.shake;
-  const size = clamp(h * 0.2, 82, 154);
-  const color = state.team === "T" ? "#c48a45" : "#8ea9b8";
-  ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.42)";
-  ctx.beginPath();
-  ctx.ellipse(x, y + size * 0.78, size * 0.5, size * 0.11, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(242,240,223,0.58)";
-  ctx.lineWidth = 3;
-  ctx.strokeRect(x - size * 0.31, y - size * 0.39, size * 0.62, size * 0.58);
-  ctx.fillStyle = "#20231e";
-  ctx.fillRect(x - size * 0.18, y + size * 0.12, size * 0.12, size * 0.54);
-  ctx.fillRect(x + size * 0.06, y + size * 0.12, size * 0.12, size * 0.54);
-  ctx.fillStyle = color;
-  ctx.fillRect(x - size * 0.27, y - size * 0.36, size * 0.54, size * 0.52);
-  ctx.fillStyle = "rgba(255,255,255,0.16)";
-  ctx.fillRect(x - size * 0.22, y - size * 0.31, size * 0.44, size * 0.06);
-  ctx.fillStyle = "#d8c19a";
-  ctx.fillRect(x - size * 0.16, y - size * 0.62, size * 0.32, size * 0.24);
-  ctx.fillStyle = "#1a1d18";
-  ctx.fillRect(x + size * 0.18, y - size * 0.18, size * 0.62, size * 0.1);
-  ctx.fillStyle = "#f2f0df";
-  ctx.font = "800 12px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("YOU", x, y - size * 0.72);
-  ctx.restore();
-}
-
-function draw3dPlayerAvatar(w, h) {
-  draw3dPlayerObject(w, h);
 }
 
 function draw3dWeapon(w, h) {
