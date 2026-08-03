@@ -3574,7 +3574,7 @@ async function openStandaloneEditor() {
   window.location.href = window.location.pathname.toLowerCase().endsWith("potatostrike.html") ? "game/editor.html" : "editor.html";
 }
 
-hud.quickEditor.addEventListener("click", openStandaloneEditor);
+hud.quickEditor.addEventListener("click", () => togglePanel(hud.editorPanel));
 hud.openEditor.addEventListener("click", openStandaloneEditor);
 hud.openConsole.addEventListener("click", openOwnerConsole);
 hud.openNetwork.addEventListener("click", () => togglePanel(hud.networkPanel));
