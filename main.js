@@ -58,6 +58,7 @@ function createWindow(options = {}) {
   });
 
   windows.game = win;
+  attachWindowDiagnostics(win, "game");
   win.on("closed", () => {
     if (windows.game === win) windows.game = null;
   });
@@ -86,11 +87,24 @@ function createEditorWindow() {
     },
   });
   windows.editor = win;
+  attachWindowDiagnostics(win, "editor");
   win.on("closed", () => {
     if (windows.editor === win) windows.editor = null;
   });
   win.loadFile(path.join(__dirname, "game", "editor.html"));
   return win;
+}
+
+function attachWindowDiagnostics(win, name) {
+  win.webContents.on("console-message", (_event, level, message, line, sourceId) => {
+    console.log(`[${name}:console:${level}] ${message} (${sourceId}:${line})`);
+  });
+  win.webContents.on("did-fail-load", (_event, code, description, url) => {
+    console.error(`[${name}:load] ${code} ${description} ${url}`);
+  });
+  win.webContents.on("render-process-gone", (_event, details) => {
+    console.error(`[${name}:gone] ${details.reason}`);
+  });
 }
 
 function openGameTest() {

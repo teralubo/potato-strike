@@ -130,6 +130,18 @@ for (const snippet of ["showFatalError", "normalizeMap", "findSafePoint", "showF
   }
 }
 
+for (const snippet of ["showBootError", "ensureNormalBootMenu", "if (!loadStudioTestMap()) ensureNormalBootMenu()"]) {
+  if (!js.includes(snippet)) {
+    console.error(`Missing required offline boot guard: ${snippet}`);
+    process.exit(1);
+  }
+}
+
+if (!fs.readFileSync("game/styles.css", "utf8").includes("#menu {\n  position: absolute;\n  inset: 0;\n  z-index: 5;")) {
+  console.error("Menu overlay z-index guard is missing");
+  process.exit(1);
+}
+
 for (const snippet of ["cycleSpectatorTarget", "spectatorNext", "OBS HP", "po dead strzalki lub klik"]) {
   if (!js.includes(snippet) && !html.includes(snippet)) {
     console.error(`Missing required spectator feature: ${snippet}`);

@@ -1,6 +1,20 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d", { alpha: false });
 
+function showBootError(error) {
+  const menu = document.getElementById("menu");
+  const message = document.getElementById("message");
+  if (menu) menu.classList.remove("hidden");
+  if (message) {
+    message.textContent = `Blad startu offline: ${error?.message || String(error || "nieznany blad")}`;
+    message.classList.add("show");
+  }
+  console.error(error);
+}
+
+window.addEventListener("error", (event) => showBootError(event.error || event.message));
+window.addEventListener("unhandledrejection", (event) => showBootError(event.reason));
+
 const $ = (id) => document.getElementById(id);
 const hud = {
   mode: $("mode-pill"),
@@ -904,6 +918,19 @@ function loadStudioTestMap() {
     showMessage("Nie udalo sie zaladowac testu Studio");
     return false;
   }
+}
+
+function isStudioTestLaunch() {
+  return new URLSearchParams(window.location.search).has("studioTest");
+}
+
+function ensureNormalBootMenu() {
+  if (isStudioTestLaunch()) return;
+  state.running = false;
+  state.paused = false;
+  state.overlayOpen = false;
+  hud.menu.classList.remove("hidden");
+  hud.pausePanel?.classList.add("hidden");
 }
 
 function applyStudioTestMeta(meta) {
@@ -2823,16 +2850,20 @@ document.querySelectorAll("[data-touch-action]").forEach((button) => {
   button.addEventListener("pointerleave", up);
 });
 
-makeWeapons();
-loadConfig();
-loadUserMapsFromStorage();
-resize();
-renderMissions();
-renderShop();
-renderBinds();
-renderSavedMissions();
-renderAssetList();
-renderModManager();
-renderProfileMenu();
-loadStudioTestMap();
-requestAnimationFrame(tick);
+try {
+  makeWeapons();
+  loadConfig();
+  loadUserMapsFromStorage();
+  resize();
+  renderMissions();
+  renderShop();
+  renderBinds();
+  renderSavedMissions();
+  renderAssetList();
+  renderModManager();
+  renderProfileMenu();
+  if (!loadStudioTestMap()) ensureNormalBootMenu();
+  requestAnimationFrame(tick);
+} catch (error) {
+  showBootError(error);
+}

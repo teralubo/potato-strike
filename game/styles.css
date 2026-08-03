@@ -99,6 +99,7 @@ body {
 #menu {
   position: absolute;
   inset: 0;
+  z-index: 5;
   display: grid;
   place-content: center;
   gap: 14px;
@@ -227,7 +228,7 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  z-index: 4;
+  z-index: 7;
   width: min(920px, calc(100vw - 28px));
   max-height: min(720px, calc(100vh - 28px));
   overflow: auto;
@@ -328,7 +329,7 @@ button:disabled {
 }
 
 #pause-panel {
-  z-index: 6;
+  z-index: 8;
 }
 
 .shop-item.owned {
