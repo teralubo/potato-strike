@@ -597,6 +597,20 @@ function bindLabel(action) {
   return settings.language === "en" ? actionLabelI18n.en[action] || actionLabels[action] || action : actionLabels[action] || action;
 }
 
+function normalizeGraphicsMode(mode) {
+  return ["2d", "3d", "third"].includes(mode) ? mode : "2d";
+}
+
+function isPerspectiveMode() {
+  return settings.graphicsMode === "3d" || settings.graphicsMode === "third";
+}
+
+function renderGameView() {
+  if (settings.graphicsMode === "3d") render3d();
+  else if (settings.graphicsMode === "third") renderThirdPerson();
+  else render2d();
+}
+
 const player = {
   x: 0,
   y: 0,
@@ -780,6 +794,8 @@ function applyLanguage() {
     setOptionText("menu-team", "CT", "Counter-Terrorists");
     setOptionText("menu-graphics", "2d", "2D top-down");
     setOptionText("menu-graphics", "3d", "3D potato");
+    setOptionText("menu-graphics", "third", "Third person");
+    setOptionText("graphics-mode", "third", "Third person");
     setOptionText("control-mode", "keyboard", "Keyboard + mouse");
     setOptionText("control-mode", "mobile", "Phone / touch screen");
   } else {
@@ -796,6 +812,8 @@ function applyLanguage() {
     setOptionText("menu-team", "CT", "Counter-Terrorists");
     setOptionText("menu-graphics", "2d", "2D top-down");
     setOptionText("menu-graphics", "3d", "3D potato");
+    setOptionText("menu-graphics", "third", "Trzecia osoba");
+    setOptionText("graphics-mode", "third", "Trzecia osoba");
     setOptionText("control-mode", "keyboard", "Klawiatura + mysz");
     setOptionText("control-mode", "mobile", "Telefon / ekran dotykowy");
   }
@@ -1063,6 +1081,7 @@ function loadConfig() {
   try {
     const config = JSON.parse(raw);
     Object.assign(settings, config.settings || {});
+    settings.graphicsMode = normalizeGraphicsMode(settings.graphicsMode);
     Object.assign(bindings, config.bindings || {});
     settings.configId = config.configId || settings.configId;
     settings.nick = config.nick || settings.nick;
@@ -1223,7 +1242,7 @@ function loadStudioTestMap() {
       hud.menuMap.appendChild(option);
     }
     hud.menuMap.value = "studioTest";
-    hud.menuGraphics.value = testMap.meta?.testGraphics || "2d";
+    hud.menuGraphics.value = normalizeGraphicsMode(testMap.meta?.testGraphics || "2d");
     hud.menuMode.value = "offline";
     if (testMap.meta?.matchSize) hud.matchSize.value = String(testMap.meta.matchSize);
     hud.menu.classList.add("hidden");
@@ -1929,7 +1948,8 @@ function newMatch() {
   state.round = 1;
   state.half = 1;
   state.score = { T: 0, CT: 0 };
-  settings.graphicsMode = hud.menuGraphics.value;
+  settings.graphicsMode = normalizeGraphicsMode(hud.menuGraphics.value);
+  hud.menuGraphics.value = settings.graphicsMode;
   hud.graphicsMode.value = settings.graphicsMode;
   player.money = 800;
   player.kills = 0;
@@ -2174,7 +2194,7 @@ function updatePlayer(dt) {
     player.dash -= dt;
   }
   player.speedFactor = Math.hypot(forward, strafe) * (walking ? 0.25 : 1);
-  if (settings.graphicsMode === "3d") {
+  if (isPerspectiveMode()) {
     const vx = Math.cos(player.angle) * forward * speed + Math.cos(player.angle + Math.PI / 2) * strafe * speed;
     const vy = Math.sin(player.angle) * forward * speed + Math.sin(player.angle + Math.PI / 2) * strafe * speed;
     moveEntity(player, vx / len, vy / len, dt);
@@ -2648,8 +2668,8 @@ function drawMinimap() {
 
 function drawCrosshair() {
   const weapon = activeWeapon();
-  const cx = settings.graphicsMode === "3d" ? window.innerWidth / 2 : mouse.x;
-  const cy = settings.graphicsMode === "3d" ? window.innerHeight / 2 : mouse.y;
+  const cx = isPerspectiveMode() ? window.innerWidth / 2 : mouse.x;
+  const cy = isPerspectiveMode() ? window.innerHeight / 2 : mouse.y;
   const gap = 10 + weapon.spread * 120 + player.speedFactor * 10 + camera.shake;
   ctx.strokeStyle = settings.crosshairColor;
   ctx.fillStyle = settings.crosshairColor;
@@ -2678,6 +2698,69 @@ function render2d() {
   if (player.alive) drawActor(player, state.team === "T" ? "#c48a45" : "#8ea9b8", "YOU");
   drawMinimap();
   drawCrosshair();
+}
+
+function renderThirdPerson() {
+  camera.shake *= 0.88;
+  const lead = 190;
+  const shakeX = (Math.random() - 0.5) * camera.shake;
+  const shakeY = (Math.random() - 0.5) * camera.shake;
+  camera.x = clamp(player.x + Math.cos(player.angle) * lead - window.innerWidth / 2 + shakeX, 0, Math.max(0, state.map.w - window.innerWidth));
+  camera.y = clamp(player.y + Math.sin(player.angle) * lead - window.innerHeight / 2 + shakeY, 0, Math.max(0, state.map.h - window.innerHeight));
+  drawMap2d();
+  drawProjectiles2d();
+  for (const ally of allies) if (ally.hp > 0) drawActor(ally, state.team === "T" ? "#c48a45" : "#8ea9b8", ally === state.spectator.target ? "OBS" : state.team);
+  for (const bot of bots) if (bot.hp > 0) drawActor(bot, state.enemyTeam === "T" ? "#b84d42" : "#557bb0", state.enemyTeam);
+  if (player.alive) drawThirdPersonPlayer();
+  drawThirdPersonCameraHud();
+  drawMinimap();
+  drawCrosshair();
+}
+
+function drawThirdPersonPlayer() {
+  const x = player.x - camera.x;
+  const y = player.y - camera.y;
+  const color = state.team === "T" ? "#c48a45" : "#8ea9b8";
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(player.angle || 0);
+  ctx.fillStyle = "rgba(0,0,0,0.34)";
+  ctx.beginPath();
+  ctx.ellipse(0, 9, 24, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(242,240,223,0.72)";
+  ctx.lineWidth = 3;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.roundRect?.(-16, -18, 32, 36, 6);
+  if (ctx.roundRect) ctx.fill(); else ctx.fillRect(-16, -18, 32, 36);
+  ctx.strokeRect(-16, -18, 32, 36);
+  ctx.fillStyle = "#1a1d18";
+  ctx.fillRect(8, -5, 38, 10);
+  ctx.fillStyle = "#ede2b7";
+  ctx.fillRect(42, -2, 15, 4);
+  ctx.restore();
+  ctx.fillStyle = "#f2f0df";
+  ctx.font = "800 12px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(tr("you"), x, y - 30);
+}
+
+function drawThirdPersonCameraHud() {
+  if (settings.quality === "low") return;
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  ctx.strokeStyle = "rgba(242,240,223,0.12)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + 32);
+  ctx.lineTo(player.x - camera.x, player.y - camera.y);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(17,20,17,0.5)";
+  ctx.fillRect(14, window.innerHeight - 44, 156, 28);
+  ctx.fillStyle = "#f2f0df";
+  ctx.font = "800 12px Arial";
+  ctx.fillText("THIRD PERSON", 92, window.innerHeight - 26);
 }
 
 function castRay(angle) {
@@ -2972,7 +3055,7 @@ function tick(now) {
     updateSpectator();
     pollServerAudioEvents();
     try {
-      if (settings.graphicsMode === "3d") render3d(); else render2d();
+      renderGameView();
     } catch (error) {
       console.error(error);
       showMessage("Blad renderu - przelaczam na 2D");
@@ -3075,7 +3158,7 @@ window.addEventListener("keydown", (event) => {
 window.addEventListener("keyup", (event) => keys.delete(event.code));
 canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
-    if (settings.graphicsMode === "3d") {
+    if (isPerspectiveMode()) {
       player.angle += event.movementX * 0.0032 * settings.sensitivity;
       mouse.x = window.innerWidth / 2;
       mouse.y = window.innerHeight / 2;
@@ -3190,7 +3273,7 @@ hud.start.addEventListener("click", async () => {
     mouse.x = window.innerWidth / 2;
     mouse.y = window.innerHeight / 2;
     newMatch();
-    if (settings.graphicsMode === "3d") render3d(); else render2d();
+    renderGameView();
     hud.menu.classList.add("hidden");
     if (state.gameMode !== "offline") {
       hud.networkStatus.textContent = `${state.gameMode.toUpperCase()} jest przygotowany w menu. Aktualny build gra lokalnie z botami, dopoki nie zostanie podpiety serwer.`;
@@ -3202,7 +3285,8 @@ hud.start.addEventListener("click", async () => {
   }
 });
 
-hud.graphicsMode.addEventListener("change", () => { settings.graphicsMode = hud.graphicsMode.value; hud.menuGraphics.value = settings.graphicsMode; });
+hud.graphicsMode.addEventListener("change", () => { settings.graphicsMode = normalizeGraphicsMode(hud.graphicsMode.value); hud.graphicsMode.value = settings.graphicsMode; hud.menuGraphics.value = settings.graphicsMode; saveConfig(); });
+hud.menuGraphics.addEventListener("change", () => { settings.graphicsMode = normalizeGraphicsMode(hud.menuGraphics.value); hud.menuGraphics.value = settings.graphicsMode; hud.graphicsMode.value = settings.graphicsMode; saveConfig(); });
 hud.quality.addEventListener("change", () => { settings.quality = hud.quality.value; });
 hud.languageSelect.addEventListener("change", () => {
   settings.language = hud.languageSelect.value;

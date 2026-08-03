@@ -79,6 +79,7 @@ let studioSettings = loadJson("potatoStrikeStudioSettings", {
   defaultWeapon: "side-default",
 });
 studioSettings.viewportMode = studioSettings.viewportMode === "3d" ? "3d" : "2d";
+studioSettings.testGraphics = ["2d", "3d", "third"].includes(studioSettings.testGraphics) ? studioSettings.testGraphics : studioSettings.viewportMode;
 
 const textureOptions = [
   ["white", "White wall"],
@@ -632,8 +633,8 @@ function renderUi() {
   map.meta = map.meta || {};
   ui.viewportMode.value = studioSettings.viewportMode;
   ui.gameMode.value = map.meta.gameMode || studioSettings.gameMode;
-  studioSettings.testGraphics = studioSettings.viewportMode;
-  ui.testGraphics.value = studioSettings.viewportMode;
+  studioSettings.testGraphics = ["2d", "3d", "third"].includes(map.meta.testGraphics || studioSettings.testGraphics) ? (map.meta.testGraphics || studioSettings.testGraphics) : studioSettings.viewportMode;
+  ui.testGraphics.value = studioSettings.testGraphics;
   ui.matchSize.value = String(map.meta.matchSize || studioSettings.matchSize);
   ui.defaultWeapon.value = map.meta.defaultWeapon || studioSettings.defaultWeapon;
   syncAdvancedFields();
@@ -1040,13 +1041,18 @@ window.addEventListener("keydown", (event) => {
 ui.name.addEventListener("input", () => { map.name = ui.name.value; });
 ui.viewportMode.addEventListener("change", () => {
   studioSettings.viewportMode = ui.viewportMode.value === "3d" ? "3d" : "2d";
-  studioSettings.testGraphics = studioSettings.viewportMode;
   convertMapForViewport(studioSettings.viewportMode);
   saveJson("potatoStrikeStudioSettings", studioSettings);
   renderUi();
   status(`Mapa przekonwertowana do edycji ${studioSettings.viewportMode.toUpperCase()}`);
 });
 ui.gameMode.addEventListener("change", () => { map.meta = { ...(map.meta || {}), gameMode: ui.gameMode.value }; });
+ui.testGraphics.addEventListener("change", () => {
+  studioSettings.testGraphics = ["2d", "3d", "third"].includes(ui.testGraphics.value) ? ui.testGraphics.value : "2d";
+  map.meta = { ...(map.meta || {}), testGraphics: studioSettings.testGraphics };
+  saveJson("potatoStrikeStudioSettings", studioSettings);
+  status(`Kamera testu: ${studioSettings.testGraphics}`);
+});
 ui.matchSize.addEventListener("change", () => { map.meta = { ...(map.meta || {}), matchSize: Number(ui.matchSize.value) }; });
 ui.defaultWeapon.addEventListener("change", () => { map.meta = { ...(map.meta || {}), defaultWeapon: ui.defaultWeapon.value }; });
 ui.applyTerrain.addEventListener("click", applyTerrainSettings);

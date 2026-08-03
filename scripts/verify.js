@@ -115,6 +115,11 @@ for (const snippet of [
   "createPlayerProfile",
   "renderProfileMenu",
   "applyProfile",
+  "renderThirdPerson",
+  "drawThirdPersonPlayer",
+  "normalizeGraphicsMode",
+  "isPerspectiveMode",
+  "renderGameView",
   "renderModManager",
   "sortedMods",
   "enterSpectator",
@@ -138,7 +143,7 @@ for (const snippet of [
 }
 
 const editorJs = fs.readFileSync("game/editor.js", "utf8");
-for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "isoCanvasPoint", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps"]) {
+for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "isoCanvasPoint", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps", "third", "testGraphics"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio feature: ${snippet}`);
     process.exit(1);
@@ -153,7 +158,7 @@ for (const snippet of ["wrap.dataset.view", "canvas.style.width = \"100%\"", "dr
 }
 
 const editorHtml = fs.readFileSync("game/editor.html", "utf8");
-for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "studioSettings.testGraphics = studioSettings.viewportMode", "type=\"hidden\" value=\"2d\""]) {
+for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "Kamera testu", "<option value=\"third\">Third person</option>"]) {
   if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
     console.error(`Missing required Studio editor graphics separation: ${snippet}`);
     process.exit(1);
