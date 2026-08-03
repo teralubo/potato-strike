@@ -89,6 +89,8 @@ for (const snippet of [
   "textureForHit",
   "sideColorForHit",
   "draw3dTerrain",
+  "draw3dFloorPerspectiveGrid",
+  "drawFpsStatusStrip",
   "draw3dFloorGuides",
   "drawPotatoWallColumn",
   "castRayHit",

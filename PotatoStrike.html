@@ -3784,9 +3784,21 @@ function castRayHit(angle) {
     d += step;
     if (x < 0 || y < 0 || x > state.map.w || y > state.map.h) return { d, hit: null, edge: true };
     const hit = state.map.obstacles.find((obj) => x >= obj.x && y >= obj.y && x <= obj.x + obj.w && y <= obj.y + obj.h);
-    if (hit) return { d, hit, edge: false, x, y };
+    if (hit) return { d, hit, edge: false, x, y, side: wallHitSide(hit, x, y) };
   }
   return { d: 1200, hit: null, edge: false };
+}
+
+function wallHitSide(hit, x, y) {
+  const left = Math.abs(x - hit.x);
+  const right = Math.abs(hit.x + hit.w - x);
+  const top = Math.abs(y - hit.y);
+  const bottom = Math.abs(hit.y + hit.h - y);
+  const min = Math.min(left, right, top, bottom);
+  if (min === left) return "west";
+  if (min === right) return "east";
+  if (min === top) return "north";
+  return "south";
 }
 
 function wallBaseColor(hit) {
@@ -3825,10 +3837,11 @@ function shadeHex(color, amount) {
   return `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
 }
 
-function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column) {
+function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column, side = "") {
   const texture = textureForHit(hit);
   const baseColor = hit?.color && hit.texture === "custom-color" ? hit.color : wallBaseColor(hit);
-  const base = shadeHex(baseColor, shade - 150);
+  const sideShade = side === "north" || side === "south" ? -18 : 0;
+  const base = shadeHex(baseColor, shade - 150 + sideShade);
   ctx.fillStyle = base;
   ctx.fillRect(x, y, colW + 1, wallH);
   const stripe = texture.mode === "crate" ? 16 : texture.mode === "brick" ? 28 : texture.mode === "metal" ? 42 : 36;
@@ -3848,9 +3861,13 @@ function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column) {
     ctx.fillStyle = "rgba(255,255,255,0.2)";
     ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.08));
   }
-  ctx.strokeStyle = `rgba(0,0,0,${clamp(0.22 + distance / 4600, 0.18, 0.42)})`;
+  ctx.strokeStyle = `rgba(0,0,0,${clamp(0.24 + distance / 4200, 0.2, 0.48)})`;
   ctx.lineWidth = 1;
   ctx.strokeRect(x + 0.5, y + 0.5, colW, wallH);
+  ctx.fillStyle = `rgba(255,255,255,${clamp(0.11 - distance / 7600, 0.02, 0.09)})`;
+  ctx.fillRect(x, y, colW + 1, Math.max(1, wallH * 0.025));
+  ctx.fillStyle = `rgba(0,0,0,${clamp(0.2 + distance / 5200, 0.18, 0.46)})`;
+  ctx.fillRect(x, y + wallH - Math.max(2, wallH * 0.04), colW + 1, Math.max(2, wallH * 0.04));
   ctx.fillStyle = `rgba(255,255,255,${clamp(0.16 - distance / 8500, 0.025, 0.12)})`;
   ctx.fillRect(x, y, Math.max(1, colW * 0.35), wallH);
   ctx.fillStyle = `rgba(0,0,0,${clamp(distance / 2200, 0.04, 0.4)})`;
@@ -3860,9 +3877,10 @@ function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column) {
 function render3d() {
   camera.shake *= 0.88;
   const w = window.innerWidth, h = window.innerHeight;
-  const horizon = clamp(h / 2 + camera.pitch * 0.28, h * 0.28, h * 0.72);
+  const horizon = clamp(h * 0.52 + camera.pitch * 0.3, h * 0.26, h * 0.74);
   const sky = ctx.createLinearGradient(0, 0, 0, horizon);
-  sky.addColorStop(0, "#304045");
+  sky.addColorStop(0, "#536a72");
+  sky.addColorStop(0.72, "#314247");
   sky.addColorStop(1, "#202a2d");
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, horizon);
@@ -3876,13 +3894,13 @@ function render3d() {
     const hitInfo = castRayHit(ray);
     const d = hitInfo.d * Math.cos(ray - player.angle);
     depth[i] = d;
-    const wallH = clamp((h * 700) / d, 10, h * 1.65);
-    const shade = clamp(245 - d * 0.11, 68, 220);
+    const wallH = clamp((h * 760) / d, 12, h * 1.85);
+    const shade = clamp(252 - d * 0.095, 84, 232);
     const x = i * colW;
     const y = horizon - wallH / 2 + camera.shake;
-    drawPotatoWallColumn(x, y, colW, wallH, hitInfo.hit, shade, d, i);
+    drawPotatoWallColumn(x, y, colW, wallH, hitInfo.hit, shade, d, i, hitInfo.side);
     if (settings.quality !== "low" && i % 2 === 0) {
-      ctx.fillStyle = `rgba(255,245,190,${clamp(0.2 - d / 8500, 0.03, 0.16)})`;
+      ctx.fillStyle = `rgba(255,255,255,${clamp(0.14 - d / 8200, 0.025, 0.1)})`;
       ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.06));
     }
   }
@@ -3903,41 +3921,58 @@ function render3d() {
   }
   draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
   draw3dWeapon(w, h);
+  drawFpsStatusStrip(w, h);
   drawMinimap();
   drawCrosshair();
 }
 
 function draw3dTerrain(w, h, horizon = h / 2) {
   const floor = ctx.createLinearGradient(0, horizon, 0, h);
-  floor.addColorStop(0, "#55614c");
-  floor.addColorStop(0.48, simple3dTextures.terrain.base);
-  floor.addColorStop(1, "#171d17");
+  floor.addColorStop(0, "#59664f");
+  floor.addColorStop(0.5, simple3dTextures.terrain.base);
+  floor.addColorStop(1, "#1b231b");
   ctx.fillStyle = floor;
   ctx.fillRect(0, horizon, w, h - horizon);
-  draw3dFloorGuides(w, h, horizon);
+  draw3dFloorPerspectiveGrid(w, h, horizon);
 }
 
-function draw3dFloorGuides(w, h, horizon = h / 2) {
+function draw3dFloorPerspectiveGrid(w, h, horizon = h / 2) {
   if (settings.quality === "low") return;
   ctx.save();
   ctx.lineWidth = 1;
-  for (let i = 1; i <= 9; i += 1) {
-    const y = horizon + Math.pow(i / 9, 1.55) * (h - horizon);
-    ctx.strokeStyle = `rgba(215,189,98,${0.13 - i * 0.008})`;
+  const floorHeight = h - horizon;
+  for (let i = 1; i <= 12; i += 1) {
+    const y = horizon + Math.pow(i / 12, 1.72) * floorHeight;
+    ctx.strokeStyle = `rgba(242,240,223,${0.16 - i * 0.008})`;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(w, y);
     ctx.stroke();
   }
-  ctx.strokeStyle = "rgba(242,240,223,0.08)";
-  for (let i = -4; i <= 4; i += 1) {
-    const foot = w / 2 + i * w * 0.12;
+  ctx.strokeStyle = "rgba(242,240,223,0.11)";
+  const yawOffset = Math.sin(player.angle) * w * 0.08;
+  for (let i = -6; i <= 6; i += 1) {
+    const foot = w / 2 + yawOffset + i * w * 0.11;
     ctx.beginPath();
     ctx.moveTo(w / 2, horizon);
     ctx.lineTo(foot, h);
     ctx.stroke();
   }
   ctx.restore();
+}
+
+function draw3dFloorGuides(w, h, horizon = h / 2) {
+  draw3dFloorPerspectiveGrid(w, h, horizon);
+}
+
+function drawFpsStatusStrip(w, h) {
+  if (settings.quality === "low") return;
+  ctx.fillStyle = "rgba(17,20,17,0.5)";
+  ctx.fillRect(14, h - 44, 106, 28);
+  ctx.fillStyle = "#f2f0df";
+  ctx.font = "800 12px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("3D FPS", 67, h - 26);
 }
 
 function draw3dSiteMarkers(w, h, fov, depth, colW, horizon = h / 2) {
@@ -3963,12 +3998,18 @@ function draw3dSiteMarkers(w, h, fov, depth, colW, horizon = h / 2) {
 }
 
 function draw3dCharacter(x, y, size, color) {
-  ctx.fillStyle = "rgba(0,0,0,0.32)";
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.38)";
   ctx.beginPath();
   ctx.ellipse(x, y + size * 0.62, size * 0.34, size * 0.09, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.strokeStyle = "rgba(242,240,223,0.3)";
+  ctx.lineWidth = Math.max(1, size * 0.02);
   ctx.fillStyle = color;
   ctx.fillRect(x - size * 0.22, y - size * 0.45, size * 0.44, size * 0.62);
+  ctx.strokeRect(x - size * 0.22, y - size * 0.45, size * 0.44, size * 0.62);
+  ctx.fillStyle = "rgba(255,255,255,0.16)";
+  ctx.fillRect(x - size * 0.18, y - size * 0.39, size * 0.36, size * 0.05);
   ctx.fillStyle = "#d8c19a";
   ctx.fillRect(x - size * 0.16, y - size * 0.72, size * 0.32, size * 0.25);
   ctx.fillStyle = "#1a1d18";
@@ -3979,6 +4020,7 @@ function draw3dCharacter(x, y, size, color) {
   ctx.fillStyle = "#2b2d28";
   ctx.fillRect(x - size * 0.2, y + size * 0.18, size * 0.16, size * 0.42);
   ctx.fillRect(x + size * 0.04, y + size * 0.18, size * 0.16, size * 0.42);
+  ctx.restore();
 }
 
 function draw3dWeapon(w, h) {
