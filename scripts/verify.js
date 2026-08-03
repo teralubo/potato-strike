@@ -126,6 +126,10 @@ for (const snippet of [
   "pollServerAudioEvents",
   "weaponAudioProfile",
   "maybeStep",
+  "applyLanguage",
+  "i18n",
+  "bindLabel",
+  "setOptionText",
 ]) {
   if (!js.includes(snippet)) {
     console.error(`Missing required runtime feature: ${snippet}`);
