@@ -629,6 +629,22 @@ button:disabled {
           Screen shake
           <input id="screen-shake" type="range" min="0" max="1" step="0.05" value="0.8">
         </label>
+        <label class="check">
+          <input id="sound-enabled" type="checkbox" checked>
+          Dzwieki gry
+        </label>
+        <label>
+          Glosnosc
+          <input id="master-volume" type="range" min="0" max="1" step="0.05" value="0.75">
+        </label>
+        <label>
+          Kroki
+          <input id="footstep-volume" type="range" min="0" max="1" step="0.05" value="0.55">
+        </label>
+        <label class="check">
+          <input id="server-audio" type="checkbox" checked>
+          Audio eventy przez serwer LAN
+        </label>
         <label>
           Limit CPU/GPU
           <select id="perf-limit">
@@ -1134,11 +1150,17 @@ const hud = {
   configId: $("config-id"),
   configPlayerId: $("config-player-id"),
   playerName: $("player-name"),
+  lanRoom: $("lan-room"),
+  serverUrl: $("server-url"),
   exportConfig: $("export-config"),
   importConfig: $("import-config"),
   configFile: $("config-file"),
   sensitivity: $("sensitivity"),
   screenShake: $("screen-shake"),
+  soundEnabled: $("sound-enabled"),
+  masterVolume: $("master-volume"),
+  footstepVolume: $("footstep-volume"),
+  serverAudio: $("server-audio"),
   perfLimit: $("perf-limit"),
   botCount: $("bot-count"),
   controlMode: $("control-mode"),
@@ -1372,6 +1394,10 @@ const settings = {
   playerId: "",
   sensitivity: 1,
   screenShake: 0.8,
+  soundEnabled: true,
+  masterVolume: 0.75,
+  footstepVolume: 0.55,
+  serverAudio: true,
   perfLimit: "balanced",
   botCount: 10,
   matchSize: 5,
@@ -1518,6 +1544,162 @@ function codeName(code) {
   return code;
 }
 
+const audio = {
+  ctx: null,
+  enabledOnce: false,
+  lastServerPost: 0,
+  lastServerPoll: 0,
+  lastServerEventTime: 0,
+  lastBombBeep: 0,
+  playerStep: 0,
+  actorSteps: new WeakMap(),
+};
+
+function ensureAudio() {
+  if (!settings.soundEnabled) return null;
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return null;
+  if (!audio.ctx) audio.ctx = new AudioCtor();
+  if (audio.ctx.state === "suspended") audio.ctx.resume();
+  audio.enabledOnce = true;
+  return audio.ctx;
+}
+
+function audioVolume(x = player.x, y = player.y, range = 1250, channel = "effects") {
+  if (!settings.soundEnabled) return 0;
+  const base = clamp(Number(settings.masterVolume ?? 0.75), 0, 1);
+  const channelVolume = channel === "steps" ? clamp(Number(settings.footstepVolume ?? 0.55), 0, 1) : 1;
+  const d = dist(player.x, player.y, x, y);
+  return base * channelVolume * clamp(1 - d / range, 0, 1);
+}
+
+function makeNoise(ctx, duration) {
+  const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * duration)), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  return source;
+}
+
+function burst({ type = "noise", freq = 160, endFreq = 80, duration = 0.12, volume = 0.45, x = player.x, y = player.y, range = 1250, filter = 900, channel = "effects" }) {
+  const ctx = ensureAudio();
+  const v = volume * audioVolume(x, y, range, channel);
+  if (!ctx || v <= 0.002) return;
+  const gain = ctx.createGain();
+  const now = ctx.currentTime;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, v), now + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  gain.connect(ctx.destination);
+  let source;
+  if (type === "noise") {
+    source = makeNoise(ctx, duration);
+    const biquad = ctx.createBiquadFilter();
+    biquad.type = "bandpass";
+    biquad.frequency.setValueAtTime(filter, now);
+    biquad.Q.value = 0.8;
+    source.connect(biquad);
+    biquad.connect(gain);
+  } else {
+    source = ctx.createOscillator();
+    source.type = type;
+    source.frequency.setValueAtTime(freq, now);
+    source.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
+    source.connect(gain);
+  }
+  source.start(now);
+  source.stop(now + duration + 0.02);
+}
+
+function weaponAudioProfile(weapon = {}) {
+  const name = weapon.name || "";
+  if (name.includes("AWP")) return { freq: 82, filter: 520, duration: 0.24, volume: 0.95, tail: 0.18 };
+  if (name.includes("SSG") || weapon.category === "Sniper") return { freq: 105, filter: 620, duration: 0.2, volume: 0.78, tail: 0.14 };
+  if (weapon.category === "Heavy" && weapon.pellets) return { freq: 78, filter: 480, duration: 0.22, volume: 0.85, tail: 0.12 };
+  if (weapon.category === "Pistol") return { freq: 180, filter: 1450, duration: 0.095, volume: 0.45, tail: 0.05 };
+  if (weapon.category === "SMG") return { freq: 150, filter: 1250, duration: 0.075, volume: 0.38, tail: 0.035 };
+  const silenced = name.includes("M4A1-S") || name.includes("USP-S") || name.includes("MP5-SD");
+  return { freq: silenced ? 135 : 120, filter: silenced ? 850 : 1050, duration: silenced ? 0.09 : 0.13, volume: silenced ? 0.42 : 0.62, tail: silenced ? 0.03 : 0.09 };
+}
+
+function playSound(kind, data = {}) {
+  const x = data.x ?? player.x;
+  const y = data.y ?? player.y;
+  if (kind === "gun") {
+    const p = weaponAudioProfile(data.weapon);
+    const volume = p.volume * (data.hostile ? 0.68 : 1);
+    burst({ type: "square", freq: p.freq, endFreq: 38, duration: p.duration, volume, x, y, filter: p.filter });
+    burst({ type: "noise", duration: p.duration + p.tail, volume: volume * 0.7, x, y, filter: p.filter });
+  } else if (kind === "dryfire") burst({ type: "square", freq: 420, endFreq: 260, duration: 0.04, volume: 0.18, x, y, filter: 1800 });
+  else if (kind === "reload") { burst({ type: "triangle", freq: 320, endFreq: 180, duration: 0.08, volume: 0.28, x, y, filter: 1400 }); setTimeout(() => burst({ type: "triangle", freq: 210, endFreq: 330, duration: 0.09, volume: 0.22, x, y, filter: 1600 }), 180); }
+  else if (kind === "reloadDone") burst({ type: "triangle", freq: 280, endFreq: 520, duration: 0.06, volume: 0.2, x, y, filter: 1800 });
+  else if (kind === "step") { burst({ type: "noise", duration: 0.045, volume: data.walking ? 0.08 : 0.14, x, y, range: 760, filter: data.walking ? 280 : 360, channel: "steps" }); burst({ type: "sine", freq: data.walking ? 72 : 92, endFreq: 42, duration: 0.055, volume: data.walking ? 0.05 : 0.09, x, y, range: 720, channel: "steps" }); }
+  else if (kind === "grenadeThrow") burst({ type: "noise", duration: 0.09, volume: 0.18, x, y, filter: 1100 });
+  else if (kind === "grenadeExplode") { burst({ type: "noise", duration: data.type === "smoke" ? 0.5 : 0.28, volume: data.type === "flash" ? 0.42 : 0.8, x, y, range: 1600, filter: data.type === "smoke" ? 420 : 720 }); burst({ type: "sawtooth", freq: data.type === "flash" ? 880 : 74, endFreq: 38, duration: data.type === "flash" ? 0.12 : 0.22, volume: data.type === "smoke" ? 0.18 : 0.55, x, y, range: 1600 }); }
+  else if (kind === "hit") burst({ type: "noise", duration: 0.035, volume: 0.16, x, y, filter: 1900 });
+  else if (kind === "death") burst({ type: "sawtooth", freq: 170, endFreq: 48, duration: 0.28, volume: 0.35, x, y, filter: 620 });
+  else if (kind === "bombPlant") { burst({ type: "square", freq: 620, endFreq: 620, duration: 0.06, volume: 0.32, x, y, filter: 1500 }); setTimeout(() => burst({ type: "square", freq: 820, endFreq: 820, duration: 0.05, volume: 0.28, x, y, filter: 1600 }), 110); }
+  else if (kind === "bombBeep") burst({ type: "sine", freq: data.fast ? 1050 : 760, endFreq: data.fast ? 1050 : 760, duration: 0.055, volume: 0.28, x, y, range: 1450, filter: 1200 });
+  else if (kind === "bombExplode") { burst({ type: "noise", duration: 0.5, volume: 1, x, y, range: 1900, filter: 520 }); burst({ type: "sawtooth", freq: 64, endFreq: 28, duration: 0.6, volume: 0.75, x, y, range: 1900 }); }
+  else if (kind === "defuse") burst({ type: "triangle", freq: 560, endFreq: 360, duration: 0.08, volume: 0.2, x, y, filter: 1300 });
+  else if (kind === "buy" || kind === "ui") burst({ type: "triangle", freq: kind === "buy" ? 520 : 440, endFreq: kind === "buy" ? 780 : 620, duration: 0.05, volume: 0.16, x, y, filter: 1800 });
+}
+
+function serverAudioBase() {
+  const raw = hud.serverUrl?.value || `${location.protocol}//${location.host}`;
+  return raw.replace(/^ws:/, "http:").replace(/^wss:/, "https:").replace(/\/$/, "");
+}
+
+function emitAudioEvent(kind, data = {}, sendServer = true) {
+  playSound(kind, data);
+  if (!sendServer || !settings.serverAudio || state.gameMode === "offline") return;
+  const now = performance.now();
+  if (now - audio.lastServerPost < 35) return;
+  audio.lastServerPost = now;
+  fetch(`${serverAudioBase()}/api/audio`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      room: hud.lanRoom?.value || "potato-lan",
+      playerId: settings.playerId,
+      name: settings.nick,
+      kind,
+      x: Math.round(data.x ?? player.x),
+      y: Math.round(data.y ?? player.y),
+      weapon: data.weapon?.name || data.weapon || "",
+      type: data.type || "",
+      time: Date.now(),
+    }),
+  }).catch(() => {});
+}
+
+function pollServerAudioEvents() {
+  if (!settings.serverAudio || state.gameMode === "offline") return;
+  const now = performance.now();
+  if (now - audio.lastServerPoll < 280) return;
+  audio.lastServerPoll = now;
+  const room = encodeURIComponent(hud.lanRoom?.value || "potato-lan");
+  fetch(`${serverAudioBase()}/api/audio-events?room=${room}&since=${audio.lastServerEventTime}`).then((res) => res.json()).then((payload) => {
+    for (const event of payload.events || []) {
+      audio.lastServerEventTime = Math.max(audio.lastServerEventTime, event.time || 0);
+      if (event.playerId && event.playerId === settings.playerId) continue;
+      playSound(event.kind, { x: event.x, y: event.y, weapon: event.weapon ? { name: event.weapon } : null, type: event.type });
+    }
+  }).catch(() => {});
+}
+
+function maybeStep(actor, moving, walking = false) {
+  if (!moving || state.phase !== "live") return;
+  const now = performance.now();
+  const delay = walking ? 470 : 310;
+  const lastStep = actor === player ? audio.playerStep : audio.actorSteps.get(actor) || 0;
+  if (now - lastStep < delay) return;
+  if (actor === player) audio.playerStep = now;
+  else audio.actorSteps.set(actor, now);
+  emitAudioEvent("step", { x: actor.x, y: actor.y, walking }, actor === player);
+}
+
 function ensurePlayerId() {
   if (!settings.configId) {
     settings.configId = `cfg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -1571,6 +1753,10 @@ function syncProfileFields() {
   hud.hzLimit.value = String(settings.hzLimit);
   hud.crosshairStyle.value = settings.crosshairStyle;
   hud.crosshairColor.value = settings.crosshairColor;
+  hud.soundEnabled.checked = settings.soundEnabled;
+  hud.masterVolume.value = String(settings.masterVolume);
+  hud.footstepVolume.value = String(settings.footstepVolume);
+  hud.serverAudio.checked = settings.serverAudio;
 }
 
 function loadConfig() {
@@ -2417,6 +2603,8 @@ function endRound(winner, reason) {
   if (winner === state.team) advanceMission("roundWins", 1);
   if (winner === "CT" && state.team === "CT") advanceMission("ctRounds", 1);
   if (winner === state.team) markMapWin();
+  if (reason.includes("bomba wybuchla")) emitAudioEvent("bombExplode", { x: state.bomb.x, y: state.bomb.y });
+  else emitAudioEvent(winner === state.team ? "buy" : "death", { x: player.x, y: player.y });
   showMessage(`${winner} wygrywa: ${reason}`);
   setTimeout(() => {
     state.round += 1;
@@ -2447,6 +2635,7 @@ function plantBomb() {
   state.bomb.timer = 40;
   player.plants += 1;
   advanceMission("plants", 1);
+  emitAudioEvent("bombPlant", { x: player.x, y: player.y });
   showMessage(`Bomba podlozona na ${site}`);
 }
 
@@ -2457,6 +2646,7 @@ function defuseBomb(dt) {
     return;
   }
   state.bomb.defuse += dt;
+  if (Math.floor(state.bomb.defuse * 4) !== Math.floor((state.bomb.defuse - dt) * 4)) emitAudioEvent("defuse", { x: state.bomb.x, y: state.bomb.y }, false);
   if (state.bomb.defuse >= 5) {
     player.defuses += 1;
     advanceMission("defuses", 1);
@@ -2483,6 +2673,12 @@ function updateRoundRules(dt) {
   state.roundTime -= dt;
   if (state.bomb.status === "planted") {
     state.bomb.timer -= dt;
+    const beepDelay = state.bomb.timer < 10 ? 360 : state.bomb.timer < 20 ? 620 : 980;
+    const now = performance.now();
+    if (now - audio.lastBombBeep > beepDelay) {
+      audio.lastBombBeep = now;
+      emitAudioEvent("bombBeep", { x: state.bomb.x, y: state.bomb.y, fast: state.bomb.timer < 10 }, false);
+    }
     if (state.bomb.timer <= 0) endRound("T", "bomba wybuchla");
   } else if (state.roundTime <= 0) {
     endRound("CT", "czas rundy minal");
@@ -2509,6 +2705,7 @@ function buyItem(type, id) {
       weapon.currentReserve = weapon.reserve;
     }
     player.weaponId = weapon.id;
+    emitAudioEvent("buy", { x: player.x, y: player.y });
     showMessage(`Wyposazono: ${weapon.name}`);
   }
   if (type === "grenade") {
@@ -2519,6 +2716,7 @@ function buyItem(type, id) {
     if (player.money < grenade.price) return showMessage("Za malo kasy");
     player.money -= grenade.price;
     player.grenades[grenade.name] = count + 1;
+    emitAudioEvent("buy", { x: player.x, y: player.y });
     showMessage(`Kupiono: ${grenade.name}`);
   }
   renderShop();
@@ -2540,10 +2738,12 @@ function throwGrenade() {
     type: catalog.key,
     color: catalog.color,
   });
+  emitAudioEvent("grenadeThrow", { x: player.x, y: player.y, type: catalog.key });
   renderShop();
 }
 
 function explodeGrenade(grenade) {
+  emitAudioEvent("grenadeExplode", { x: grenade.x, y: grenade.y, type: grenade.type });
   effects.push({ x: grenade.x, y: grenade.y, r: grenade.type === "smoke" ? 130 : 86, life: grenade.type === "smoke" ? 7 : 0.45, type: grenade.type, color: grenade.color });
   if (grenade.type === "he" || grenade.type === "fire") {
     for (const bot of bots) {
@@ -2564,6 +2764,7 @@ function shoot(owner, angle, weapon, hostile = false) {
     if (state.phase !== "live" || state.overlayOpen) return;
     if (weapon.reloading > 0 || weapon.cooldown > 0) return;
     if (weapon.ammo <= 0) {
+      emitAudioEvent("dryfire", { x: owner.x, y: owner.y }, false);
       if (settings.autoReload) reload();
       return;
     }
@@ -2571,6 +2772,7 @@ function shoot(owner, angle, weapon, hostile = false) {
     weapon.cooldown = weapon.fireDelay / 1000;
     camera.shake = Math.min(10, camera.shake + weapon.recoil * 90 * settings.screenShake);
   }
+  emitAudioEvent("gun", { x: owner.x, y: owner.y, weapon, hostile }, !hostile && owner === player);
   const pelletCount = weapon.pellets || 1;
   for (let i = 0; i < pelletCount; i += 1) {
     const spread = hostile ? 0.11 * difficultyScale() : weapon.spread + weapon.recoil * Math.min(1.5, owner.speedFactor || 0);
@@ -2592,6 +2794,7 @@ function reload() {
   const weapon = activeWeapon();
   if (weapon.reloading > 0 || weapon.ammo === weapon.magSize || weapon.currentReserve <= 0) return;
   weapon.reloading = weapon.reloadTime;
+  emitAudioEvent("reload", { x: player.x, y: player.y, weapon });
   showMessage(`Przeladowanie: ${weapon.name}`);
 }
 
@@ -2617,6 +2820,7 @@ function updatePlayer(dt) {
     moveEntity(player, (strafe / len) * speed, (-forward / len) * speed, dt);
     player.angle = angleTo(player.x, player.y, mouse.x + camera.x, mouse.y + camera.y);
   }
+  maybeStep(player, Boolean(forward || strafe), walking);
   const weapon = activeWeapon();
   weapon.cooldown = Math.max(0, weapon.cooldown - dt);
   if (weapon.reloading > 0) {
@@ -2626,6 +2830,7 @@ function updatePlayer(dt) {
       const take = Math.min(need, weapon.currentReserve);
       weapon.ammo += take;
       weapon.currentReserve -= take;
+      emitAudioEvent("reloadDone", { x: player.x, y: player.y, weapon }, false);
     }
   }
   if (mouse.down && (weapon.automatic || mouse.clicked)) shoot(player, player.angle, weapon);
@@ -2648,6 +2853,7 @@ function updateBots(dt) {
       const ty = targetSite ? targetSite.y : player.y;
       const moveA = angleTo(bot.x, bot.y, tx, ty) + Math.sin(performance.now() / 420 + bot.x) * 0.45;
       moveEntity(bot, Math.cos(moveA) * bot.speed, Math.sin(moveA) * bot.speed, dt);
+      maybeStep(bot, true, false);
     }
     bot.fire -= dt * 1000;
     if (bot.fire <= 0 && los && d < 740 && player.alive && bot.flashed <= 0) {
@@ -2671,6 +2877,7 @@ function updateAllies(dt) {
     const los = hasLineOfSight(ally.x, ally.y, target.x, target.y);
     if (!los || d > 360) {
       moveEntity(ally, Math.cos(a) * ally.speed, Math.sin(a) * ally.speed, dt);
+      maybeStep(ally, true, false);
     }
     ally.fire -= dt * 1000;
     if (ally.fire <= 0 && los && d < 680) {
@@ -2752,9 +2959,11 @@ function damagePlayer(amount) {
   player.armor -= armorBlock;
   player.hp -= amount - armorBlock;
   player.invuln = 0.12;
+  emitAudioEvent("hit", { x: player.x, y: player.y }, false);
   if (player.hp <= 0) {
     player.hp = 0;
     player.alive = false;
+    emitAudioEvent("death", { x: player.x, y: player.y });
     enterSpectator();
   }
 }
@@ -2774,6 +2983,7 @@ function updateBullets(dt) {
       for (const ally of allies) {
         if (ally.hp > 0 && dist(b.x, b.y, ally.x, ally.y) < ally.r) {
           ally.hp -= b.damage;
+          emitAudioEvent(ally.hp <= 0 ? "death" : "hit", { x: ally.x, y: ally.y }, false);
           remove = true;
           break;
         }
@@ -2791,6 +3001,9 @@ function updateBullets(dt) {
             player.money += 300;
             advanceMission("kills", 1);
             advanceMission("category", 1, activeWeapon().category);
+            emitAudioEvent("death", { x: bot.x, y: bot.y }, false);
+          } else {
+            emitAudioEvent("hit", { x: bot.x, y: bot.y }, false);
           }
           remove = true;
           break;
@@ -3262,6 +3475,7 @@ function tick(now) {
     updateBullets(dt);
     updateGrenades(dt);
     updateSpectator();
+    pollServerAudioEvents();
     try {
       if (settings.graphicsMode === "3d") render3d(); else render2d();
     } catch (error) {
@@ -3374,6 +3588,7 @@ canvas.addEventListener("mousemove", (event) => {
 canvas.addEventListener("mousedown", async (event) => {
   if (editMapAt(event)) return;
   if (state.overlayOpen) return;
+  ensureAudio();
   mouse.down = true;
   mouse.clicked = true;
   try { await canvas.requestPointerLock(); } catch { /* optional */ }
@@ -3456,6 +3671,7 @@ hud.pauseMenu.addEventListener("click", () => {
   hud.menu.classList.remove("hidden");
 });
 hud.start.addEventListener("click", async () => {
+  ensureAudio();
   hud.menu.classList.add("hidden");
   closePanels();
   state.running = true;
@@ -3509,6 +3725,10 @@ hud.profileFile.addEventListener("change", async () => {
 });
 hud.sensitivity.addEventListener("input", () => { settings.sensitivity = Number(hud.sensitivity.value); });
 hud.screenShake.addEventListener("input", () => { settings.screenShake = Number(hud.screenShake.value); });
+hud.soundEnabled.addEventListener("change", () => { settings.soundEnabled = hud.soundEnabled.checked; if (settings.soundEnabled) ensureAudio(); saveConfig(); });
+hud.masterVolume.addEventListener("input", () => { settings.masterVolume = Number(hud.masterVolume.value); saveConfig(); });
+hud.footstepVolume.addEventListener("input", () => { settings.footstepVolume = Number(hud.footstepVolume.value); saveConfig(); });
+hud.serverAudio.addEventListener("change", () => { settings.serverAudio = hud.serverAudio.checked; saveConfig(); });
 hud.perfLimit.addEventListener("change", () => { settings.perfLimit = hud.perfLimit.value; });
 hud.botCount.addEventListener("input", () => { settings.botCount = Number(hud.botCount.value); });
 hud.controlMode.addEventListener("change", () => {

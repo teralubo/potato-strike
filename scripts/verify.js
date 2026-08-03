@@ -103,6 +103,11 @@ for (const snippet of [
   "updateSpectator",
   "takeoverBot",
   "livingTeamBots",
+  "ensureAudio",
+  "emitAudioEvent",
+  "pollServerAudioEvents",
+  "weaponAudioProfile",
+  "maybeStep",
 ]) {
   if (!js.includes(snippet)) {
     console.error(`Missing required runtime feature: ${snippet}`);

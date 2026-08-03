@@ -12,6 +12,7 @@ const types = {
 };
 
 const rooms = new Map();
+const audioEvents = new Map();
 
 function send(res, status, body, type = "text/plain; charset=utf-8") {
   res.writeHead(status, { "content-type": type, "cache-control": "no-store" });
@@ -47,6 +48,40 @@ const server = http.createServer((req, res) => {
       send(res, 200, JSON.stringify({ room, players: next }), "application/json; charset=utf-8");
     });
     return;
+  }
+  if (url.pathname === "/api/audio" && req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => { body += chunk; });
+    req.on("end", () => {
+      let payload = {};
+      try {
+        payload = JSON.parse(body || "{}");
+      } catch {
+        return send(res, 400, "Bad audio event");
+      }
+      const room = String(payload.room || "potato-lan").slice(0, 80);
+      const list = audioEvents.get(room) || [];
+      list.push({
+        id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+        kind: String(payload.kind || "ui").slice(0, 40),
+        x: Number(payload.x) || 0,
+        y: Number(payload.y) || 0,
+        weapon: String(payload.weapon || "").slice(0, 40),
+        type: String(payload.type || "").slice(0, 30),
+        playerId: String(payload.playerId || "").slice(0, 80),
+        name: String(payload.name || "Potato").slice(0, 40),
+        time: Date.now(),
+      });
+      audioEvents.set(room, list.filter((event) => Date.now() - event.time < 5000).slice(-96));
+      send(res, 200, JSON.stringify({ ok: true }), "application/json; charset=utf-8");
+    });
+    return;
+  }
+  if (url.pathname === "/api/audio-events" && req.method === "GET") {
+    const room = String(url.searchParams.get("room") || "potato-lan").slice(0, 80);
+    const since = Number(url.searchParams.get("since") || 0);
+    const list = (audioEvents.get(room) || []).filter((event) => event.time > since && Date.now() - event.time < 5000);
+    return send(res, 200, JSON.stringify({ room, events: list, now: Date.now() }), "application/json; charset=utf-8");
   }
   serveFile(req, res);
 });
