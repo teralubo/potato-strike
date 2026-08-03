@@ -48,7 +48,8 @@
     "binds": "KeyI",
     "teams": "KeyT",
     "network": "KeyN",
-    "grenade": "KeyG",
+    "grenade": "KeyH",
+    "drop": "KeyG",
     "dash": "Space",
     "pause": "KeyP",
     "console": "Backquote"

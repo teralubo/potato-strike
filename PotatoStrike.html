@@ -600,7 +600,7 @@ button:disabled {
         </div>
         <div class="weapon-card wide">
           <div class="muted">controls</div>
-          <div>WASD ruch / mysz / E uzyj-podloz-rozbroj / R reload / B sklep / O ustawienia / M misje / I bindy / G granat / 1-9 bron / po dead strzalki lub klik zmieniaja teammate</div>
+          <div>WASD ruch / mysz / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H granat / R reload / B sklep / O ustawienia / M misje / I bindy / 1-9 bron / po dead strzalki lub klik zmieniaja teammate</div>
         </div>
       </div>
       <div id="message" role="status"></div>
@@ -1600,7 +1600,8 @@ const bindings = {
   binds: "KeyI",
   teams: "KeyT",
   network: "KeyN",
-  grenade: "KeyG",
+  grenade: "KeyH",
+  drop: "KeyG",
   dash: "Space",
   pause: "KeyP",
   console: "Backquote",
@@ -1622,6 +1623,7 @@ const actionLabels = {
   teams: "Druzyny",
   network: "LAN / online",
   grenade: "Granat",
+  drop: "Wyrzuc bron",
   dash: "Dash",
   pause: "Pauza",
   console: "Komendy lobby",
@@ -1653,7 +1655,7 @@ const i18n = {
     modsTitle: "Mody",
     profileTitle: "profil gracza",
     menuLead: "CS-like dla slabych komputerow: misje, boty, bomba, sklep stron, 2D albo lekkie 3D. Pod I sa bindy, ktore mozna zobaczyc i zmienic.",
-    controlsHelp: "WASD ruch / mysz / E uzyj-podloz-rozbroj / R reload / B sklep / O ustawienia / M misje / I bindy / G granat / 1-9 bron / po dead strzalki lub klik zmieniaja teammate",
+    controlsHelp: "WASD ruch / mysz / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H granat / R reload / B sklep / O ustawienia / M misje / I bindy / 1-9 bron / po dead strzalki lub klik zmieniaja teammate",
     languageLabel: "Jezyk / Language",
     graphicsLabel: "Tryb grafiki",
     qualityLabel: "Jakosc",
@@ -1684,7 +1686,7 @@ const i18n = {
     equip: "Wyposaz",
     buy: "Kup",
     grenade: "Granat",
-    throwKey: "G - rzut",
+    throwKey: "H - rzut",
     you: "TY",
     pressKey: "Nacisnij klawisz...",
     missionsPill: "MISJE",
@@ -1727,7 +1729,7 @@ const i18n = {
     modsTitle: "Mods",
     profileTitle: "player profile",
     menuLead: "CS-like for weak computers: missions, bots, bomb mode, side shop, 2D or light 3D. Press I to view and change binds.",
-    controlsHelp: "WASD movement / mouse / E use-plant-defuse-takeover / R reload / B shop / O settings / M missions / I binds / G grenade / 1-9 weapon / after death arrows or click change teammate",
+    controlsHelp: "WASD movement / mouse / E use-plant-defuse-pickup / G drop weapon / H grenade / R reload / B shop / O settings / M missions / I binds / 1-9 weapon / after death arrows or click change teammate",
     languageLabel: "Language / Jezyk",
     graphicsLabel: "Graphics mode",
     qualityLabel: "Quality",
@@ -1758,6 +1760,7 @@ const i18n = {
     equip: "Equip",
     buy: "Buy",
     grenade: "Grenade",
+    drop: "Drop weapon",
     throwKey: "G - throw",
     you: "YOU",
     pressKey: "Press a key...",
@@ -1854,6 +1857,7 @@ const player = {
   defuses: 0,
   alive: true,
   grenades: {},
+  useLatch: false,
 };
 
 let weapons = [];
@@ -1861,6 +1865,7 @@ const bots = [];
 const allies = [];
 const bullets = [];
 const grenades = [];
+const droppedWeapons = [];
 const effects = [];
 const customTextures = [];
 const loadedMods = [];
@@ -2355,6 +2360,7 @@ function loadConfig() {
     Object.assign(settings, config.settings || {});
     settings.graphicsMode = normalizeGraphicsMode(settings.graphicsMode);
     Object.assign(bindings, config.bindings || {});
+    if (bindings.grenade === bindings.drop) bindings.grenade = "KeyH";
     settings.configId = config.configId || settings.configId;
     settings.nick = config.nick || settings.nick;
     settings.playerId = config.playerId || settings.playerId;
@@ -2397,6 +2403,7 @@ function playerProfiles() {
 function applyProfile(profile, preserveIncomingId = true) {
   Object.assign(settings, profile.settings || {});
   Object.assign(bindings, profile.bindings || {});
+  if (bindings.grenade === bindings.drop) bindings.grenade = "KeyH";
   settings.configId = profile.configId || settings.configId || `cfg-${Date.now().toString(36)}`;
   settings.nick = profile.nick || settings.nick || "Potato";
   if (preserveIncomingId) settings.playerId = profile.playerId || settings.playerId;
@@ -2697,6 +2704,10 @@ function sideAllows(item, team = state.team) {
 
 function activeWeapon() {
   return weapons[player.weaponId] || weapons[0];
+}
+
+function ownedWeapons() {
+  return weapons.filter((weapon) => weapon.owned);
 }
 
 function defaultWeaponId(team) {
@@ -3094,7 +3105,9 @@ function resetRoundPositions() {
   player.invuln = 0;
   bullets.length = 0;
   grenades.length = 0;
+  droppedWeapons.length = 0;
   effects.length = 0;
+  player.useLatch = false;
   leaveSpectator();
   state.roundTime = 115;
   state.freezeTime = 5;
@@ -3317,10 +3330,20 @@ function defuseBomb(dt) {
 function useKey(dt) {
   if (!actionDown("use")) {
     state.bomb.defuse = 0;
+    player.useLatch = false;
     return;
   }
-  if (state.team === "T") plantBomb();
-  if (state.team === "CT") defuseBomb(dt);
+  if (state.team === "T" && state.bomb.status === "carried" && currentSite()) {
+    plantBomb();
+    return;
+  }
+  if (state.team === "CT" && state.bomb.status === "planted" && dist(player.x, player.y, state.bomb.x, state.bomb.y) <= 62) {
+    defuseBomb(dt);
+    return;
+  }
+  if (state.team === "CT" && state.bomb.status === "planted") state.bomb.defuse = 0;
+  if (!player.useLatch) pickupDroppedWeapon();
+  player.useLatch = true;
 }
 
 function updateRoundRules(dt) {
@@ -3361,6 +3384,7 @@ function buyItem(type, id) {
     if (!weapon || !sideAllows(weapon)) return;
     if (!weapon.owned) {
       if (player.money < weapon.price) return showMessage("Za malo kasy");
+      dropOwnedWeaponCategory(weapon.category, weapon.id);
       player.money -= weapon.price;
       weapon.owned = true;
       weapon.ammo = weapon.magSize;
@@ -3405,6 +3429,84 @@ function canBuyNow() {
 
 function buyBlockMessage() {
   return "Czas kupowania minal";
+}
+
+function weaponDropData(weapon, x = player.x, y = player.y) {
+  return {
+    weaponId: weapon.id,
+    name: weapon.name,
+    category: weapon.category,
+    side: weapon.side,
+    ammo: weapon.ammo,
+    currentReserve: weapon.currentReserve,
+    x: clamp(x, 24, state.map.w - 24),
+    y: clamp(y, 24, state.map.h - 24),
+    angle: player.angle,
+    color: weapon.color,
+  };
+}
+
+function dropWeapon(weapon, { force = false, silent = false } = {}) {
+  if (!weapon?.owned) return false;
+  const carrying = ownedWeapons();
+  if (!force && carrying.length <= 1) {
+    if (!silent) showMessage("Nie mozesz wyrzucic ostatniej broni");
+    return false;
+  }
+  droppedWeapons.push(weaponDropData(weapon, player.x + Math.cos(player.angle) * 38, player.y + Math.sin(player.angle) * 38));
+  weapon.owned = false;
+  weapon.cooldown = 0;
+  weapon.reloading = 0;
+  if (player.weaponId === weapon.id) {
+    const fallback = ownedWeapons().find((item) => item.id !== weapon.id);
+    if (fallback) player.weaponId = fallback.id;
+  }
+  if (!silent) {
+    emitAudioEvent("ui", { x: player.x, y: player.y }, false);
+    showMessage(`Wyrzucono: ${weapon.name}`);
+  }
+  renderShop();
+  updateHud();
+  return true;
+}
+
+function dropOwnedWeaponCategory(category, exceptId = -1) {
+  const existing = weapons.find((weapon) => weapon.owned && weapon.category === category && weapon.id !== exceptId);
+  if (existing) dropWeapon(existing, { force: true, silent: true });
+}
+
+function dropActiveWeapon() {
+  if (!state.running || state.overlayOpen || !player.alive) return;
+  dropWeapon(activeWeapon());
+}
+
+function nearestDroppedWeapon(range = 70) {
+  let best = null;
+  for (const item of droppedWeapons) {
+    const d = dist(player.x, player.y, item.x, item.y);
+    if (d <= range && (!best || d < best.d)) best = { item, d };
+  }
+  return best?.item || null;
+}
+
+function pickupDroppedWeapon() {
+  const item = nearestDroppedWeapon();
+  if (!item) return false;
+  const weapon = weapons[item.weaponId] || weapons.find((candidate) => candidate.name === item.name);
+  if (!weapon) return false;
+  dropOwnedWeaponCategory(weapon.category, weapon.id);
+  weapon.owned = true;
+  weapon.ammo = clamp(Number(item.ammo), 0, weapon.magSize);
+  weapon.currentReserve = clamp(Number(item.currentReserve), 0, weapon.reserve);
+  weapon.cooldown = 0;
+  weapon.reloading = 0;
+  player.weaponId = weapon.id;
+  droppedWeapons.splice(droppedWeapons.indexOf(item), 1);
+  emitAudioEvent("buy", { x: player.x, y: player.y }, false);
+  showMessage(`Podniesiono: ${weapon.name}`);
+  renderShop();
+  updateHud();
+  return true;
 }
 
 function throwGrenade() {
@@ -3978,6 +4080,22 @@ function drawProjectiles2d() {
   for (const g of grenades) {
     ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x - camera.x, g.y - camera.y, 7, 0, Math.PI * 2); ctx.fill();
   }
+  for (const item of droppedWeapons) {
+    const x = item.x - camera.x;
+    const y = item.y - camera.y;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(item.angle || 0);
+    ctx.fillStyle = item.color || "#d7bd62";
+    ctx.fillRect(-15, -4, 30, 8);
+    ctx.fillStyle = "#171812";
+    ctx.fillRect(3, -9, 22, 4);
+    ctx.restore();
+    ctx.fillStyle = "#f2f0df";
+    ctx.font = "10px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(item.name, x, y - 14);
+  }
   for (const e of effects) {
     ctx.globalAlpha = clamp(e.life / 1.5, 0.18, 0.75);
     ctx.fillStyle = e.type === "smoke" ? "#a8aaa1" : e.color;
@@ -4002,6 +4120,8 @@ function drawMinimap() {
   ctx.fillStyle = "#77b56f"; ctx.fillRect(x + player.x * sx - 2, y + player.y * sy - 2, 4, 4);
   ctx.fillStyle = "#d95f4e";
   for (const bot of bots) if (bot.hp > 0) ctx.fillRect(x + bot.x * sx - 2, y + bot.y * sy - 2, 4, 4);
+  ctx.fillStyle = "#f5df88";
+  for (const item of droppedWeapons) ctx.fillRect(x + item.x * sx - 2, y + item.y * sy - 2, 4, 4);
 }
 
 function drawCrosshair() {
@@ -4441,6 +4561,25 @@ function draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon) {
     ctx.strokeStyle = "rgba(17,18,12,0.55)";
     ctx.stroke();
   }
+  for (const item of droppedWeapons) {
+    const p = projectWorldToFps(item.x, item.y, fov, depth, colW, horizon, -8, 60);
+    if (!p) continue;
+    const size = clamp((h * 34) / Math.max(1, p.d), 10, 36);
+    ctx.fillStyle = "rgba(0,0,0,0.36)";
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y + size * 0.35, size * 0.9, size * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = item.color || "#d7bd62";
+    ctx.fillRect(p.x - size * 0.7, p.y - size * 0.2, size * 1.4, size * 0.28);
+    ctx.fillStyle = "#171812";
+    ctx.fillRect(p.x + size * 0.1, p.y - size * 0.46, size * 0.75, size * 0.18);
+    if (p.d < 180) {
+      ctx.fillStyle = "#f2f0df";
+      ctx.font = "800 11px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(`E ${item.name}`, p.x, p.y - size * 0.8);
+    }
+  }
   if (state.bomb.status === "planted" || state.bomb.status === "hidden") {
     const p = projectWorldToFps(state.bomb.x, state.bomb.y, fov, depth, colW, horizon, -10, 75);
     if (p) {
@@ -4655,7 +4794,7 @@ function closePanels() {
 }
 
 function equipHotkey(n) {
-  const owned = weapons.filter((weapon) => weapon.owned && sideAllows(weapon));
+  const owned = ownedWeapons();
   const weapon = owned[n - 1];
   if (weapon) {
     player.weaponId = weapon.id;
@@ -4664,7 +4803,7 @@ function equipHotkey(n) {
 }
 
 function cycleWeapon(direction = 1) {
-  const owned = weapons.filter((weapon) => weapon.owned && sideAllows(weapon));
+  const owned = ownedWeapons();
   if (owned.length < 2) return;
   const current = owned.findIndex((weapon) => weapon.id === player.weaponId);
   const next = owned[(current + direction + owned.length) % owned.length];
@@ -4695,7 +4834,7 @@ window.addEventListener("keydown", (event) => {
     renderBinds();
     return;
   }
-  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.spectatorNext, bindings.spectatorPrev].includes(event.code)) event.preventDefault();
+  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev].includes(event.code)) event.preventDefault();
   keys.add(event.code);
   if (event.code === "Escape") closePanels();
   if (event.code === bindings.shop) togglePanel(hud.shopPanel);
@@ -4713,6 +4852,7 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   if (event.code === bindings.reload) reload();
+  if (event.code === bindings.drop) dropActiveWeapon();
   if (event.code === bindings.grenade) { throwGrenade(); advanceMission("grenade", 1); }
   if (event.code.startsWith("Digit")) equipHotkey(Number(event.code.slice(5)));
 });
