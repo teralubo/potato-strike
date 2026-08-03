@@ -13,6 +13,12 @@ function configDir() {
   return dir;
 }
 
+function playersDir() {
+  const dir = path.join(configDir(), "players");
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
 function modsDir() {
   const dir = path.join(__dirname, "mods");
   fs.mkdirSync(dir, { recursive: true });
@@ -94,19 +100,30 @@ ipcMain.handle("window:openEditor", () => {
 ipcMain.handle("window:testMap", () => openGameTest());
 
 ipcMain.handle("config:save", (_event, payload) => {
-  const file = `${safeConfigName(payload?.name)}.json`;
-  const target = path.join(configDir(), file);
-  fs.writeFileSync(target, JSON.stringify(payload?.config || {}, null, 2));
-  return { ok: true, path: target };
+  const profile = payload?.config || {};
+  const playerId = safeConfigName(profile.playerId || payload?.name || "local-player");
+  const playerDir = path.join(playersDir(), playerId);
+  fs.mkdirSync(playerDir, { recursive: true });
+  const profilePath = path.join(playerDir, "profile.json");
+  fs.writeFileSync(profilePath, JSON.stringify(profile, null, 2));
+  fs.writeFileSync(path.join(playerDir, "maps.json"), JSON.stringify(profile.userMaps || [], null, 2));
+  fs.writeFileSync(path.join(playerDir, "missions.json"), JSON.stringify(profile.storyMissions || [], null, 2));
+  fs.writeFileSync(path.join(playerDir, "assets.json"), JSON.stringify({ textures: profile.customTextures || [], mods: profile.mods || [] }, null, 2));
+  return { ok: true, path: profilePath, playerDir };
 });
 
 ipcMain.handle("config:load", (_event, fileName) => {
-  const file = path.join(configDir(), safeConfigName(fileName));
+  const safe = safeConfigName(fileName);
+  const file = safe.endsWith(".json")
+    ? path.join(configDir(), safe)
+    : path.join(playersDir(), safe, "profile.json");
   return JSON.parse(fs.readFileSync(file, "utf8"));
 });
 
 ipcMain.handle("config:list", () => {
-  return fs.readdirSync(configDir()).filter((file) => file.endsWith(".json"));
+  return fs.readdirSync(playersDir(), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(playersDir(), entry.name, "profile.json")))
+    .map((entry) => entry.name);
 });
 
 ipcMain.handle("mod:save", (_event, payload) => {

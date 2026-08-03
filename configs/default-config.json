@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "type": "potato-strike-player-profile",
   "configId": "default-local-config",
   "nick": "Potato",
   "playerId": "default-local-player",

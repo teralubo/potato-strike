@@ -64,9 +64,12 @@ Configi startowe sa w folderze `configs/`, a export configu zawiera tez mapy i m
 
 ## Config
 
-- Config zawiera nick gracza, ID gracza, ustawienia, celownik i bindy.
-- Config zawiera tez `configId`, wygenerowane mapy, misje fabularne, tekstury i mody.
-- W ustawieniach mozna pobrac albo wgrac config JSON.
+- Config jest profilem gracza. Zawiera nick gracza, automatycznie wygenerowane ID gracza, ustawienia, celownik i bindy.
+- Gracz moze nadac nick przy tworzeniu profilu, ale nie nadaje sam ID.
+- W menu glownym w rogu jest menu profili: nowy profil, lista profili, wczytanie, import i export.
+- Profil zawiera tez `configId`, wygenerowane mapy, misje fabularne, tekstury i mody.
+- W wersji Electron profil zapisuje sie w `configs/players/<playerId>/` jako folder danych gracza: `profile.json`, `maps.json`, `missions.json`, `assets.json`.
+- W ustawieniach mozna pobrac albo wgrac profil JSON.
 - Pauza jest domyslnie pod `P`, a komendy lobby pod klawiszem konsoli.
 
 ## Edytor i mody

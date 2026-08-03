@@ -225,6 +225,23 @@ function isoPoint(x, y, originX, originY, scale) {
   return { x: originX + (x - y) * scale * 0.5, y: originY + (x + y) * scale * 0.25 };
 }
 
+function convertMapForViewport(mode) {
+  map.meta = { ...(map.meta || {}), editorViewport: mode, format: "potato-map-3d-lite" };
+  map.obstacles = map.obstacles.map((obj, index) => ({
+    id: obj.id || `obj-${Date.now().toString(36)}-${index}`,
+    type: obj.type || "wall",
+    x: Number(obj.x || 0),
+    y: Number(obj.y || 0),
+    w: Number(obj.w || 120),
+    h: Number(obj.h || 80),
+    z: Number(obj.z ?? (obj.type === "light" ? 10 : obj.type === "cover" ? 46 : obj.type === "crate" ? 64 : 96)),
+    rot: Number(obj.rot || 0),
+    color: obj.color || "#56614d",
+    material: obj.material || "potato-concrete",
+    texture: obj.texture || "",
+  }));
+}
+
 function isoLayout() {
   return {
     originX: canvas.width / 2,
@@ -642,9 +659,12 @@ window.addEventListener("keydown", (event) => {
 ui.name.addEventListener("input", () => { map.name = ui.name.value; });
 ui.viewportMode.addEventListener("change", () => {
   studioSettings.viewportMode = ui.viewportMode.value;
+  convertMapForViewport(studioSettings.viewportMode);
   saveJson("potatoStrikeStudioSettings", studioSettings);
   draw();
-  status(`Widok: ${studioSettings.viewportMode.toUpperCase()}`);
+  renderProperties();
+  renderObjects();
+  status(`Mapa przekonwertowana do edycji ${studioSettings.viewportMode.toUpperCase()}`);
 });
 ui.gameMode.addEventListener("change", () => { map.meta = { ...(map.meta || {}), gameMode: ui.gameMode.value }; });
 ui.testGraphics.addEventListener("change", () => {
@@ -670,6 +690,7 @@ try {
 } catch {
   map = emptyMap();
 }
+convertMapForViewport(studioSettings.viewportMode);
 refreshMapList();
 renderUi();
 document.querySelector('[data-tool="select"]').classList.add("active");

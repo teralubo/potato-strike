@@ -45,7 +45,7 @@ if (fs.existsSync("beta")) {
   process.exit(1);
 }
 
-for (const key of ["configId", "userMaps", "storyMissions", "customTextures", "mods", "settings", "bindings", "nick", "playerId"]) {
+for (const key of ["type", "configId", "userMaps", "storyMissions", "customTextures", "mods", "settings", "bindings", "nick", "playerId"]) {
   if (!(key in defaultConfig)) {
     console.error(`default config missing ${key}`);
     process.exit(1);
@@ -57,8 +57,14 @@ if (!js.includes("userMaps()") || !js.includes("storyMissions: savedStoryMission
   process.exit(1);
 }
 
-if (!fs.readFileSync("main.js", "utf8").includes("config:save") || !fs.readFileSync("preload.js", "utf8").includes("saveConfig")) {
+const mainJs = fs.readFileSync("main.js", "utf8");
+if (!mainJs.includes("config:save") || !fs.readFileSync("preload.js", "utf8").includes("saveConfig")) {
   console.error("Electron config save bridge is missing");
+  process.exit(1);
+}
+
+if (!mainJs.includes("playersDir") || !mainJs.includes("profile.json") || !mainJs.includes("assets.json")) {
+  console.error("Player profile folder storage is missing");
   process.exit(1);
 }
 
@@ -83,6 +89,9 @@ for (const snippet of [
   "openStandaloneEditor",
   "loadStudioTestMap",
   "loadUserMapsFromStorage",
+  "createPlayerProfile",
+  "renderProfileMenu",
+  "applyProfile",
 ]) {
   if (!js.includes(snippet)) {
     console.error(`Missing required runtime feature: ${snippet}`);

@@ -91,6 +91,14 @@ const hud = {
   showMinimap: $("show-minimap"),
   autoReload: $("auto-reload"),
   menuMode: $("menu-mode"),
+  profileCurrent: $("profile-current"),
+  profileNick: $("profile-nick"),
+  profileCreate: $("profile-create"),
+  profileList: $("profile-list"),
+  profileLoad: $("profile-load"),
+  profileExport: $("profile-export"),
+  profileImport: $("profile-import"),
+  profileFile: $("profile-file"),
   launchTarget: $("launch-target"),
   matchSize: $("match-size"),
   fillMode: $("fill-mode"),
@@ -461,11 +469,13 @@ function ensurePlayerId() {
   }
   hud.configId.value = settings.configId;
   hud.configPlayerId.value = settings.playerId;
+  if (hud.profileCurrent) hud.profileCurrent.textContent = `${settings.nick} / ${settings.playerId}`;
 }
 
-function serializeConfig() {
+function serializeProfile() {
   return {
     version: 1,
+    type: "potato-strike-player-profile",
     configId: settings.configId,
     nick: settings.nick,
     playerId: settings.playerId,
@@ -478,16 +488,38 @@ function serializeConfig() {
   };
 }
 
+function serializeConfig() {
+  return serializeProfile();
+}
+
 function saveConfig() {
   ensurePlayerId();
-  localStorage.setItem("potatoStrikeConfig", JSON.stringify(serializeConfig()));
+  const profile = serializeProfile();
+  localStorage.setItem("potatoStrikeConfig", JSON.stringify(profile));
+  const profiles = playerProfiles().filter((item) => item.playerId !== profile.playerId);
+  profiles.push(profile);
+  localStorage.setItem("potatoStrikeProfiles", JSON.stringify(profiles));
+  renderProfileMenu();
+}
+
+function syncProfileFields() {
+  hud.configNick.value = settings.nick;
+  hud.configId.value = settings.configId;
+  hud.configPlayerId.value = settings.playerId;
+  hud.profileNick.value = settings.nick;
+  hud.playerName.value = settings.nick;
+  hud.languageSelect.value = settings.language;
+  hud.resolution.value = settings.resolution;
+  hud.hzLimit.value = String(settings.hzLimit);
+  hud.crosshairStyle.value = settings.crosshairStyle;
+  hud.crosshairColor.value = settings.crosshairColor;
 }
 
 function loadConfig() {
   const raw = localStorage.getItem("potatoStrikeConfig");
   if (!raw) {
     ensurePlayerId();
-    hud.configNick.value = settings.nick;
+    syncProfileFields();
     saveConfig();
     return;
   }
@@ -503,14 +535,7 @@ function loadConfig() {
     showMessage("Config uszkodzony, uzywam domyslnego");
   }
   ensurePlayerId();
-  hud.configNick.value = settings.nick;
-  hud.configId.value = settings.configId;
-  hud.configPlayerId.value = settings.playerId;
-  hud.languageSelect.value = settings.language;
-  hud.resolution.value = settings.resolution;
-  hud.hzLimit.value = String(settings.hzLimit);
-  hud.crosshairStyle.value = settings.crosshairStyle;
-  hud.crosshairColor.value = settings.crosshairColor;
+  syncProfileFields();
 }
 
 function downloadJson(name, data) {
@@ -523,14 +548,66 @@ function downloadJson(name, data) {
 }
 
 async function exportConfig() {
-  const config = serializeConfig();
-  const name = `config-${settings.nick || "player"}-${settings.playerId || "local"}`;
+  const config = serializeProfile();
+  const name = `profile-${settings.nick || "player"}-${settings.playerId || "local"}`;
   if (window.potatoNative?.saveConfig) {
     const result = await window.potatoNative.saveConfig(name, config);
-    showMessage(result.ok ? `Config zapisany w configs` : "Nie zapisano configu");
+    showMessage(result.ok ? `Profil zapisany w configs/players/${settings.playerId}` : "Nie zapisano profilu");
     return;
   }
-  downloadJson("potato-strike-config.json", config);
+  downloadJson("potato-strike-profile.json", config);
+}
+
+function playerProfiles() {
+  try {
+    return JSON.parse(localStorage.getItem("potatoStrikeProfiles") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function applyProfile(profile, preserveIncomingId = true) {
+  Object.assign(settings, profile.settings || {});
+  Object.assign(bindings, profile.bindings || {});
+  settings.configId = profile.configId || settings.configId || `cfg-${Date.now().toString(36)}`;
+  settings.nick = profile.nick || settings.nick || "Potato";
+  if (preserveIncomingId) settings.playerId = profile.playerId || settings.playerId;
+  ensurePlayerId();
+  restoreUserContent(profile);
+  syncProfileFields();
+  saveConfig();
+  renderBinds();
+  renderProfileMenu();
+}
+
+function createPlayerProfile(nick) {
+  saveConfig();
+  settings.nick = nick || "Potato";
+  settings.playerId = `ps-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  settings.configId = `cfg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  writeUserMaps([]);
+  writeStoryMissions([]);
+  customTextures.splice(0, customTextures.length);
+  loadedMods.splice(0, loadedMods.length);
+  syncProfileFields();
+  saveConfig();
+  renderSavedMissions();
+  renderAssetList();
+  showMessage(`Nowy profil: ${settings.nick}`);
+}
+
+function renderProfileMenu() {
+  if (!hud.profileList) return;
+  const profiles = playerProfiles();
+  hud.profileList.innerHTML = "";
+  for (const profile of profiles) {
+    const option = document.createElement("option");
+    option.value = profile.playerId;
+    option.textContent = `${profile.nick || "Potato"} / ${profile.playerId || "--"}`;
+    hud.profileList.appendChild(option);
+  }
+  hud.profileList.value = settings.playerId;
+  hud.profileCurrent.textContent = `${settings.nick} / ${settings.playerId || "--"}`;
 }
 
 function isLobbyCommander() {
@@ -2152,15 +2229,23 @@ hud.configFile.addEventListener("change", async () => {
   const file = hud.configFile.files[0];
   if (!file) return;
   const config = JSON.parse(await file.text());
-  Object.assign(settings, config.settings || {});
-  Object.assign(bindings, config.bindings || {});
-  settings.nick = config.nick || settings.nick;
-  settings.playerId = config.playerId || settings.playerId;
-  restoreUserContent(config);
-  saveConfig();
-  loadConfig();
-  renderBinds();
-  showMessage("Config wgrany");
+  applyProfile(config, true);
+  showMessage("Profil wgrany z configu");
+});
+hud.profileCreate.addEventListener("click", () => createPlayerProfile(hud.profileNick.value || "Potato"));
+hud.profileLoad.addEventListener("click", () => {
+  const profile = playerProfiles().find((item) => item.playerId === hud.profileList.value);
+  if (!profile) return showMessage("Brak profilu do wczytania");
+  applyProfile(profile, true);
+  showMessage(`Wczytano profil: ${settings.nick}`);
+});
+hud.profileExport.addEventListener("click", exportConfig);
+hud.profileImport.addEventListener("click", () => hud.profileFile.click());
+hud.profileFile.addEventListener("change", async () => {
+  const file = hud.profileFile.files[0];
+  if (!file) return;
+  applyProfile(JSON.parse(await file.text()), true);
+  showMessage("Profil zaimportowany");
 });
 hud.sensitivity.addEventListener("input", () => { settings.sensitivity = Number(hud.sensitivity.value); });
 hud.screenShake.addEventListener("input", () => { settings.screenShake = Number(hud.screenShake.value); });
@@ -2221,5 +2306,6 @@ renderShop();
 renderBinds();
 renderSavedMissions();
 renderAssetList();
+renderProfileMenu();
 loadStudioTestMap();
 requestAnimationFrame(tick);

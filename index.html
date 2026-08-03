@@ -405,6 +405,23 @@
       </div>
     </div>
     <div id="menu">
+      <div id="player-menu">
+        <div class="muted">profil gracza</div>
+        <div id="profile-current">Potato / --</div>
+        <div class="profile-row">
+          <input id="profile-nick" placeholder="Nick nowego profilu" value="Potato">
+          <button id="profile-create">Nowy profil</button>
+        </div>
+        <div class="profile-row">
+          <select id="profile-list"></select>
+          <button id="profile-load">Wczytaj</button>
+        </div>
+        <div class="profile-row">
+          <button id="profile-export" class="secondary">Export profilu</button>
+          <button id="profile-import" class="secondary">Import profilu</button>
+          <input id="profile-file" class="hidden" type="file" accept="application/json">
+        </div>
+      </div>
       <div class="menu-box">
         <h1>Potato Strike</h1>
         <p>CS-like dla slabych komputerow: misje, boty, bomba, sklep stron, 2D albo lekkie 3D. Pod I sa bindy, ktore mozna zobaczyc i zmienic.</p>
