@@ -1450,13 +1450,15 @@ const settings = {
 };
 
 const simple3dTextures = {
-  white: { base: "#ecece2", side: "#c7c9bd", seam: "rgba(35,35,31,0.24)", mark: "rgba(255,255,255,0.28)", mode: "panel" },
-  concrete: { base: "#cfd1c7", side: "#aeb3aa", seam: "rgba(45,45,40,0.26)", mark: "rgba(255,255,255,0.18)", mode: "panel" },
-  brick: { base: "#c7a889", side: "#9a7158", seam: "rgba(65,38,28,0.34)", mark: "rgba(255,245,220,0.16)", mode: "brick" },
-  crate: { base: "#ad8150", side: "#765334", seam: "rgba(49,30,17,0.36)", mark: "rgba(255,230,176,0.18)", mode: "crate" },
-  metal: { base: "#aeb9bd", side: "#78888d", seam: "rgba(22,35,38,0.32)", mark: "rgba(255,255,255,0.24)", mode: "metal" },
-  glass: { base: "#acd3dc", side: "#6fabb8", seam: "rgba(33,67,74,0.28)", mark: "rgba(255,255,255,0.35)", mode: "glass" },
-  terrain: { base: "#3b4a35", side: "#263126", seam: "rgba(242,240,223,0.12)", mark: "rgba(255,255,255,0.08)", mode: "terrain" },
+  white: { base: "#f0f0e6", side: "#d1d4c8", seam: "rgba(35,35,31,0.24)", mark: "rgba(255,255,255,0.28)", mode: "panel", footstep: "concrete" },
+  concrete: { base: "#d2d5cb", side: "#aeb7ad", seam: "rgba(45,45,40,0.26)", mark: "rgba(255,255,255,0.18)", mode: "panel", footstep: "concrete" },
+  brick: { base: "#cda47f", side: "#91664e", seam: "rgba(65,38,28,0.34)", mark: "rgba(255,245,220,0.16)", mode: "brick", footstep: "stone" },
+  crate: { base: "#b88752", side: "#745032", seam: "rgba(49,30,17,0.36)", mark: "rgba(255,230,176,0.18)", mode: "crate", footstep: "wood" },
+  metal: { base: "#b9c5c9", side: "#74868c", seam: "rgba(22,35,38,0.32)", mark: "rgba(255,255,255,0.24)", mode: "metal", footstep: "metal" },
+  glass: { base: "#b7dce4", side: "#6daab8", seam: "rgba(33,67,74,0.28)", mark: "rgba(255,255,255,0.35)", mode: "glass", footstep: "glass" },
+  hazard: { base: "#f0d06e", side: "#88622e", seam: "rgba(42,31,18,0.38)", mark: "rgba(20,20,15,0.3)", mode: "hazard", footstep: "metal" },
+  bluewall: { base: "#bfd2df", side: "#71899b", seam: "rgba(20,36,50,0.28)", mark: "rgba(255,255,255,0.22)", mode: "panel", footstep: "concrete" },
+  terrain: { base: "#47553e", side: "#283229", seam: "rgba(242,240,223,0.12)", mark: "rgba(255,255,255,0.08)", mode: "terrain", footstep: "dirt" },
 };
 
 const bindings = {
@@ -2019,13 +2021,40 @@ function burst({ type = "noise", freq = 160, endFreq = 80, duration = 0.12, volu
 
 function weaponAudioProfile(weapon = {}) {
   const name = weapon.name || "";
-  if (name.includes("AWP")) return { freq: 82, filter: 520, duration: 0.24, volume: 0.95, tail: 0.18 };
-  if (name.includes("SSG") || weapon.category === "Sniper") return { freq: 105, filter: 620, duration: 0.2, volume: 0.78, tail: 0.14 };
-  if (weapon.category === "Heavy" && weapon.pellets) return { freq: 78, filter: 480, duration: 0.22, volume: 0.85, tail: 0.12 };
-  if (weapon.category === "Pistol") return { freq: 180, filter: 1450, duration: 0.095, volume: 0.45, tail: 0.05 };
-  if (weapon.category === "SMG") return { freq: 150, filter: 1250, duration: 0.075, volume: 0.38, tail: 0.035 };
+  if (name.includes("AWP")) return { freq: 76, click: 980, filter: 460, duration: 0.26, volume: 1, tail: 0.2, shell: 0.22 };
+  if (name.includes("SSG") || weapon.category === "Sniper") return { freq: 102, click: 900, filter: 580, duration: 0.21, volume: 0.82, tail: 0.15, shell: 0.18 };
+  if (weapon.category === "Heavy" && weapon.pellets) return { freq: 72, click: 620, filter: 430, duration: 0.23, volume: 0.9, tail: 0.14, shell: 0.2 };
+  if (weapon.category === "Heavy") return { freq: 94, click: 720, filter: 820, duration: 0.12, volume: 0.66, tail: 0.08, shell: 0.12 };
+  if (weapon.category === "Pistol") return { freq: name.includes("Desert") || name.includes("R8") ? 132 : 190, click: 1320, filter: 1450, duration: 0.095, volume: name.includes("Desert") || name.includes("R8") ? 0.62 : 0.45, tail: 0.05, shell: 0.09 };
+  if (weapon.category === "SMG") return { freq: 150, click: 1180, filter: 1250, duration: 0.075, volume: 0.38, tail: 0.035, shell: 0.065 };
   const silenced = name.includes("M4A1-S") || name.includes("USP-S") || name.includes("MP5-SD");
-  return { freq: silenced ? 135 : 120, filter: silenced ? 850 : 1050, duration: silenced ? 0.09 : 0.13, volume: silenced ? 0.42 : 0.62, tail: silenced ? 0.03 : 0.09 };
+  return { freq: silenced ? 135 : name.includes("AK") ? 104 : 120, click: silenced ? 760 : 980, filter: silenced ? 820 : 1040, duration: silenced ? 0.09 : 0.13, volume: silenced ? 0.42 : 0.64, tail: silenced ? 0.03 : 0.09, shell: silenced ? 0.05 : 0.11 };
+}
+
+function stepAudioProfile(material = "dirt", walking = false) {
+  const profiles = {
+    concrete: { filter: 420, freq: 86, scrape: 0.12 },
+    stone: { filter: 520, freq: 92, scrape: 0.16 },
+    wood: { filter: 330, freq: 76, scrape: 0.2 },
+    metal: { filter: 780, freq: 118, scrape: 0.24 },
+    glass: { filter: 980, freq: 136, scrape: 0.18 },
+    dirt: { filter: 280, freq: 72, scrape: 0.1 },
+  };
+  const p = profiles[material] || profiles.dirt;
+  const volume = walking ? 0.075 : 0.14;
+  return { ...p, volume };
+}
+
+function impactAudioProfile(material = "concrete") {
+  const profiles = {
+    concrete: { filter: 1500, freq: 220, volume: 0.18 },
+    stone: { filter: 1700, freq: 260, volume: 0.2 },
+    wood: { filter: 820, freq: 180, volume: 0.16 },
+    metal: { filter: 2400, freq: 420, volume: 0.22 },
+    glass: { filter: 2800, freq: 760, volume: 0.18 },
+    dirt: { filter: 520, freq: 120, volume: 0.12 },
+  };
+  return profiles[material] || profiles.concrete;
 }
 
 function playSound(kind, data = {}) {
@@ -2036,10 +2065,22 @@ function playSound(kind, data = {}) {
     const volume = p.volume * (data.hostile ? 0.68 : 1);
     burst({ type: "square", freq: p.freq, endFreq: 38, duration: p.duration, volume, x, y, filter: p.filter });
     burst({ type: "noise", duration: p.duration + p.tail, volume: volume * 0.7, x, y, filter: p.filter });
+    setTimeout(() => burst({ type: "triangle", freq: p.click, endFreq: p.click * 0.7, duration: 0.025, volume: volume * 0.22, x, y, filter: 2200 }), 18);
+    setTimeout(() => burst({ type: "noise", duration: 0.045, volume: p.shell, x, y, range: 620, filter: 3100 }), 95);
   } else if (kind === "dryfire") burst({ type: "square", freq: 420, endFreq: 260, duration: 0.04, volume: 0.18, x, y, filter: 1800 });
   else if (kind === "reload") { burst({ type: "triangle", freq: 320, endFreq: 180, duration: 0.08, volume: 0.28, x, y, filter: 1400 }); setTimeout(() => burst({ type: "triangle", freq: 210, endFreq: 330, duration: 0.09, volume: 0.22, x, y, filter: 1600 }), 180); }
   else if (kind === "reloadDone") burst({ type: "triangle", freq: 280, endFreq: 520, duration: 0.06, volume: 0.2, x, y, filter: 1800 });
-  else if (kind === "step") { burst({ type: "noise", duration: 0.045, volume: data.walking ? 0.08 : 0.14, x, y, range: 760, filter: data.walking ? 280 : 360, channel: "steps" }); burst({ type: "sine", freq: data.walking ? 72 : 92, endFreq: 42, duration: 0.055, volume: data.walking ? 0.05 : 0.09, x, y, range: 720, channel: "steps" }); }
+  else if (kind === "step") {
+    const p = stepAudioProfile(data.material, data.walking);
+    burst({ type: "noise", duration: 0.045, volume: p.volume, x, y, range: 760, filter: p.filter, channel: "steps" });
+    burst({ type: "sine", freq: p.freq, endFreq: 42, duration: 0.055, volume: p.volume * 0.62, x, y, range: 720, channel: "steps" });
+    if (!data.walking) burst({ type: "noise", duration: 0.025, volume: p.scrape * 0.18, x, y, range: 520, filter: p.filter * 1.6, channel: "steps" });
+  }
+  else if (kind === "impact") {
+    const p = impactAudioProfile(data.material);
+    burst({ type: "noise", duration: 0.035, volume: p.volume, x, y, range: 900, filter: p.filter });
+    burst({ type: "triangle", freq: p.freq, endFreq: Math.max(42, p.freq * 0.45), duration: 0.04, volume: p.volume * 0.55, x, y, range: 780, filter: p.filter });
+  }
   else if (kind === "grenadeThrow") burst({ type: "noise", duration: 0.09, volume: 0.18, x, y, filter: 1100 });
   else if (kind === "grenadeExplode") { burst({ type: "noise", duration: data.type === "smoke" ? 0.5 : 0.28, volume: data.type === "flash" ? 0.42 : 0.8, x, y, range: 1600, filter: data.type === "smoke" ? 420 : 720 }); burst({ type: "sawtooth", freq: data.type === "flash" ? 880 : 74, endFreq: 38, duration: data.type === "flash" ? 0.12 : 0.22, volume: data.type === "smoke" ? 0.18 : 0.55, x, y, range: 1600 }); }
   else if (kind === "hit") burst({ type: "noise", duration: 0.035, volume: 0.16, x, y, filter: 1900 });
@@ -2074,6 +2115,7 @@ function emitAudioEvent(kind, data = {}, sendServer = true) {
       y: Math.round(data.y ?? player.y),
       weapon: data.weapon?.name || data.weapon || "",
       type: data.type || "",
+      material: data.material || "",
       time: Date.now(),
     }),
   }).catch(() => {});
@@ -2089,7 +2131,7 @@ function pollServerAudioEvents() {
     for (const event of payload.events || []) {
       audio.lastServerEventTime = Math.max(audio.lastServerEventTime, event.time || 0);
       if (event.playerId && event.playerId === settings.playerId) continue;
-      playSound(event.kind, { x: event.x, y: event.y, weapon: event.weapon ? { name: event.weapon } : null, type: event.type });
+      playSound(event.kind, { x: event.x, y: event.y, weapon: event.weapon ? { name: event.weapon } : null, type: event.type, material: event.material });
     }
   }).catch(() => {});
 }
@@ -2102,7 +2144,7 @@ function maybeStep(actor, moving, walking = false) {
   if (now - lastStep < delay) return;
   if (actor === player) audio.playerStep = now;
   else audio.actorSteps.set(actor, now);
-  emitAudioEvent("step", { x: actor.x, y: actor.y, walking }, actor === player);
+  emitAudioEvent("step", { x: actor.x, y: actor.y, walking, material: materialAt(actor.x, actor.y) }, actor === player);
 }
 
 function ensurePlayerId() {
@@ -3484,7 +3526,8 @@ function updateBullets(dt) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.life -= dt;
-    let remove = b.life <= 0 || b.x < 0 || b.y < 0 || b.x > state.map.w || b.y > state.map.h || pointInObstacle(b.x, b.y);
+    const hitWall = pointInObstacle(b.x, b.y);
+    let remove = b.life <= 0 || b.x < 0 || b.y < 0 || b.x > state.map.w || b.y > state.map.h || hitWall;
   if (!remove && b.hostile && dist(b.x, b.y, player.x, player.y) < player.r) {
       damagePlayer(b.damage);
       remove = true;
@@ -3521,6 +3564,7 @@ function updateBullets(dt) {
       }
     }
     if (remove) {
+      if (hitWall) emitAudioEvent("impact", { x: b.x, y: b.y, material: materialAt(b.x, b.y) }, false);
       if (settings.quality !== "low") effects.push({ x: b.x, y: b.y, r: 10, life: 0.18, type: "hit", color: b.color });
       bullets.splice(i, 1);
     }
@@ -3706,7 +3750,7 @@ function renderShop() {
 }
 
 function drawMap2d() {
-  ctx.fillStyle = "#20291f";
+  ctx.fillStyle = "#293629";
   ctx.fillRect(-camera.x, -camera.y, state.map.w, state.map.h);
   if (settings.quality !== "low") {
     ctx.strokeStyle = "#2e3a2d";
@@ -3758,6 +3802,9 @@ function drawActor(actor, color, label) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(actor.angle || 0);
+  ctx.strokeStyle = "#f7f1d8";
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, actor.r + 2, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = color;
   ctx.beginPath(); ctx.arc(0, 0, actor.r, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#1a1d18"; ctx.fillRect(4, -5, actor.r + 16, 10);
@@ -3883,13 +3930,28 @@ function defaultTextureForType(type) {
   if (type === "cover") return "concrete";
   if (type === "light") return "glass";
   if (type === "ramp") return "metal";
+  if (type === "hazard") return "hazard";
   return "white";
+}
+
+function autoTextureForHit(hit) {
+  if (!hit) return "white";
+  if (hit.texture || hit.material || hit.type) return defaultTextureForType(hit.type);
+  const hash = Math.abs(Math.floor(hit.x * 7 + hit.y * 11 + hit.w * 13 + hit.h * 17));
+  const longWall = Math.max(hit.w, hit.h) > Math.min(hit.w, hit.h) * 2.4;
+  const palette = longWall ? ["concrete", "white", "bluewall", "brick"] : ["crate", "metal", "concrete", "hazard"];
+  return palette[hash % palette.length];
 }
 
 function textureForHit(hit) {
   if (!hit) return simple3dTextures.white;
-  const key = hit.texture || hit.material || defaultTextureForType(hit.type);
+  const key = hit.texture || hit.material || autoTextureForHit(hit);
   return simple3dTextures[key] || simple3dTextures.white;
+}
+
+function materialAt(x, y) {
+  const hit = state.map.obstacles.find((o) => x >= o.x && x <= o.x + o.w && y >= o.y && y <= o.y + o.h);
+  return textureForHit(hit || { texture: "terrain" }).footstep || "dirt";
 }
 
 function sideColorForHit(hit) {
@@ -3933,6 +3995,11 @@ function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column, s
   if (settings.quality !== "low" && texture.mode === "glass") {
     ctx.fillStyle = "rgba(255,255,255,0.2)";
     ctx.fillRect(drawX, y + wallH * 0.18, drawW, Math.max(1, wallH * 0.08));
+  }
+  if (settings.quality !== "low" && texture.mode === "hazard") {
+    const band = Math.max(10, wallH / 6);
+    ctx.fillStyle = "rgba(20,20,15,0.28)";
+    for (let row = y; row < y + wallH; row += band * 2) ctx.fillRect(drawX, row, drawW, band);
   }
   if (settings.quality === "high" && (column % 24 === 0 || side === "edge")) {
     ctx.strokeStyle = `rgba(0,0,0,${clamp(0.12 + distance / 6200, 0.1, 0.26)})`;
@@ -4006,9 +4073,9 @@ function render3d() {
 
 function draw3dTerrain(w, h, horizon = h / 2) {
   const floor = ctx.createLinearGradient(0, horizon, 0, h);
-  floor.addColorStop(0, "#59664f");
+  floor.addColorStop(0, "#68775e");
   floor.addColorStop(0.5, simple3dTextures.terrain.base);
-  floor.addColorStop(1, "#1b231b");
+  floor.addColorStop(1, "#223024");
   ctx.fillStyle = floor;
   ctx.fillRect(0, horizon, w, h - horizon);
   draw3dFloorPerspectiveGrid(w, h, horizon);
@@ -4140,8 +4207,11 @@ function draw3dCharacter(x, y, size, color) {
   ctx.beginPath();
   ctx.ellipse(x, y + size * 0.62, size * 0.34, size * 0.09, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "rgba(242,240,223,0.3)";
-  ctx.lineWidth = Math.max(1, size * 0.02);
+  ctx.strokeStyle = "rgba(255,248,218,0.92)";
+  ctx.lineWidth = Math.max(2, size * 0.045);
+  ctx.strokeRect(x - size * 0.26, y - size * 0.49, size * 0.52, size * 0.7);
+  ctx.strokeStyle = "rgba(14,16,13,0.78)";
+  ctx.lineWidth = Math.max(1, size * 0.025);
   ctx.fillStyle = color;
   ctx.fillRect(x - size * 0.22, y - size * 0.45, size * 0.44, size * 0.62);
   ctx.strokeRect(x - size * 0.22, y - size * 0.45, size * 0.44, size * 0.62);
