@@ -140,6 +140,13 @@ for (const snippet of ["wrap.dataset.view", "canvas.style.width = \"100%\"", "dr
   }
 }
 
+for (const snippet of ["hitIsoObject", "isoBoxFaces", "hitObjectAtEvent", "pointInPolygon"]) {
+  if (!editorJs.includes(snippet)) {
+    console.error(`Missing required Studio 3D editing feature: ${snippet}`);
+    process.exit(1);
+  }
+}
+
 for (const snippet of ["showFatalError", "normalizeMap", "findSafePoint", "showFatalError(fallbackError, \"renderu\")", "normalizeMap(maps[state.mapKey]"]) {
   if (!js.includes(snippet)) {
     console.error(`Missing required runtime safety guard: ${snippet}`);

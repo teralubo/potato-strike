@@ -337,6 +337,46 @@ function isoCanvasPoint(screenX, screenY) {
   };
 }
 
+function eventCanvasPixel(event) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - rect.left) * (canvas.width / rect.width),
+    y: (event.clientY - rect.top) * (canvas.height / rect.height),
+  };
+}
+
+function pointInPolygon(point, polygon) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+    const a = polygon[i];
+    const b = polygon[j];
+    const intersects = ((a.y > point.y) !== (b.y > point.y)) && point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y || 1) + a.x;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function isoBoxFaces(obj) {
+  const { originX, originY, scale } = isoLayout();
+  const z = Math.max(18, obj.z || 64) * scale * 0.7;
+  const p1 = isoPoint(obj.x, obj.y, originX, originY, scale);
+  const p2 = isoPoint(obj.x + obj.w, obj.y, originX, originY, scale);
+  const p3 = isoPoint(obj.x + obj.w, obj.y + obj.h, originX, originY, scale);
+  const p4 = isoPoint(obj.x, obj.y + obj.h, originX, originY, scale);
+  return [
+    [{ x: p1.x, y: p1.y - z }, { x: p2.x, y: p2.y - z }, { x: p3.x, y: p3.y - z }, { x: p4.x, y: p4.y - z }],
+    [{ x: p2.x, y: p2.y - z }, { x: p3.x, y: p3.y - z }, p3, p2],
+    [{ x: p1.x, y: p1.y - z }, { x: p2.x, y: p2.y - z }, p2, p1],
+  ];
+}
+
+function hitIsoObject(screenX, screenY) {
+  const point = { x: screenX, y: screenY };
+  return [...map.obstacles]
+    .sort((a, b) => (b.x + b.y + b.z) - (a.x + a.y + a.z))
+    .find((obj) => isoBoxFaces(obj).some((face) => pointInPolygon(point, face)));
+}
+
 function drawIsoLine(x1, y1, x2, y2, originX, originY, scale) {
   const a = isoPoint(x1, y1, originX, originY, scale);
   const b = isoPoint(x2, y2, originX, originY, scale);
@@ -437,17 +477,22 @@ function drawObject(obj) {
 }
 
 function canvasPoint(event) {
-  const rect = canvas.getBoundingClientRect();
-  const screen = {
-    x: (event.clientX - rect.left) * (canvas.width / rect.width),
-    y: (event.clientY - rect.top) * (canvas.height / rect.height),
-  };
+  const screen = eventCanvasPixel(event);
   if (studioSettings.viewportMode === "3d") return isoCanvasPoint(screen.x, screen.y);
   return screen;
 }
 
 function hitObject(x, y) {
   return [...map.obstacles].reverse().find((obj) => x >= obj.x && y >= obj.y && x <= obj.x + obj.w && y <= obj.y + obj.h);
+}
+
+function hitObjectAtEvent(event) {
+  if (studioSettings.viewportMode === "3d") {
+    const screen = eventCanvasPixel(event);
+    return hitIsoObject(screen.x, screen.y);
+  }
+  const p = canvasPoint(event);
+  return hitObject(p.x, p.y);
 }
 
 function addObject(type, x, y) {
@@ -689,15 +734,15 @@ document.querySelectorAll("[data-tool]").forEach((button) => {
 canvas.addEventListener("mousedown", (event) => {
   const p = canvasPoint(event);
   if (activeTool === "select") {
-    const obj = hitObject(p.x, p.y);
+    const obj = hitObjectAtEvent(event);
     selectedId = obj?.id || "";
-    if (obj) drag = { id: obj.id, dx: p.x - obj.x, dy: p.y - obj.y };
+    if (obj) drag = { id: obj.id, dx: studioSettings.viewportMode === "3d" ? obj.w / 2 : p.x - obj.x, dy: studioSettings.viewportMode === "3d" ? obj.h / 2 : p.y - obj.y };
     status(obj ? `Wybrano ${obj.type} w widoku ${studioSettings.viewportMode.toUpperCase()}` : "Brak obiektu pod kursorem");
     renderUi();
     return;
   }
   if (activeTool === "delete") {
-    const obj = hitObject(p.x, p.y);
+    const obj = hitObjectAtEvent(event);
     if (obj) map.obstacles = map.obstacles.filter((item) => item.id !== obj.id);
     selectedId = "";
     renderUi();
