@@ -11,6 +11,7 @@
     "build:single": "node scripts/build-single-html.js",
     "package:offline": "node scripts/package-offline.js",
     "start": "electron .",
+    "start:safe": "electron . --safe-offline",
     "start:editor": "electron . --editor",
     "build:win": "electron-builder --win portable",
     "build:linux": "electron-builder --linux dir AppImage"
@@ -23,6 +24,7 @@
     "appId": "local.potatostrike.game",
     "productName": "Potato Strike",
     "files": [
+      "PotatoStrike.html",
       "game/index.html",
       "game/editor.html",
       "game/styles.css",

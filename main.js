@@ -5,6 +5,7 @@ const path = require("path");
 const windows = {
   game: null,
   editor: null,
+  recovery: null,
 };
 
 function logsDir() {
@@ -86,7 +87,8 @@ function safeConfigName(name) {
 }
 
 function createWindow(options = {}) {
-  writeLog("main", `Creating game window ${JSON.stringify(options.query || {})}`);
+  const safeMode = options.safeMode || process.env.POTATO_SAFE_OFFLINE === "1" || process.argv.includes("--safe") || process.argv.includes("--safe-offline");
+  writeLog("main", `Creating game window ${JSON.stringify(options.query || {})} safeMode=${safeMode}`);
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
@@ -96,17 +98,18 @@ function createWindow(options = {}) {
       backgroundThrottling: false,
       contextIsolation: true,
       nodeIntegration: false,
-      preload: path.join(__dirname, "preload.js"),
+      sandbox: safeMode,
+      ...(safeMode ? {} : { preload: path.join(__dirname, "preload.js") }),
     },
   });
 
   windows.game = win;
-  attachWindowDiagnostics(win, "game");
+  attachWindowDiagnostics(win, "game", { safeMode });
   win.on("closed", () => {
     if (windows.game === win) windows.game = null;
     writeLog("main", "Game window closed");
   });
-  const file = path.join(__dirname, "game", "index.html");
+  const file = safeMode ? path.join(__dirname, "PotatoStrike.html") : path.join(__dirname, "game", "index.html");
   writeLog("main", `Loading game file ${file}`);
   win.loadFile(file, options.query ? { query: options.query } : undefined);
   return win;
@@ -146,7 +149,7 @@ function createEditorWindow() {
   return win;
 }
 
-function attachWindowDiagnostics(win, name) {
+function attachWindowDiagnostics(win, name, options = {}) {
   win.webContents.on("did-finish-load", () => {
     writeLog(name, `did-finish-load ${win.webContents.getURL()}`);
   });
@@ -162,6 +165,16 @@ function attachWindowDiagnostics(win, name) {
   win.webContents.on("render-process-gone", (_event, details) => {
     writeLog(`${name}:gone`, details);
     writeCrashSnapshot(name, details);
+    if (name === "game" && !options.safeMode) {
+      writeLog("main", "Normal game renderer crashed; retrying safe offline single-file mode");
+      try {
+        if (!win.isDestroyed()) win.destroy();
+      } catch {
+        // The renderer is already gone; this is only cleanup.
+      }
+      createWindow({ safeMode: true });
+      return;
+    }
     showCrashRecoveryWindow(name, details);
   });
   win.webContents.on("preload-error", (_event, preloadPath, error) => {
@@ -190,6 +203,7 @@ function writeCrashSnapshot(name, details) {
 }
 
 function showCrashRecoveryWindow(name, details) {
+  if (windows.recovery && !windows.recovery.isDestroyed()) return;
   const html = `<!doctype html>
 <html>
 <head>
@@ -221,6 +235,10 @@ function showCrashRecoveryWindow(name, details) {
       nodeIntegration: false,
       sandbox: true,
     },
+  });
+  windows.recovery = recovery;
+  recovery.on("closed", () => {
+    if (windows.recovery === recovery) windows.recovery = null;
   });
   recovery.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
 }

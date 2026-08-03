@@ -13,7 +13,7 @@ if (missing.length) {
   process.exit(1);
 }
 
-if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["start:editor"] || !packageJson.scripts["build:win"] || !packageJson.scripts["build:linux"] || !packageJson.scripts.serve) {
+if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["start:safe"] || !packageJson.scripts["start:editor"] || !packageJson.scripts["build:win"] || !packageJson.scripts["build:linux"] || !packageJson.scripts.serve) {
   console.error("package.json is missing start/build scripts");
   process.exit(1);
 }
@@ -59,6 +59,11 @@ if (!js.includes("userMaps()") || !js.includes("storyMissions: savedStoryMission
 const mainJs = fs.readFileSync("main.js", "utf8");
 if (!mainJs.includes("config:save") || !fs.readFileSync("preload.js", "utf8").includes("saveConfig")) {
   console.error("Electron config save bridge is missing");
+  process.exit(1);
+}
+
+if (!packageJson.build?.files?.includes("PotatoStrike.html")) {
+  console.error("Electron build must include PotatoStrike.html for safe offline mode");
   process.exit(1);
 }
 
@@ -150,7 +155,7 @@ for (const snippet of ["showBootError", "ensureNormalBootMenu", "if (!loadStudio
 }
 
 const preloadJs = fs.readFileSync("preload.js", "utf8");
-for (const snippet of ["writeLog", "logs", "potato-strike.log", "preload-error", "log:renderer", "crashReporter", "showCrashRecoveryWindow"]) {
+for (const snippet of ["writeLog", "logs", "potato-strike.log", "preload-error", "log:renderer", "crashReporter", "showCrashRecoveryWindow", "POTATO_SAFE_OFFLINE", "PotatoStrike.html"]) {
   if (!mainJs.includes(snippet) && !preloadJs.includes(snippet)) {
     console.error(`Missing required offline logging feature: ${snippet}`);
     process.exit(1);
