@@ -136,6 +136,23 @@
           Outline celownika
         </label>
         <label>
+          Mini-paint celownika
+          <input id="crosshair-paint-color" type="color" value="#f2f0df">
+        </label>
+        <label class="check">
+          <input id="crosshair-custom-enabled" type="checkbox">
+          Uzyj narysowanego celownika
+        </label>
+        <div class="paint-card">
+          <canvas id="crosshair-paint-canvas" width="160" height="160" aria-label="Mini-paint celownika"></canvas>
+          <div class="menu-actions left compact-actions">
+            <button id="crosshair-paint-clear" type="button" class="secondary">Wyczysc</button>
+            <button id="crosshair-paint-export" type="button" class="secondary">Export</button>
+            <button id="crosshair-paint-import" type="button" class="secondary">Import</button>
+            <input id="crosshair-paint-file" class="hidden" type="file" accept="application/json">
+          </div>
+        </div>
+        <label>
           Nick gracza
           <input id="config-nick" value="Potato">
         </label>

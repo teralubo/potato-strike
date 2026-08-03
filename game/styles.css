@@ -298,9 +298,14 @@ button:disabled {
   grid-template-columns: 1fr;
 }
 
+.panel#shop-panel {
+  width: min(1120px, calc(100vw - 28px));
+  background: rgba(14, 17, 14, 0.97);
+}
+
 .shop-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 10px;
   padding-top: 6px;
 }
@@ -354,6 +359,37 @@ button:disabled {
 
 .shop-item.owned {
   border-color: rgba(119, 181, 111, 0.55);
+}
+
+.shop-item.active {
+  border-color: rgba(215, 189, 98, 0.78);
+  background: rgba(215, 189, 98, 0.12);
+}
+
+.paint-card {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 176px 1fr;
+  gap: 12px;
+  align-items: start;
+  border: 1px solid rgba(242, 240, 223, 0.14);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(242, 240, 223, 0.055);
+}
+
+#crosshair-paint-canvas {
+  width: 160px;
+  height: 160px;
+  border: 1px solid rgba(242, 240, 223, 0.24);
+  border-radius: 6px;
+  background: #111411;
+  image-rendering: pixelated;
+  cursor: crosshair;
+}
+
+.compact-actions {
+  margin-top: 0;
 }
 
 .shop-title,

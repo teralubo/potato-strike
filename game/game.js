@@ -106,6 +106,13 @@ const hud = {
   crosshairGap: $("crosshair-gap"),
   crosshairThickness: $("crosshair-thickness"),
   crosshairOutline: $("crosshair-outline"),
+  crosshairPaintColor: $("crosshair-paint-color"),
+  crosshairCustomEnabled: $("crosshair-custom-enabled"),
+  crosshairPaintCanvas: $("crosshair-paint-canvas"),
+  crosshairPaintClear: $("crosshair-paint-clear"),
+  crosshairPaintExport: $("crosshair-paint-export"),
+  crosshairPaintImport: $("crosshair-paint-import"),
+  crosshairPaintFile: $("crosshair-paint-file"),
   configNick: $("config-nick"),
   configId: $("config-id"),
   configPlayerId: $("config-player-id"),
@@ -360,6 +367,9 @@ const settings = {
   crosshairGap: 10,
   crosshairThickness: 2,
   crosshairOutline: true,
+  crosshairCustomEnabled: false,
+  crosshairPaintColor: "#f2f0df",
+  customCrosshair: [],
   language: "pl",
   configId: "",
   nick: "Potato",
@@ -1142,6 +1152,8 @@ function syncProfileFields() {
   hud.crosshairGap.value = String(settings.crosshairGap);
   hud.crosshairThickness.value = String(settings.crosshairThickness);
   hud.crosshairOutline.checked = settings.crosshairOutline;
+  hud.crosshairCustomEnabled.checked = settings.crosshairCustomEnabled;
+  hud.crosshairPaintColor.value = settings.crosshairPaintColor || settings.crosshairColor;
   hud.sensitivity.value = String(settings.sensitivity);
   hud.pitchSensitivity.value = String(settings.pitchSensitivity);
   hud.invertY.checked = settings.invertY;
@@ -1149,6 +1161,7 @@ function syncProfileFields() {
   hud.masterVolume.value = String(settings.masterVolume);
   hud.footstepVolume.value = String(settings.footstepVolume);
   hud.serverAudio.checked = settings.serverAudio;
+  drawCrosshairPaint();
 }
 
 function loadConfig() {
@@ -2652,7 +2665,7 @@ function renderShop() {
     section.innerHTML = `<div class="shop-section-title">${category}</div>`;
     for (const weapon of weapons.filter((item) => item.category === category && sideAllows(item))) {
       const item = document.createElement("div");
-      item.className = `shop-item${weapon.owned ? " owned" : ""}`;
+      item.className = `shop-item${weapon.owned ? " owned" : ""}${weapon.id === player.weaponId ? " active" : ""}`;
       item.innerHTML = `<div class="shop-title"><span>${weapon.name}</span><span class="tag">${weapon.owned ? tr("owned") : `$${weapon.price}`}</span></div><div class="muted">${weapon.side} / ${weapon.category}</div><div class="shop-stats"><span>DMG ${weapon.damage}</span><span>MAG ${weapon.magSize}</span><span>ROF ${Math.round(1000 / weapon.fireDelay * 60)}</span><span>SPREAD ${Math.round(weapon.spread * 100)}</span></div>`;
       const button = document.createElement("button");
       button.textContent = weapon.owned ? tr("equip") : tr("buy");
@@ -2798,6 +2811,10 @@ function drawCrosshair() {
   const weapon = activeWeapon();
   const cx = isPerspectiveMode() ? window.innerWidth / 2 : mouse.x;
   const cy = isPerspectiveMode() ? window.innerHeight / 2 + camera.pitch * 0.28 : mouse.y;
+  if (settings.crosshairCustomEnabled && settings.customCrosshair?.length) {
+    drawCustomCrosshair(cx, cy);
+    return;
+  }
   const baseGap = Number(settings.crosshairGap ?? 10);
   const size = Number(settings.crosshairSize ?? 1);
   const gap = baseGap + weapon.spread * 120 + player.speedFactor * 10 + camera.shake;
@@ -2838,6 +2855,72 @@ function drawCrosshair() {
   }
   if (settings.crosshairOutline) drawLines("rgba(0,0,0,0.72)", thickness + 3);
   drawLines(settings.crosshairColor, thickness);
+}
+
+function drawCustomCrosshair(cx, cy) {
+  const pixels = settings.customCrosshair || [];
+  const scale = clamp(Number(settings.crosshairSize || 1) * 2, 1, 5);
+  const origin = 8 * scale;
+  if (settings.crosshairOutline) {
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    for (const cell of pixels) {
+      ctx.fillRect(cx - origin + cell.x * scale - 1, cy - origin + cell.y * scale - 1, scale + 2, scale + 2);
+    }
+  }
+  for (const cell of pixels) {
+    ctx.fillStyle = cell.color || settings.crosshairColor;
+    ctx.fillRect(cx - origin + cell.x * scale, cy - origin + cell.y * scale, scale, scale);
+  }
+}
+
+function normalizeCrosshairPixels(pixels) {
+  if (!Array.isArray(pixels)) return [];
+  return pixels
+    .map((cell) => ({ x: Math.floor(Number(cell.x)), y: Math.floor(Number(cell.y)), color: String(cell.color || settings.crosshairColor) }))
+    .filter((cell) => cell.x >= 0 && cell.x < 16 && cell.y >= 0 && cell.y < 16 && /^#[0-9a-f]{6}$/i.test(cell.color))
+    .slice(0, 256);
+}
+
+function paintCrosshairCell(event, erase = false) {
+  const canvasPaint = hud.crosshairPaintCanvas;
+  const rect = canvasPaint.getBoundingClientRect();
+  const x = clamp(Math.floor(((event.clientX - rect.left) / rect.width) * 16), 0, 15);
+  const y = clamp(Math.floor(((event.clientY - rect.top) / rect.height) * 16), 0, 15);
+  const pixels = normalizeCrosshairPixels(settings.customCrosshair);
+  const index = pixels.findIndex((cell) => cell.x === x && cell.y === y);
+  if (erase || event.buttons === 2) {
+    if (index >= 0) pixels.splice(index, 1);
+  } else if (index >= 0) {
+    pixels[index].color = hud.crosshairPaintColor.value;
+  } else {
+    pixels.push({ x, y, color: hud.crosshairPaintColor.value });
+  }
+  settings.customCrosshair = pixels;
+  settings.crosshairCustomEnabled = true;
+  hud.crosshairCustomEnabled.checked = true;
+  drawCrosshairPaint();
+  saveConfig();
+}
+
+function drawCrosshairPaint() {
+  const canvasPaint = hud.crosshairPaintCanvas;
+  if (!canvasPaint) return;
+  const pctx = canvasPaint.getContext("2d");
+  pctx.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+  pctx.fillStyle = "#111411";
+  pctx.fillRect(0, 0, canvasPaint.width, canvasPaint.height);
+  pctx.strokeStyle = "rgba(242,240,223,0.12)";
+  for (let i = 0; i <= 16; i += 1) {
+    const v = i * 10;
+    pctx.beginPath(); pctx.moveTo(v, 0); pctx.lineTo(v, 160); pctx.stroke();
+    pctx.beginPath(); pctx.moveTo(0, v); pctx.lineTo(160, v); pctx.stroke();
+  }
+  pctx.strokeStyle = "rgba(215,189,98,0.5)";
+  pctx.strokeRect(70.5, 70.5, 20, 20);
+  for (const cell of normalizeCrosshairPixels(settings.customCrosshair)) {
+    pctx.fillStyle = cell.color;
+    pctx.fillRect(cell.x * 10 + 1, cell.y * 10 + 1, 8, 8);
+  }
 }
 
 function render2d() {
@@ -3383,6 +3466,17 @@ function equipHotkey(n) {
   }
 }
 
+function cycleWeapon(direction = 1) {
+  const owned = weapons.filter((weapon) => weapon.owned && sideAllows(weapon));
+  if (owned.length < 2) return;
+  const current = owned.findIndex((weapon) => weapon.id === player.weaponId);
+  const next = owned[(current + direction + owned.length) % owned.length];
+  player.weaponId = next.id;
+  emitAudioEvent("ui", { x: player.x, y: player.y }, false);
+  showMessage(next.name);
+  updateHud();
+}
+
 function downloadLauncher() {
   const content = `@echo off\r\ncd /d "%~dp0"\r\nstart "" "PotatoStrike.html"\r\n`;
   const blob = new Blob([content], { type: "application/octet-stream" });
@@ -3460,6 +3554,11 @@ canvas.addEventListener("mousedown", async (event) => {
 canvas.addEventListener("contextmenu", (event) => {
   if (state.spectator.active && !player.alive) event.preventDefault();
 });
+canvas.addEventListener("wheel", (event) => {
+  if (state.overlayOpen || !state.running || !player.alive) return;
+  event.preventDefault();
+  cycleWeapon(event.deltaY > 0 ? 1 : -1);
+}, { passive: false });
 window.addEventListener("mouseup", () => { mouse.down = false; });
 
 document.querySelectorAll(".close-panel").forEach((button) => button.addEventListener("click", closePanels));
@@ -3575,6 +3674,37 @@ hud.crosshairSize.addEventListener("input", () => { settings.crosshairSize = Num
 hud.crosshairGap.addEventListener("input", () => { settings.crosshairGap = Number(hud.crosshairGap.value); saveConfig(); });
 hud.crosshairThickness.addEventListener("input", () => { settings.crosshairThickness = Number(hud.crosshairThickness.value); saveConfig(); });
 hud.crosshairOutline.addEventListener("change", () => { settings.crosshairOutline = hud.crosshairOutline.checked; saveConfig(); });
+hud.crosshairPaintColor.addEventListener("input", () => { settings.crosshairPaintColor = hud.crosshairPaintColor.value; saveConfig(); });
+hud.crosshairCustomEnabled.addEventListener("change", () => { settings.crosshairCustomEnabled = hud.crosshairCustomEnabled.checked; saveConfig(); });
+hud.crosshairPaintClear.addEventListener("click", () => {
+  settings.customCrosshair = [];
+  drawCrosshairPaint();
+  saveConfig();
+});
+hud.crosshairPaintExport.addEventListener("click", () => downloadJson("potato-crosshair.json", { type: "potato-strike-crosshair", pixels: normalizeCrosshairPixels(settings.customCrosshair) }));
+hud.crosshairPaintImport.addEventListener("click", () => hud.crosshairPaintFile.click());
+hud.crosshairPaintFile.addEventListener("change", async () => {
+  const file = hud.crosshairPaintFile.files[0];
+  if (!file) return;
+  const payload = JSON.parse(await file.text());
+  settings.customCrosshair = normalizeCrosshairPixels(payload.pixels || payload.customCrosshair || payload);
+  settings.crosshairCustomEnabled = true;
+  hud.crosshairCustomEnabled.checked = true;
+  drawCrosshairPaint();
+  saveConfig();
+  showMessage("Celownik wgrany");
+});
+hud.crosshairPaintCanvas.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  hud.crosshairPaintCanvas.setPointerCapture?.(event.pointerId);
+  paintCrosshairCell(event, event.button === 2);
+});
+hud.crosshairPaintCanvas.addEventListener("pointermove", (event) => {
+  if (!event.buttons) return;
+  event.preventDefault();
+  paintCrosshairCell(event, event.buttons === 2);
+});
+hud.crosshairPaintCanvas.addEventListener("contextmenu", (event) => event.preventDefault());
 hud.configNick.addEventListener("input", () => { settings.nick = hud.configNick.value || "Potato"; hud.playerName.value = settings.nick; saveConfig(); });
 hud.exportConfig.addEventListener("click", exportConfig);
 hud.importConfig.addEventListener("click", () => hud.configFile.click());
