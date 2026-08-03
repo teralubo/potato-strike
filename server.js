@@ -20,7 +20,7 @@ function send(res, status, body, type = "text/plain; charset=utf-8") {
 
 function serveFile(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const clean = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
+  const clean = decodeURIComponent(url.pathname === "/" ? "/PotatoStrike.html" : url.pathname);
   const file = path.normalize(path.join(root, clean));
   if (!file.startsWith(root)) return send(res, 403, "Forbidden");
   fs.readFile(file, (err, data) => {

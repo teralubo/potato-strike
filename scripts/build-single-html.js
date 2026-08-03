@@ -2,9 +2,9 @@ const fs = require("fs");
 const path = require("path");
 
 const root = process.cwd();
-const htmlPath = path.join(root, "index.html");
-const cssPath = path.join(root, "styles.css");
-const jsPath = path.join(root, "game.js");
+const htmlPath = path.join(root, "game", "index.html");
+const cssPath = path.join(root, "game", "styles.css");
+const jsPath = path.join(root, "game", "game.js");
 const outPath = path.join(root, "PotatoStrike.html");
 
 const html = fs.readFileSync(htmlPath, "utf8");

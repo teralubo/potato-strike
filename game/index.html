@@ -388,6 +388,17 @@
       </div>
       <p class="panel-note" id="network-status">Offline z botami jest w pelni grywalny. Online/LAN ma menu i konfiguracje; do prawdziwych graczy trzeba uruchomic serwer WebSocket.</p>
     </div>
+    <div class="panel hidden" id="mods-panel" aria-label="Mody">
+      <div class="panel-head">
+        <div>
+          <div class="muted">sandbox</div>
+          <h2>Mody</h2>
+        </div>
+        <button class="close-panel" data-panel="mods-panel">Zamknij</button>
+      </div>
+      <div id="mod-manager-list" class="mission-list"></div>
+      <p class="panel-note">Mody sa zapisane w profilu gracza. Mozesz je wlaczac, wylaczac, ustawiac priorytet i eksportowac razem z configiem profilu.</p>
+    </div>
     <div id="mobile-controls" class="hidden" aria-label="Sterowanie mobilne">
       <div class="mobile-stick">
         <button data-touch-action="forward">W</button>
@@ -505,6 +516,7 @@
           <button id="start">Graj</button>
           <button id="quick-editor">EDYTOR</button>
           <button id="open-profile" class="secondary">Profil</button>
+          <button id="open-mods" class="secondary">Mody</button>
           <button id="open-settings" class="secondary">Ustawienia</button>
           <button id="open-binds" class="secondary">Bindy</button>
           <button id="open-teams" class="secondary">Druzyny</button>

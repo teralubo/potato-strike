@@ -68,6 +68,8 @@ const hud = {
   missionList: $("mission-list"),
   networkPanel: $("network-panel"),
   networkStatus: $("network-status"),
+  modsPanel: $("mods-panel"),
+  modManagerList: $("mod-manager-list"),
   rerollMissions: $("reroll-missions"),
   graphicsMode: $("graphics-mode"),
   quality: $("quality"),
@@ -80,6 +82,7 @@ const hud = {
   configNick: $("config-nick"),
   configId: $("config-id"),
   configPlayerId: $("config-player-id"),
+  playerName: $("player-name"),
   exportConfig: $("export-config"),
   importConfig: $("import-config"),
   configFile: $("config-file"),
@@ -101,6 +104,7 @@ const hud = {
   profileImport: $("profile-import"),
   profileFile: $("profile-file"),
   openProfile: $("open-profile"),
+  openMods: $("open-mods"),
   launchTarget: $("launch-target"),
   matchSize: $("match-size"),
   fillMode: $("fill-mode"),
@@ -1051,7 +1055,7 @@ function renderAssetList() {
   hud.assetList.innerHTML = "";
   const rows = [
     ...customTextures.map((texture) => ["Texture", texture.name]),
-    ...loadedMods.map((mod) => ["Mod", mod.name || mod.id || "unnamed"]),
+    ...sortedMods().map((mod) => [mod.enabled === false ? "Mod off" : "Mod on", `${mod.priority ?? 100} / ${mod.name || mod.id || "unnamed"}`]),
   ];
   if (!rows.length) rows.push(["Assets", "brak"]);
   for (const [kind, name] of rows) {
@@ -1060,6 +1064,62 @@ function renderAssetList() {
     item.innerHTML = `<span>${kind}</span><span class="tag">${name}</span>`;
     hud.assetList.appendChild(item);
   }
+}
+
+function sortedMods() {
+  return [...loadedMods].sort((a, b) => Number(a.priority ?? 100) - Number(b.priority ?? 100));
+}
+
+function renderModManager() {
+  if (!hud.modManagerList) return;
+  hud.modManagerList.innerHTML = "";
+  const mods = sortedMods();
+  if (!mods.length) {
+    const empty = document.createElement("div");
+    empty.className = "mission-item";
+    empty.textContent = "Brak modow w profilu. Wgraj mod w edytorze lub przez import modpacka.";
+    hud.modManagerList.appendChild(empty);
+    return;
+  }
+  for (const mod of mods) {
+    const item = document.createElement("div");
+    item.className = "mission-item";
+    item.innerHTML = `
+      <div class="mission-title"><span>${mod.name || mod.id || "unnamed"}</span><span class="tag">${mod.enabled === false ? "OFF" : "ON"}</span></div>
+      <div class="settings-grid">
+        <label class="check"><input data-mod-enabled="${mod.id}" type="checkbox" ${mod.enabled === false ? "" : "checked"}> Wlaczony</label>
+        <label>Priorytet <input data-mod-priority="${mod.id}" type="number" value="${mod.priority ?? 100}"></label>
+      </div>
+      <div class="menu-actions left"><button data-mod-remove="${mod.id}" class="secondary">Usun</button></div>
+    `;
+    hud.modManagerList.appendChild(item);
+  }
+  hud.modManagerList.querySelectorAll("[data-mod-enabled]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const mod = loadedMods.find((item) => item.id === input.dataset.modEnabled);
+      if (mod) mod.enabled = input.checked;
+      saveConfig();
+      renderAssetList();
+      renderModManager();
+    });
+  });
+  hud.modManagerList.querySelectorAll("[data-mod-priority]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const mod = loadedMods.find((item) => item.id === input.dataset.modPriority);
+      if (mod) mod.priority = Number(input.value || 100);
+      saveConfig();
+      renderAssetList();
+    });
+  });
+  hud.modManagerList.querySelectorAll("[data-mod-remove]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const index = loadedMods.findIndex((item) => item.id === button.dataset.modRemove);
+      if (index >= 0) loadedMods.splice(index, 1);
+      saveConfig();
+      renderAssetList();
+      renderModManager();
+    });
+  });
 }
 
 async function importTexture() {
@@ -1107,10 +1167,11 @@ async function importMod() {
       showMessage("Script mod ma blad");
     }
   }
-  loadedMods.push({ id: mod.id || `mod-${Date.now().toString(36)}`, ...mod });
+  loadedMods.push({ id: mod.id || `mod-${Date.now().toString(36)}`, enabled: mod.enabled !== false, priority: Number(mod.priority ?? 100), ...mod });
   safeApplyMod(mod);
   if (window.potatoNative?.saveMod) await window.potatoNative.saveMod(mod.name || mod.id || "mod", mod);
   renderAssetList();
+  renderModManager();
   saveConfig();
   showMessage("Mod/tryb wgrany");
 }
@@ -2038,7 +2099,16 @@ function tick(now) {
     updateBots(dt);
     updateBullets(dt);
     updateGrenades(dt);
-    if (settings.graphicsMode === "3d") render3d(); else render2d();
+    try {
+      if (settings.graphicsMode === "3d") render3d(); else render2d();
+    } catch (error) {
+      console.error(error);
+      showMessage("Blad renderu - przelaczam na 2D");
+      settings.graphicsMode = "2d";
+      hud.menuGraphics.value = "2d";
+      hud.graphicsMode.value = "2d";
+      render2d();
+    }
     updateHud();
   }
   requestAnimationFrame(tick);
@@ -2056,6 +2126,7 @@ function togglePanel(panel) {
     if (panel === hud.teamsPanel) renderTeams();
     if (panel === hud.bindsPanel) renderBinds();
     if (panel === hud.editorPanel) renderSavedMissions();
+    if (panel === hud.modsPanel) renderModManager();
   }
 }
 
@@ -2070,6 +2141,7 @@ function closePanels() {
   hud.consolePanel.classList.add("hidden");
   hud.missionsPanel.classList.add("hidden");
   hud.networkPanel.classList.add("hidden");
+  hud.modsPanel.classList.add("hidden");
 }
 
 function equipHotkey(n) {
@@ -2082,7 +2154,7 @@ function equipHotkey(n) {
 }
 
 function downloadLauncher() {
-  const content = `@echo off\r\ncd /d "%~dp0"\r\nstart "" "index.html"\r\n`;
+  const content = `@echo off\r\ncd /d "%~dp0"\r\nstart "" "PotatoStrike.html"\r\n`;
   const blob = new Blob([content], { type: "application/octet-stream" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -2154,7 +2226,7 @@ async function openStandaloneEditor() {
     await window.potatoNative.openEditor();
     return;
   }
-  window.location.href = "editor.html";
+  window.location.href = window.location.pathname.toLowerCase().endsWith("potatostrike.html") ? "game/editor.html" : "editor.html";
 }
 
 hud.quickEditor.addEventListener("click", openStandaloneEditor);
@@ -2162,6 +2234,10 @@ hud.openEditor.addEventListener("click", openStandaloneEditor);
 hud.openConsole.addEventListener("click", openOwnerConsole);
 hud.openNetwork.addEventListener("click", () => togglePanel(hud.networkPanel));
 hud.openProfile.addEventListener("click", () => hud.playerMenu?.classList.toggle("hidden"));
+hud.openMods.addEventListener("click", () => {
+  togglePanel(hud.modsPanel);
+  renderModManager();
+});
 hud.downloadGame.addEventListener("click", downloadLauncher);
 hud.generateMap.addEventListener("click", generateMapFromMenu);
 hud.editorNew.addEventListener("click", newEditorMap);
@@ -2206,6 +2282,7 @@ hud.start.addEventListener("click", async () => {
   mouse.x = window.innerWidth / 2;
   mouse.y = window.innerHeight / 2;
   newMatch();
+  if (settings.graphicsMode === "3d") render3d(); else render2d();
   if (state.gameMode !== "offline") {
     hud.networkStatus.textContent = `${state.gameMode.toUpperCase()} jest przygotowany w menu. Aktualny build gra lokalnie z botami, dopoki nie zostanie podpiety serwer.`;
     showMessage(`${state.gameMode.toUpperCase()}: fallback do botow`);
@@ -2309,6 +2386,7 @@ renderShop();
 renderBinds();
 renderSavedMissions();
 renderAssetList();
+renderModManager();
 renderProfileMenu();
 loadStudioTestMap();
 requestAnimationFrame(tick);

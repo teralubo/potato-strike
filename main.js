@@ -49,7 +49,7 @@ function createWindow(options = {}) {
   win.on("closed", () => {
     if (windows.game === win) windows.game = null;
   });
-  win.loadFile(path.join(__dirname, "index.html"), options.query ? { query: options.query } : undefined);
+  win.loadFile(path.join(__dirname, "game", "index.html"), options.query ? { query: options.query } : undefined);
   return win;
 }
 
@@ -76,7 +76,7 @@ function createEditorWindow() {
   win.on("closed", () => {
     if (windows.editor === win) windows.editor = null;
   });
-  win.loadFile(path.join(__dirname, "editor.html"));
+  win.loadFile(path.join(__dirname, "game", "editor.html"));
   return win;
 }
 

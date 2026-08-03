@@ -1,0 +1,22 @@
+{
+  "type": "potato-strike-map",
+  "map": {
+    "name": "Example Mod Map",
+    "w": 1800,
+    "h": 1200,
+    "tSpawn": { "x": 180, "y": 1020 },
+    "ctSpawn": { "x": 1620, "y": 180 },
+    "sites": {
+      "A": { "x": 1320, "y": 860, "r": 115 },
+      "B": { "x": 520, "y": 300, "r": 110 }
+    },
+    "meta": {
+      "format": "potato-map-3d-lite",
+      "license": "GNU GPL 3.0"
+    },
+    "obstacles": [
+      { "id": "wall-1", "type": "wall", "x": 420, "y": 360, "w": 320, "h": 80, "z": 96, "rot": 0, "color": "#56614d", "material": "potato-concrete" },
+      { "id": "crate-1", "type": "crate", "x": 980, "y": 620, "w": 90, "h": 90, "z": 64, "rot": 0, "color": "#7d6648", "material": "potato-wood" }
+    ]
+  }
+}

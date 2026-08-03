@@ -1,7 +1,7 @@
 const fs = require("fs");
 
-const html = fs.readFileSync("index.html", "utf8");
-const js = fs.readFileSync("game.js", "utf8");
+const html = fs.readFileSync("game/index.html", "utf8");
+const js = fs.readFileSync("game/game.js", "utf8");
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const defaultConfig = JSON.parse(fs.readFileSync("configs/default-config.json", "utf8"));
 
@@ -18,7 +18,7 @@ if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["
   process.exit(1);
 }
 
-for (const file of ["main.js", "preload.js", "editor.html", "editor.css", "editor.js", "launch-offline-window.bat", "scripts/package-offline.js", "scripts/build-single-html.js", "mods/README.md"]) {
+for (const file of ["main.js", "preload.js", "game/index.html", "game/styles.css", "game/game.js", "game/editor.html", "game/editor.css", "game/editor.js", "launch-offline-window.bat", "scripts/package-offline.js", "scripts/build-single-html.js", "DEV-tools/README.md", "DEV-tools/mod-template.json", "mods/README.md"]) {
   if (!fs.existsSync(file)) {
     console.error(`Missing required offline file: ${file}`);
     process.exit(1);
@@ -97,6 +97,8 @@ for (const snippet of [
   "createPlayerProfile",
   "renderProfileMenu",
   "applyProfile",
+  "renderModManager",
+  "sortedMods",
 ]) {
   if (!js.includes(snippet)) {
     console.error(`Missing required runtime feature: ${snippet}`);
@@ -104,7 +106,7 @@ for (const snippet of [
   }
 }
 
-const editorJs = fs.readFileSync("editor.js", "utf8");
+const editorJs = fs.readFileSync("game/editor.js", "utf8");
 for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "isoCanvasPoint", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio feature: ${snippet}`);

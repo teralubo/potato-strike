@@ -14,7 +14,8 @@ Workflow repo:
 
 - Najlzejsza wersja gry to jeden plik `PotatoStrike.html`. Kliknij go dwa razy albo uruchom `PotatoStrike.bat`.
 - Pliki developerskie `node_modules/`, `dist/`, `.git/` i lokalne `.exe` nie sa potrzebne do wersji przegladarkowej i nie powinny trafic do malej paczki gry.
-- Tryb developerski mozesz odpalic przez `index.html`, albo `launch-browser.bat`.
+- Edytowalne zrodla gry sa w folderze `game/`, a narzedzia modderskie w `DEV-tools/`.
+- Tryb developerski mozesz odpalic przez `game/index.html`, albo `launch-browser.bat`.
 - Alternatywnie uruchom lokalny serwer:
 
 ```powershell
@@ -82,6 +83,8 @@ Configi startowe sa w folderze `configs/`, a export configu zawiera tez mapy i m
 - Edytor pozwala dodawac sciany, skrzynie, oslony, rampy, swiatla, spawny, triggery, logike, bronie i propy.
 - Mozna wgrac wlasna teksture, zapisac mape, zapisac misje albo wyeksportowac modpack.
 - Folder `mods/` sluzy do modow JSON/JS w wersji offline. Import kodu w UI dziala przez prosty sandbox API.
+- Folder `DEV-tools/` ma szablony modow, map i profilu gracza dla modderow.
+- Zakladka `Mody` w menu pozwala widziec mody z profilu, wlaczac/wylaczac je, ustawiac priorytet i usuwac.
 - W menu ustawien jest wybor jezyka PL/EN.
 
 ## Status online/LAN

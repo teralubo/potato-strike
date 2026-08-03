@@ -1,0 +1,16 @@
+{
+  "id": "example-low-weight-mod",
+  "name": "Example Low Weight Mod",
+  "enabled": true,
+  "priority": 100,
+  "mode": "sandbox",
+  "roundTime": 120,
+  "weapons": [
+    {
+      "name": "Potato Blaster",
+      "damage": 22,
+      "magSize": 24,
+      "color": "#d7bd62"
+    }
+  ]
+}
