@@ -2374,20 +2374,12 @@ function render3d() {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h / 2);
   const floor = ctx.createLinearGradient(0, h / 2, 0, h);
-  floor.addColorStop(0, "#31362f");
-  floor.addColorStop(1, "#181c18");
+  floor.addColorStop(0, "#48523f");
+  floor.addColorStop(0.45, "#30392d");
+  floor.addColorStop(1, "#151a15");
   ctx.fillStyle = floor;
   ctx.fillRect(0, h / 2, w, h / 2);
-  if (settings.quality !== "low") {
-    ctx.strokeStyle = "rgba(215,189,98,0.1)";
-    ctx.lineWidth = 1;
-    for (let y = h / 2 + 34; y < h; y += 36) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-  }
+  draw3dFloorGuides(w, h);
   const fov = Math.PI / 2.9;
   const cols = settings.quality === "low" ? 100 : settings.quality === "high" ? 260 : 170;
   const colW = w / cols;
@@ -2397,16 +2389,19 @@ function render3d() {
     const raw = castRay(ray);
     const d = raw * Math.cos(ray - player.angle);
     depth[i] = d;
-    const wallH = clamp((h * 620) / d, 8, h * 1.5);
-    const shade = clamp(218 - d * 0.13, 50, 198);
+    const wallH = clamp((h * 700) / d, 10, h * 1.65);
+    const shade = clamp(245 - d * 0.11, 68, 220);
     const x = i * colW;
     const y = h / 2 - wallH / 2 + camera.shake;
-    ctx.fillStyle = `rgb(${Math.floor(shade * 0.62)},${Math.floor(shade * 0.72)},${Math.floor(shade * 0.58)})`;
+    const stripe = i % 8 < 4 ? 1 : 0.88;
+    ctx.fillStyle = `rgb(${Math.floor(shade * 0.62 * stripe)},${Math.floor(shade * 0.78 * stripe)},${Math.floor(shade * 0.58 * stripe)})`;
     ctx.fillRect(x, y, colW + 1, wallH);
+    ctx.fillStyle = `rgba(255,255,255,${clamp(0.11 - d / 9000, 0.015, 0.09)})`;
+    ctx.fillRect(x, y, Math.max(1, colW * 0.35), wallH);
     if (settings.quality !== "low" && i % 2 === 0) {
-      ctx.fillStyle = `rgba(255,245,190,${clamp(0.16 - d / 9000, 0.02, 0.13)})`;
+      ctx.fillStyle = `rgba(255,245,190,${clamp(0.2 - d / 8500, 0.03, 0.16)})`;
       ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.06));
-      ctx.fillStyle = `rgba(0,0,0,${clamp(d / 2600, 0.04, 0.34)})`;
+      ctx.fillStyle = `rgba(0,0,0,${clamp(d / 2200, 0.04, 0.38)})`;
       ctx.fillRect(x, y + wallH * 0.72, colW + 1, Math.max(1, wallH * 0.12));
     }
   }
@@ -2426,9 +2421,33 @@ function render3d() {
     draw3dCharacter(sx, h / 2, size, s.color);
   }
   draw3dSiteMarkers(w, h, fov, depth, colW);
+  if (player.alive && !state.spectator.active) draw3dPlayerAvatar(w, h);
   draw3dWeapon(w, h);
   drawMinimap();
   drawCrosshair();
+}
+
+function draw3dFloorGuides(w, h) {
+  if (settings.quality === "low") return;
+  ctx.save();
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 9; i += 1) {
+    const y = h / 2 + Math.pow(i / 9, 1.55) * h * 0.48;
+    ctx.strokeStyle = `rgba(215,189,98,${0.13 - i * 0.008})`;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(242,240,223,0.08)";
+  for (let i = -4; i <= 4; i += 1) {
+    const foot = w / 2 + i * w * 0.12;
+    ctx.beginPath();
+    ctx.moveTo(w / 2, h / 2);
+    ctx.lineTo(foot, h);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function draw3dSiteMarkers(w, h, fov, depth, colW) {
@@ -2470,6 +2489,34 @@ function draw3dCharacter(x, y, size, color) {
   ctx.fillStyle = "#2b2d28";
   ctx.fillRect(x - size * 0.2, y + size * 0.18, size * 0.16, size * 0.42);
   ctx.fillRect(x + size * 0.04, y + size * 0.18, size * 0.16, size * 0.42);
+}
+
+function draw3dPlayerAvatar(w, h) {
+  const x = w / 2;
+  const y = h - 190 + camera.shake;
+  const size = clamp(h * 0.18, 74, 142);
+  const color = state.team === "T" ? "#c48a45" : "#8ea9b8";
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.42)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + size * 0.76, size * 0.46, size * 0.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#20231e";
+  ctx.fillRect(x - size * 0.18, y + size * 0.12, size * 0.12, size * 0.54);
+  ctx.fillRect(x + size * 0.06, y + size * 0.12, size * 0.12, size * 0.54);
+  ctx.fillStyle = color;
+  ctx.fillRect(x - size * 0.27, y - size * 0.36, size * 0.54, size * 0.52);
+  ctx.fillStyle = "rgba(255,255,255,0.16)";
+  ctx.fillRect(x - size * 0.22, y - size * 0.31, size * 0.44, size * 0.06);
+  ctx.fillStyle = "#d8c19a";
+  ctx.fillRect(x - size * 0.16, y - size * 0.62, size * 0.32, size * 0.24);
+  ctx.fillStyle = "#1a1d18";
+  ctx.fillRect(x + size * 0.18, y - size * 0.18, size * 0.62, size * 0.1);
+  ctx.fillStyle = "#f2f0df";
+  ctx.font = "800 12px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("YOU", x, y - size * 0.72);
+  ctx.restore();
 }
 
 function draw3dWeapon(w, h) {

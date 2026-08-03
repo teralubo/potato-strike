@@ -85,6 +85,8 @@ if (!mainJs.includes("playersDir") || !mainJs.includes("profile.json") || !mainJ
 
 for (const snippet of [
   "draw3dCharacter",
+  "draw3dPlayerAvatar",
+  "draw3dFloorGuides",
   "draw3dWeapon",
   "draw3dSiteMarkers",
   "openOwnerConsole",
