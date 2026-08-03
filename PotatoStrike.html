@@ -1354,6 +1354,7 @@ const state = {
   bomb: { status: "carried", carrier: "player", x: 0, y: 0, site: "", timer: 40, defuse: 0 },
   campaignIndex: 0,
   randomMissions: [],
+  spectator: { active: false, index: 0, target: null, takeoverLatch: false },
   frameSkip: 0,
 };
 
@@ -1404,7 +1405,7 @@ const actionLabels = {
   back: "Ruch do tylu",
   left: "Ruch w lewo",
   right: "Ruch w prawo",
-  use: "Uzyj / bomba",
+  use: "Uzyj / bomba / przejmij bota",
   reload: "Przeladuj",
   shop: "Sklep",
   settings: "Ustawienia",
@@ -2255,6 +2256,7 @@ function resetRoundPositions() {
   bullets.length = 0;
   grenades.length = 0;
   effects.length = 0;
+  leaveSpectator();
   state.roundTime = 115;
   state.freezeTime = 5;
   state.phase = "freeze";
@@ -2291,6 +2293,8 @@ function spawnBots() {
       speed: (92 + Math.random() * 22) * difficultyScale(),
       fire: 450 + Math.random() * 700,
       weapon: state.enemyTeam === "T" ? "AK-47" : "M4A4",
+      name: `ENEMY ${i + 1}`,
+      source: "BOT",
       flashed: 0,
     });
   }
@@ -2306,6 +2310,7 @@ function spawnBots() {
       speed: 92 + Math.random() * 18,
       fire: 520 + Math.random() * 760,
       name: `BOT ${i}`,
+      source: "BOT",
       flashed: 0,
     });
   }
@@ -2675,6 +2680,72 @@ function updateAllies(dt) {
   }
 }
 
+function livingTeamBots() {
+  return allies.filter((ally) => ally.hp > 0);
+}
+
+function currentSpectatorTarget() {
+  const living = livingTeamBots();
+  if (!living.length) {
+    state.spectator.target = null;
+    return null;
+  }
+  state.spectator.index = clamp(state.spectator.index, 0, living.length - 1);
+  state.spectator.target = living[state.spectator.index];
+  return state.spectator.target;
+}
+
+function enterSpectator() {
+  if (state.phase === "ended") return;
+  state.spectator.active = true;
+  state.spectator.index = 0;
+  state.spectator.takeoverLatch = true;
+  mouse.down = false;
+  mouse.clicked = false;
+  const target = currentSpectatorTarget();
+  if (!target) {
+    endRound(state.enemyTeam, "twoja druzyna wyeliminowana");
+    return;
+  }
+  showMessage(`Nie zyjesz - obserwujesz ${target.name}. Wcisnij E, aby przejac bota.`);
+}
+
+function leaveSpectator() {
+  state.spectator.active = false;
+  state.spectator.target = null;
+  state.spectator.takeoverLatch = false;
+}
+
+function takeoverBot(bot) {
+  const index = allies.indexOf(bot);
+  if (index < 0 || bot.hp <= 0 || bot.source === "LAN") return;
+  player.x = bot.x;
+  player.y = bot.y;
+  player.angle = bot.angle || player.angle;
+  player.hp = clamp(bot.hp, 1, 100);
+  player.alive = true;
+  player.invuln = 0.35;
+  allies.splice(index, 1);
+  leaveSpectator();
+  renderTeams();
+  showMessage(`Przejales ${bot.name}. Grasz dalej.`);
+}
+
+function updateSpectator() {
+  if (player.alive || !state.spectator.active || state.overlayOpen || state.phase === "ended") return;
+  const target = currentSpectatorTarget();
+  if (!target) {
+    endRound(state.enemyTeam, "twoja druzyna wyeliminowana");
+    return;
+  }
+  player.x = target.x;
+  player.y = target.y;
+  player.angle = target.angle || player.angle;
+  const wantsTakeover = actionDown("use");
+  if (wantsTakeover && !state.spectator.takeoverLatch) takeoverBot(target);
+  state.spectator.takeoverLatch = wantsTakeover;
+}
+
 function damagePlayer(amount) {
   if (player.invuln > 0 || !player.alive) return;
   const armorBlock = Math.min(player.armor, amount * 0.5);
@@ -2684,7 +2755,7 @@ function damagePlayer(amount) {
   if (player.hp <= 0) {
     player.hp = 0;
     player.alive = false;
-    endRound(state.enemyTeam, "gracz wyeliminowany");
+    enterSpectator();
   }
 }
 
@@ -3012,9 +3083,9 @@ function render2d() {
   camera.y = clamp(player.y - window.innerHeight / 2 + (Math.random() - 0.5) * camera.shake, 0, Math.max(0, state.map.h - window.innerHeight));
   drawMap2d();
   drawProjectiles2d();
-  for (const ally of allies) if (ally.hp > 0) drawActor(ally, state.team === "T" ? "#c48a45" : "#8ea9b8", state.team);
+  for (const ally of allies) if (ally.hp > 0) drawActor(ally, state.team === "T" ? "#c48a45" : "#8ea9b8", ally === state.spectator.target ? "OBS" : state.team);
   for (const bot of bots) if (bot.hp > 0) drawActor(bot, state.enemyTeam === "T" ? "#b84d42" : "#557bb0", state.enemyTeam);
-  drawActor(player, state.team === "T" ? "#c48a45" : "#8ea9b8", "YOU");
+  if (player.alive) drawActor(player, state.team === "T" ? "#c48a45" : "#8ea9b8", "YOU");
   drawMinimap();
   drawCrosshair();
 }
@@ -3076,7 +3147,7 @@ function render3d() {
   }
   const sprites = [
     ...bots.filter((bot) => bot.hp > 0).map((bot) => ({ bot, color: state.enemyTeam === "T" ? "#b84d42" : "#557bb0", d: dist(player.x, player.y, bot.x, bot.y), a: angleTo(player.x, player.y, bot.x, bot.y) })),
-    ...allies.filter((bot) => bot.hp > 0).map((bot) => ({ bot, color: state.team === "T" ? "#c48a45" : "#8ea9b8", d: dist(player.x, player.y, bot.x, bot.y), a: angleTo(player.x, player.y, bot.x, bot.y) })),
+    ...allies.filter((bot) => bot.hp > 0 && bot !== state.spectator.target).map((bot) => ({ bot, color: state.team === "T" ? "#c48a45" : "#8ea9b8", d: dist(player.x, player.y, bot.x, bot.y), a: angleTo(player.x, player.y, bot.x, bot.y) })),
   ].sort((a, b) => b.d - a.d);
   for (const s of sprites) {
     let rel = s.a - player.angle;
@@ -3160,8 +3231,9 @@ function draw3dWeapon(w, h) {
 
 function updateHud() {
   const weapon = activeWeapon();
+  const spectated = state.spectator.active ? currentSpectatorTarget() : null;
   hud.mode.textContent = state.gameMode.toUpperCase();
-  hud.team.textContent = `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
+  hud.team.textContent = spectated ? `SPECTATE ${spectated.name}${spectated.source === "LAN" ? "" : " / E TAKEOVER"}` : `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
   hud.health.textContent = `HP ${Math.ceil(player.hp)}`;
   hud.armor.textContent = `ARMOR ${Math.ceil(player.armor)}`;
   hud.money.textContent = `${player.money}`;
@@ -3189,6 +3261,7 @@ function tick(now) {
     updateBots(dt);
     updateBullets(dt);
     updateGrenades(dt);
+    updateSpectator();
     try {
       if (settings.graphicsMode === "3d") render3d(); else render2d();
     } catch (error) {

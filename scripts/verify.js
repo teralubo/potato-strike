@@ -99,6 +99,10 @@ for (const snippet of [
   "applyProfile",
   "renderModManager",
   "sortedMods",
+  "enterSpectator",
+  "updateSpectator",
+  "takeoverBot",
+  "livingTeamBots",
 ]) {
   if (!js.includes(snippet)) {
     console.error(`Missing required runtime feature: ${snippet}`);
