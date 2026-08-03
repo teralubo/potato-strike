@@ -102,6 +102,10 @@ const hud = {
   hzLimit: $("hz-limit"),
   crosshairStyle: $("crosshair-style"),
   crosshairColor: $("crosshair-color"),
+  crosshairSize: $("crosshair-size"),
+  crosshairGap: $("crosshair-gap"),
+  crosshairThickness: $("crosshair-thickness"),
+  crosshairOutline: $("crosshair-outline"),
   configNick: $("config-nick"),
   configId: $("config-id"),
   configPlayerId: $("config-player-id"),
@@ -112,6 +116,8 @@ const hud = {
   importConfig: $("import-config"),
   configFile: $("config-file"),
   sensitivity: $("sensitivity"),
+  pitchSensitivity: $("pitch-sensitivity"),
+  invertY: $("invert-y"),
   screenShake: $("screen-shake"),
   soundEnabled: $("sound-enabled"),
   masterVolume: $("master-volume"),
@@ -350,11 +356,17 @@ const settings = {
   hzLimit: 60,
   crosshairStyle: "classic",
   crosshairColor: "#f2f0df",
+  crosshairSize: 1,
+  crosshairGap: 10,
+  crosshairThickness: 2,
+  crosshairOutline: true,
   language: "pl",
   configId: "",
   nick: "Potato",
   playerId: "",
   sensitivity: 1,
+  pitchSensitivity: 1,
+  invertY: false,
   screenShake: 0.8,
   soundEnabled: true,
   masterVolume: 0.75,
@@ -378,6 +390,12 @@ const simple3dTextures = {
   glass: { base: "#b7dce4", side: "#6daab8", seam: "rgba(33,67,74,0.28)", mark: "rgba(255,255,255,0.35)", mode: "glass", footstep: "glass" },
   hazard: { base: "#f0d06e", side: "#88622e", seam: "rgba(42,31,18,0.38)", mark: "rgba(20,20,15,0.3)", mode: "hazard", footstep: "metal" },
   bluewall: { base: "#bfd2df", side: "#71899b", seam: "rgba(20,36,50,0.28)", mark: "rgba(255,255,255,0.22)", mode: "panel", footstep: "concrete" },
+  redpanel: { base: "#d9b0a2", side: "#925d54", seam: "rgba(65,28,24,0.28)", mark: "rgba(255,238,230,0.18)", mode: "panel", footstep: "concrete" },
+  greenpanel: { base: "#c8d7b4", side: "#70885f", seam: "rgba(30,50,25,0.26)", mark: "rgba(255,255,235,0.18)", mode: "panel", footstep: "concrete" },
+  tile: { base: "#e2dfd2", side: "#aaa89d", seam: "rgba(38,38,34,0.32)", mark: "rgba(255,255,255,0.26)", mode: "tile", footstep: "stone" },
+  asphalt: { base: "#9fa49c", side: "#626c65", seam: "rgba(17,20,18,0.34)", mark: "rgba(255,255,255,0.16)", mode: "speckle", footstep: "stone" },
+  camo: { base: "#bbc6a0", side: "#667453", seam: "rgba(38,49,28,0.28)", mark: "rgba(237,245,205,0.18)", mode: "camo", footstep: "dirt" },
+  stripe: { base: "#e1c981", side: "#816b43", seam: "rgba(28,24,16,0.35)", mark: "rgba(255,255,230,0.2)", mode: "stripe", footstep: "metal" },
   terrain: { base: "#47553e", side: "#283229", seam: "rgba(242,240,223,0.12)", mark: "rgba(255,255,255,0.08)", mode: "terrain", footstep: "dirt" },
 };
 
@@ -1120,6 +1138,13 @@ function syncProfileFields() {
   hud.hzLimit.value = String(settings.hzLimit);
   hud.crosshairStyle.value = settings.crosshairStyle;
   hud.crosshairColor.value = settings.crosshairColor;
+  hud.crosshairSize.value = String(settings.crosshairSize);
+  hud.crosshairGap.value = String(settings.crosshairGap);
+  hud.crosshairThickness.value = String(settings.crosshairThickness);
+  hud.crosshairOutline.checked = settings.crosshairOutline;
+  hud.sensitivity.value = String(settings.sensitivity);
+  hud.pitchSensitivity.value = String(settings.pitchSensitivity);
+  hud.invertY.checked = settings.invertY;
   hud.soundEnabled.checked = settings.soundEnabled;
   hud.masterVolume.value = String(settings.masterVolume);
   hud.footstepVolume.value = String(settings.footstepVolume);
@@ -2773,21 +2798,46 @@ function drawCrosshair() {
   const weapon = activeWeapon();
   const cx = isPerspectiveMode() ? window.innerWidth / 2 : mouse.x;
   const cy = isPerspectiveMode() ? window.innerHeight / 2 + camera.pitch * 0.28 : mouse.y;
-  const gap = 10 + weapon.spread * 120 + player.speedFactor * 10 + camera.shake;
-  ctx.strokeStyle = settings.crosshairColor;
+  const baseGap = Number(settings.crosshairGap ?? 10);
+  const size = Number(settings.crosshairSize ?? 1);
+  const gap = baseGap + weapon.spread * 120 + player.speedFactor * 10 + camera.shake;
+  const length = (settings.crosshairStyle === "wide" ? 13 : 7) * size;
+  const thickness = Number(settings.crosshairThickness ?? 2);
+  const drawLines = (stroke, width) => {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    if (settings.crosshairStyle !== "t") {
+      ctx.moveTo(cx, cy - gap - length); ctx.lineTo(cx, cy - gap);
+    }
+    ctx.moveTo(cx - gap - length, cy); ctx.lineTo(cx - gap, cy);
+    ctx.moveTo(cx + gap, cy); ctx.lineTo(cx + gap + length, cy);
+    ctx.moveTo(cx, cy + gap); ctx.lineTo(cx, cy + gap + length);
+    ctx.stroke();
+  };
   ctx.fillStyle = settings.crosshairColor;
-  ctx.lineWidth = 2;
   if (settings.crosshairStyle === "dot") {
-    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
+    if (settings.crosshairOutline) {
+      ctx.fillStyle = "rgba(0,0,0,0.72)";
+      ctx.beginPath(); ctx.arc(cx, cy, 4 * size + 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = settings.crosshairColor;
+    ctx.beginPath(); ctx.arc(cx, cy, 3 * size, 0, Math.PI * 2); ctx.fill();
     return;
   }
-  const length = settings.crosshairStyle === "wide" ? 13 : 7;
-  ctx.beginPath();
-  ctx.moveTo(cx - gap - length, cy); ctx.lineTo(cx - gap, cy);
-  ctx.moveTo(cx + gap, cy); ctx.lineTo(cx + gap + length, cy);
-  ctx.moveTo(cx, cy - gap - length); ctx.lineTo(cx, cy - gap);
-  ctx.moveTo(cx, cy + gap); ctx.lineTo(cx, cy + gap + length);
-  ctx.stroke();
+  if (settings.crosshairStyle === "circle") {
+    if (settings.crosshairOutline) {
+      ctx.strokeStyle = "rgba(0,0,0,0.72)";
+      ctx.lineWidth = thickness + 3;
+      ctx.beginPath(); ctx.arc(cx, cy, gap + length * 0.7, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.strokeStyle = settings.crosshairColor;
+    ctx.lineWidth = thickness;
+    ctx.beginPath(); ctx.arc(cx, cy, gap + length * 0.7, 0, Math.PI * 2); ctx.stroke();
+    return;
+  }
+  if (settings.crosshairOutline) drawLines("rgba(0,0,0,0.72)", thickness + 3);
+  drawLines(settings.crosshairColor, thickness);
 }
 
 function render2d() {
@@ -2859,7 +2909,9 @@ function autoTextureForHit(hit) {
   if (hit.texture || hit.material || hit.type) return defaultTextureForType(hit.type);
   const hash = Math.abs(Math.floor(hit.x * 7 + hit.y * 11 + hit.w * 13 + hit.h * 17));
   const longWall = Math.max(hit.w, hit.h) > Math.min(hit.w, hit.h) * 2.4;
-  const palette = longWall ? ["concrete", "white", "bluewall", "brick"] : ["crate", "metal", "concrete", "hazard"];
+  const palette = longWall
+    ? ["concrete", "white", "bluewall", "redpanel", "greenpanel", "brick", "tile"]
+    : ["crate", "metal", "concrete", "hazard", "asphalt", "camo", "stripe"];
   return palette[hash % palette.length];
 }
 
@@ -2920,6 +2972,25 @@ function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column, s
     const band = Math.max(10, wallH / 6);
     ctx.fillStyle = "rgba(20,20,15,0.28)";
     for (let row = y; row < y + wallH; row += band * 2) ctx.fillRect(drawX, row, drawW, band);
+  }
+  if (settings.quality !== "low" && texture.mode === "tile") {
+    ctx.fillStyle = "rgba(60,58,52,0.22)";
+    for (let row = y + Math.max(10, wallH / 6); row < y + wallH; row += Math.max(10, wallH / 6)) ctx.fillRect(drawX, row, drawW, 1);
+    if (Math.floor(texCoord) % 64 < 6) ctx.fillRect(drawX, y, drawW, wallH);
+  }
+  if (settings.quality !== "low" && texture.mode === "speckle" && column % 5 === 0) {
+    ctx.fillStyle = "rgba(255,255,255,0.12)";
+    ctx.fillRect(drawX, y + wallH * 0.22, drawW, Math.max(1, wallH * 0.03));
+    ctx.fillStyle = "rgba(0,0,0,0.16)";
+    ctx.fillRect(drawX, y + wallH * 0.58, drawW, Math.max(1, wallH * 0.03));
+  }
+  if (settings.quality !== "low" && texture.mode === "camo") {
+    ctx.fillStyle = column % 11 < 5 ? "rgba(74,92,55,0.2)" : "rgba(224,232,188,0.16)";
+    ctx.fillRect(drawX, y + wallH * ((column % 17) / 28), drawW, wallH * 0.34);
+  }
+  if (settings.quality !== "low" && texture.mode === "stripe") {
+    ctx.fillStyle = Math.floor((texCoord + column * 3) / 22) % 2 ? "rgba(20,20,15,0.26)" : "rgba(255,255,220,0.16)";
+    ctx.fillRect(drawX, y, drawW, wallH);
   }
   if (settings.quality === "high" && (column % 24 === 0 || side === "edge")) {
     ctx.strokeStyle = `rgba(0,0,0,${clamp(0.12 + distance / 6200, 0.1, 0.26)})`;
@@ -3359,7 +3430,8 @@ canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
     if (isPerspectiveMode()) {
       player.angle += event.movementX * 0.0032 * settings.sensitivity;
-      camera.pitch = clamp(camera.pitch + event.movementY * 0.72 * settings.sensitivity, -window.innerHeight * 0.32, window.innerHeight * 0.32);
+      const pitchDirection = settings.invertY ? -1 : 1;
+      camera.pitch = clamp(camera.pitch + event.movementY * 0.72 * settings.sensitivity * settings.pitchSensitivity * pitchDirection, -window.innerHeight * 0.36, window.innerHeight * 0.36);
       mouse.x = window.innerWidth / 2;
       mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
     } else {
@@ -3499,6 +3571,10 @@ hud.resolution.addEventListener("change", () => { settings.resolution = hud.reso
 hud.hzLimit.addEventListener("change", () => { settings.hzLimit = Number(hud.hzLimit.value); saveConfig(); });
 hud.crosshairStyle.addEventListener("change", () => { settings.crosshairStyle = hud.crosshairStyle.value; saveConfig(); });
 hud.crosshairColor.addEventListener("input", () => { settings.crosshairColor = hud.crosshairColor.value; saveConfig(); });
+hud.crosshairSize.addEventListener("input", () => { settings.crosshairSize = Number(hud.crosshairSize.value); saveConfig(); });
+hud.crosshairGap.addEventListener("input", () => { settings.crosshairGap = Number(hud.crosshairGap.value); saveConfig(); });
+hud.crosshairThickness.addEventListener("input", () => { settings.crosshairThickness = Number(hud.crosshairThickness.value); saveConfig(); });
+hud.crosshairOutline.addEventListener("change", () => { settings.crosshairOutline = hud.crosshairOutline.checked; saveConfig(); });
 hud.configNick.addEventListener("input", () => { settings.nick = hud.configNick.value || "Potato"; hud.playerName.value = settings.nick; saveConfig(); });
 hud.exportConfig.addEventListener("click", exportConfig);
 hud.importConfig.addEventListener("click", () => hud.configFile.click());
@@ -3525,6 +3601,8 @@ hud.profileFile.addEventListener("change", async () => {
   showMessage("Profil zaimportowany");
 });
 hud.sensitivity.addEventListener("input", () => { settings.sensitivity = Number(hud.sensitivity.value); });
+hud.pitchSensitivity.addEventListener("input", () => { settings.pitchSensitivity = Number(hud.pitchSensitivity.value); saveConfig(); });
+hud.invertY.addEventListener("change", () => { settings.invertY = hud.invertY.checked; saveConfig(); });
 hud.screenShake.addEventListener("input", () => { settings.screenShake = Number(hud.screenShake.value); });
 hud.soundEnabled.addEventListener("change", () => { settings.soundEnabled = hud.soundEnabled.checked; if (settings.soundEnabled) ensureAudio(); saveConfig(); });
 hud.masterVolume.addEventListener("input", () => { settings.masterVolume = Number(hud.masterVolume.value); saveConfig(); });

@@ -111,11 +111,29 @@
             <option value="classic" selected>Classic</option>
             <option value="dot">Dot</option>
             <option value="wide">Wide</option>
+            <option value="circle">Circle</option>
+            <option value="t">T Style</option>
           </select>
         </label>
         <label>
           Kolor celownika
           <input id="crosshair-color" type="color" value="#f2f0df">
+        </label>
+        <label>
+          Rozmiar celownika
+          <input id="crosshair-size" type="range" min="0.6" max="2.2" step="0.1" value="1">
+        </label>
+        <label>
+          Przerwa celownika
+          <input id="crosshair-gap" type="range" min="0" max="24" step="1" value="10">
+        </label>
+        <label>
+          Grubosc celownika
+          <input id="crosshair-thickness" type="range" min="1" max="5" step="1" value="2">
+        </label>
+        <label class="check">
+          <input id="crosshair-outline" type="checkbox" checked>
+          Outline celownika
         </label>
         <label>
           Nick gracza
@@ -132,6 +150,14 @@
         <label>
           Czuleosc myszy
           <input id="sensitivity" type="range" min="0.4" max="2.4" step="0.1" value="1">
+        </label>
+        <label>
+          Kamera gora/dol
+          <input id="pitch-sensitivity" type="range" min="0.35" max="2.4" step="0.05" value="1">
+        </label>
+        <label class="check">
+          <input id="invert-y" type="checkbox">
+          Odwroc mysz Y
         </label>
         <label>
           Screen shake

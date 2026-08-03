@@ -152,6 +152,17 @@ for (const snippet of [
   "i18n",
   "bindLabel",
   "setOptionText",
+  "crosshairSize",
+  "crosshairGap",
+  "crosshairThickness",
+  "crosshairOutline",
+  "pitchSensitivity",
+  "invertY",
+  "redpanel",
+  "greenpanel",
+  "tile",
+  "camo",
+  "stripe",
   "3D FPS",
 ]) {
   if (!js.includes(snippet)) {
