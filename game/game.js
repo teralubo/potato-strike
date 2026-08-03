@@ -166,7 +166,7 @@ const hud = {
 };
 
 const weaponCatalog = [
-  { name: "Glock-18", side: "T", category: "Pistol", price: 200, magSize: 20, reserve: 120, damage: 19, fireDelay: 95, reloadTime: 1.15, spread: 0.065, recoil: 0.042, bulletSpeed: 1040, automatic: false, color: "#bfc7c1" },
+  { name: "Glock-18", side: "T", category: "Pistol", price: 200, magSize: 20, reserve: 120, damage: 19, fireDelay: 95, reloadTime: 1.15, spread: 0.065, recoil: 0.042, bulletSpeed: 1040, automatic: false, color: "#bfc7c1", burstCapable: true, burstCount: 3, burstDelay: 280, fireMode: "semi" },
   { name: "USP-S", side: "CT", category: "Pistol", price: 200, magSize: 12, reserve: 60, damage: 23, fireDelay: 150, reloadTime: 1.2, spread: 0.042, recoil: 0.038, bulletSpeed: 1060, automatic: false, color: "#b7c0b6" },
   { name: "P2000", side: "CT", category: "Pistol", price: 200, magSize: 13, reserve: 52, damage: 22, fireDelay: 145, reloadTime: 1.2, spread: 0.049, recoil: 0.04, bulletSpeed: 1040, automatic: false, color: "#9fb5b2" },
   { name: "P250", side: "BOTH", category: "Pistol", price: 300, magSize: 13, reserve: 52, damage: 27, fireDelay: 150, reloadTime: 1.2, spread: 0.052, recoil: 0.05, bulletSpeed: 1060, automatic: false, color: "#aebbb5" },
@@ -200,6 +200,7 @@ const weaponCatalog = [
   { name: "Sawed-Off", side: "T", category: "Heavy", price: 1100, magSize: 7, reserve: 32, damage: 17, pellets: 7, fireDelay: 820, reloadTime: 1.8, spread: 0.29, recoil: 0.12, bulletSpeed: 870, automatic: false, color: "#a77e55" },
   { name: "M249", side: "BOTH", category: "Heavy", price: 5200, magSize: 100, reserve: 200, damage: 28, fireDelay: 86, reloadTime: 2.9, spread: 0.13, recoil: 0.088, bulletSpeed: 1120, automatic: true, color: "#8b9a78" },
   { name: "Negev", side: "BOTH", category: "Heavy", price: 1700, magSize: 150, reserve: 200, damage: 24, fireDelay: 70, reloadTime: 3.0, spread: 0.16, recoil: 0.092, bulletSpeed: 1080, automatic: true, color: "#a19570" },
+  { name: "Knife", side: "BOTH", category: "Melee", price: 0, magSize: 1, reserve: 0, damage: 55, fireDelay: 440, reloadTime: 0, spread: 0, recoil: 0.025, bulletSpeed: 0, automatic: false, color: "#d8d5bf", melee: true, droppable: false },
 ];
 
 const grenadeCatalog = [
@@ -478,7 +479,7 @@ const i18n = {
     modsTitle: "Mody",
     profileTitle: "profil gracza",
     menuLead: "CS-like dla slabych komputerow: misje, boty, bomba, sklep stron, 2D albo lekkie 3D. Pod I sa bindy, ktore mozna zobaczyc i zmienic.",
-    controlsHelp: "WASD ruch / mysz / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H granat / R reload / B sklep / O ustawienia / M misje / I bindy / 1-9 bron / po dead strzalki lub klik zmieniaja teammate",
+    controlsHelp: "WASD ruch / mysz / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H granat / R reload / B sklep / PPM tryb Glocka / O ustawienia / M misje / I bindy / 1-9 bron / po dead strzalki lub klik zmieniaja teammate",
     languageLabel: "Jezyk / Language",
     graphicsLabel: "Tryb grafiki",
     qualityLabel: "Jakosc",
@@ -552,7 +553,7 @@ const i18n = {
     modsTitle: "Mods",
     profileTitle: "player profile",
     menuLead: "CS-like for weak computers: missions, bots, bomb mode, side shop, 2D or light 3D. Press I to view and change binds.",
-    controlsHelp: "WASD movement / mouse / E use-plant-defuse-pickup / G drop weapon / H grenade / R reload / B shop / O settings / M missions / I binds / 1-9 weapon / after death arrows or click change teammate",
+    controlsHelp: "WASD movement / mouse / E use-plant-defuse-pickup / G drop weapon / H grenade / R reload / B shop / RMB Glock mode / O settings / M missions / I binds / 1-9 weapon / after death arrows or click change teammate",
     languageLabel: "Language / Jezyk",
     graphicsLabel: "Graphics mode",
     qualityLabel: "Quality",
@@ -734,6 +735,10 @@ function dist(ax, ay, bx, by) {
 
 function angleTo(ax, ay, bx, by) {
   return Math.atan2(by - ay, bx - ax);
+}
+
+function angleDiff(a, b) {
+  return Math.atan2(Math.sin(a - b), Math.cos(a - b));
 }
 
 function teamName(team) {
@@ -1538,6 +1543,10 @@ function defaultWeaponId(team) {
   return weapons.find((weapon) => weapon.name === name)?.id || 0;
 }
 
+function knifeWeaponId() {
+  return weapons.find((weapon) => weapon.melee || weapon.name === "Knife")?.id ?? defaultWeaponId(state.team);
+}
+
 function difficultyScale() {
   if (settings.difficulty === "easy") return 0.75;
   if (settings.difficulty === "hard") return 1.3;
@@ -1910,6 +1919,10 @@ function resetLoadout() {
   player.grenades = {};
   player.helmet = false;
   player.defuseKit = false;
+  const knifeId = knifeWeaponId();
+  weapons[knifeId].owned = true;
+  weapons[knifeId].ammo = weapons[knifeId].magSize;
+  weapons[knifeId].currentReserve = weapons[knifeId].reserve;
   const id = defaultWeaponId(state.team);
   weapons[id].owned = true;
   player.weaponId = id;
@@ -2271,6 +2284,10 @@ function weaponDropData(weapon, x = player.x, y = player.y) {
 
 function dropWeapon(weapon, { force = false, silent = false } = {}) {
   if (!weapon?.owned) return false;
+  if (weapon.droppable === false || weapon.melee) {
+    if (!silent) showMessage("Noza nie mozna wyrzucic");
+    return false;
+  }
   const carrying = ownedWeapons();
   if (!force && carrying.length <= 1) {
     if (!silent) showMessage("Nie mozesz wyrzucic ostatniej broni");
@@ -2294,7 +2311,7 @@ function dropWeapon(weapon, { force = false, silent = false } = {}) {
 }
 
 function dropOwnedWeaponCategory(category, exceptId = -1) {
-  const existing = weapons.find((weapon) => weapon.owned && weapon.category === category && weapon.id !== exceptId);
+  const existing = weapons.find((weapon) => weapon.owned && weapon.category === category && weapon.id !== exceptId && weapon.droppable !== false && !weapon.melee);
   if (existing) dropWeapon(existing, { force: true, silent: true });
 }
 
@@ -2368,7 +2385,58 @@ function explodeGrenade(grenade) {
   }
 }
 
+function awardPlayerHit(bot) {
+  player.hits += 1;
+  advanceMission("hits", 1);
+  if (bot.hp <= 0) {
+    player.kills += 1;
+    player.roundKills += 1;
+    player.money += 300;
+    advanceMission("kills", 1);
+    advanceMission("category", 1, activeWeapon().category);
+    emitAudioEvent("death", { x: bot.x, y: bot.y }, false);
+  } else {
+    emitAudioEvent("hit", { x: bot.x, y: bot.y }, false);
+  }
+}
+
+function meleeAttack(owner, angle, weapon, hostile = false) {
+  if (!hostile && owner === player) {
+    if (state.phase !== "live" || state.overlayOpen) return;
+    if (weapon.cooldown > 0) return;
+    weapon.cooldown = weapon.fireDelay / 1000;
+    camera.shake = Math.min(8, camera.shake + 2.2 * settings.screenShake);
+  }
+  emitAudioEvent("gun", { x: owner.x, y: owner.y, weapon, hostile }, !hostile && owner === player);
+  const reach = 78;
+  const arc = Math.PI / 2.35;
+  if (hostile) {
+    if (dist(owner.x, owner.y, player.x, player.y) <= reach && Math.abs(angleDiff(angle, angleTo(owner.x, owner.y, player.x, player.y))) <= arc && hasLineOfSight(owner.x, owner.y, player.x, player.y)) {
+      damagePlayer(weapon.damage || 35);
+    }
+    return;
+  }
+  let best = null;
+  for (const bot of bots) {
+    if (bot.hp <= 0) continue;
+    const d = dist(owner.x, owner.y, bot.x, bot.y);
+    const rel = Math.abs(angleDiff(angle, angleTo(owner.x, owner.y, bot.x, bot.y)));
+    if (d <= reach && rel <= arc && hasLineOfSight(owner.x, owner.y, bot.x, bot.y) && (!best || d < best.d)) best = { bot, d };
+  }
+  if (best) {
+    best.bot.hp -= weapon.damage;
+    awardPlayerHit(best.bot);
+  } else {
+    emitAudioEvent("dryfire", { x: owner.x, y: owner.y }, false);
+  }
+}
+
 function shoot(owner, angle, weapon, hostile = false) {
+  if (weapon.melee) {
+    meleeAttack(owner, angle, weapon, hostile);
+    return;
+  }
+  let burstShots = 1;
   if (!hostile && owner === player) {
     if (state.phase !== "live" || state.overlayOpen) return;
     if (weapon.reloading > 0 || weapon.cooldown > 0) return;
@@ -2377,30 +2445,35 @@ function shoot(owner, angle, weapon, hostile = false) {
       if (settings.autoReload) reload();
       return;
     }
-    weapon.ammo -= 1;
-    weapon.cooldown = weapon.fireDelay / 1000;
-    camera.shake = Math.min(10, camera.shake + weapon.recoil * 90 * settings.screenShake);
+    burstShots = weapon.burstCapable && weapon.fireMode === "burst" ? Math.min(weapon.burstCount || 3, weapon.ammo) : 1;
+    weapon.ammo -= burstShots;
+    weapon.cooldown = weapon.burstCapable && weapon.fireMode === "burst" ? (weapon.burstDelay || weapon.fireDelay) / 1000 : weapon.fireDelay / 1000;
+    camera.shake = Math.min(10, camera.shake + weapon.recoil * 90 * settings.screenShake * burstShots);
   }
   emitAudioEvent("gun", { x: owner.x, y: owner.y, weapon, hostile }, !hostile && owner === player);
   const pelletCount = weapon.pellets || 1;
-  for (let i = 0; i < pelletCount; i += 1) {
-    const spread = hostile ? 0.11 * difficultyScale() : weapon.spread + weapon.recoil * Math.min(1.5, owner.speedFactor || 0);
-    const a = angle + (Math.random() - 0.5) * spread;
-    bullets.push({
-      x: owner.x + Math.cos(a) * (owner.r + 18),
-      y: owner.y + Math.sin(a) * (owner.r + 18),
-      vx: Math.cos(a) * (hostile ? 760 * difficultyScale() : weapon.bulletSpeed),
-      vy: Math.sin(a) * (hostile ? 760 * difficultyScale() : weapon.bulletSpeed),
-      damage: hostile ? 10 * difficultyScale() : weapon.damage,
-      hostile,
-      life: 0.95,
-      color: hostile ? "#f06d58" : "#f5df88",
-    });
+  for (let burst = 0; burst < burstShots; burst += 1) {
+    for (let i = 0; i < pelletCount; i += 1) {
+      const spread = hostile ? 0.11 * difficultyScale() : weapon.spread + weapon.recoil * Math.min(1.5, owner.speedFactor || 0);
+      const burstOffset = (burst - (burstShots - 1) / 2) * 0.018;
+      const a = angle + (Math.random() - 0.5) * spread + burstOffset;
+      bullets.push({
+        x: owner.x + Math.cos(a) * (owner.r + 18),
+        y: owner.y + Math.sin(a) * (owner.r + 18),
+        vx: Math.cos(a) * (hostile ? 760 * difficultyScale() : weapon.bulletSpeed),
+        vy: Math.sin(a) * (hostile ? 760 * difficultyScale() : weapon.bulletSpeed),
+        damage: hostile ? 10 * difficultyScale() : weapon.damage,
+        hostile,
+        life: 0.95,
+        color: hostile ? "#f06d58" : "#f5df88",
+      });
+    }
   }
 }
 
 function reload() {
   const weapon = activeWeapon();
+  if (weapon.melee) return;
   if (weapon.reloading > 0 || weapon.ammo === weapon.magSize || weapon.currentReserve <= 0) return;
   weapon.reloading = weapon.reloadTime;
   emitAudioEvent("reload", { x: player.x, y: player.y, weapon });
@@ -2618,18 +2691,7 @@ function updateBullets(dt) {
       for (const bot of bots) {
         if (bot.hp > 0 && dist(b.x, b.y, bot.x, bot.y) < bot.r) {
           bot.hp -= b.damage;
-          player.hits += 1;
-          advanceMission("hits", 1);
-          if (bot.hp <= 0) {
-            player.kills += 1;
-            player.roundKills += 1;
-            player.money += 300;
-            advanceMission("kills", 1);
-            advanceMission("category", 1, activeWeapon().category);
-            emitAudioEvent("death", { x: bot.x, y: bot.y }, false);
-          } else {
-            emitAudioEvent("hit", { x: bot.x, y: bot.y }, false);
-          }
+          awardPlayerHit(bot);
           remove = true;
           break;
         }
@@ -3464,6 +3526,9 @@ function draw3dCharacter(x, y, size, color) {
 }
 
 function weaponViewModel(weapon) {
+  if (weapon.melee) {
+    return { body: 96, barrel: 0, stock: false, scope: false, grip: false, magazine: 0, knife: true };
+  }
   const longGun = ["Rifle", "Sniper", "Heavy", "SMG"].includes(weapon.category);
   return {
     body: longGun ? 170 : 88,
@@ -3510,6 +3575,29 @@ function draw3dWeapon(w, h) {
   const scale = clamp(w / 1280, 0.78, 1.15);
   const sway = Math.sin(performance.now() / 140) * player.speedFactor * 10;
   const recoilDrop = camera.shake * 1.8;
+  if (model.knife) {
+    const x = w / 2 + 86 * scale + sway;
+    const y = h - 132 * scale + recoilDrop;
+    drawWeaponHands(x, y, scale);
+    ctx.save();
+    ctx.translate(x + 64 * scale, y + 18 * scale);
+    ctx.rotate(-0.55);
+    drawWeaponPart(-18 * scale, 42 * scale, 32 * scale, 68 * scale, "#2c302a");
+    ctx.fillStyle = "#e4e0d0";
+    ctx.beginPath();
+    ctx.moveTo(-10 * scale, 40 * scale);
+    ctx.lineTo(16 * scale, -64 * scale);
+    ctx.lineTo(34 * scale, 44 * scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(17,18,12,0.72)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.fillRect(8 * scale, -40 * scale, 5 * scale, 70 * scale);
+    ctx.restore();
+    return;
+  }
   const x = w / 2 + (weapon.category === "Pistol" ? 84 : 44) * scale + sway;
   const y = h - (weapon.category === "Pistol" ? 132 : 150) * scale + recoilDrop;
   const bodyH = (weapon.category === "Pistol" ? 28 : 34) * scale;
@@ -3545,8 +3633,8 @@ function updateHud() {
   const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
   hud.timer.textContent = `${Math.floor(time / 60)}:${String(Math.max(0, Math.ceil(time % 60))).padStart(2, "0")}`;
   hud.bomb.textContent = state.bomb.status === "planted" ? `${tr("bomb")} ${state.bomb.site} ${Math.ceil(state.bomb.timer)}s` : state.bomb.status === "carried" ? `${tr("bomb")} ${tr("you")}` : `${tr("bomb")} --`;
-  hud.weaponName.textContent = weapon.name;
-  hud.ammo.textContent = weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
+  hud.weaponName.textContent = weapon.burstCapable ? `${weapon.name} ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}` : weapon.name;
+  hud.ammo.textContent = weapon.melee ? "MELEE" : weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
 }
 
 function tick(now) {
@@ -3636,6 +3724,16 @@ function cycleWeapon(direction = 1) {
   updateHud();
 }
 
+function toggleWeaponMode() {
+  const weapon = activeWeapon();
+  if (!weapon.burstCapable) return false;
+  weapon.fireMode = weapon.fireMode === "burst" ? "semi" : "burst";
+  emitAudioEvent("ui", { x: player.x, y: player.y }, false);
+  showMessage(`${weapon.name}: ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}`);
+  updateHud();
+  return true;
+}
+
 function downloadLauncher() {
   const content = `@echo off\r\ncd /d "%~dp0"\r\nstart "" "PotatoStrike.html"\r\n`;
   const blob = new Blob([content], { type: "application/octet-stream" });
@@ -3707,12 +3805,17 @@ canvas.addEventListener("mousedown", async (event) => {
     return;
   }
   ensureAudio();
+  if (event.button === 2) {
+    toggleWeaponMode();
+    event.preventDefault();
+    return;
+  }
   mouse.down = true;
   mouse.clicked = true;
   try { await canvas.requestPointerLock(); } catch { /* optional */ }
 });
 canvas.addEventListener("contextmenu", (event) => {
-  if (state.spectator.active && !player.alive) event.preventDefault();
+  if ((state.running && !state.overlayOpen) || (state.spectator.active && !player.alive)) event.preventDefault();
 });
 canvas.addEventListener("wheel", (event) => {
   if (state.overlayOpen || !state.running || !player.alive) return;
