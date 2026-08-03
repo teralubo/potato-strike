@@ -140,6 +140,14 @@ for (const snippet of ["wrap.dataset.view", "canvas.style.width = \"100%\"", "dr
   }
 }
 
+const editorHtml = fs.readFileSync("game/editor.html", "utf8");
+for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "studioSettings.testGraphics = studioSettings.viewportMode", "type=\"hidden\" value=\"2d\""]) {
+  if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
+    console.error(`Missing required Studio editor graphics separation: ${snippet}`);
+    process.exit(1);
+  }
+}
+
 for (const snippet of ["hitIsoObject", "isoBoxFaces", "hitObjectAtEvent", "pointInPolygon"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio 3D editing feature: ${snippet}`);

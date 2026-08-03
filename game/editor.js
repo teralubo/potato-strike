@@ -253,31 +253,22 @@ function draw3dPreview() {
   const h = canvas.height;
   const layout = isoLayout();
   const { originX, originY, scale } = layout;
-  ctx.fillStyle = "#202620";
+  ctx.fillStyle = "#151916";
   ctx.fillRect(0, 0, w, h);
   const sky = ctx.createLinearGradient(0, 0, 0, h * 0.45);
-  sky.addColorStop(0, "#304045");
+  sky.addColorStop(0, "#3d555d");
+  sky.addColorStop(0.7, "#27363a");
   sky.addColorStop(1, "#202620");
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h * 0.45);
-  ctx.fillStyle = "#293128";
-  ctx.beginPath();
-  ctx.moveTo(originX, originY);
-  ctx.lineTo(originX + map.w * scale * 0.5, originY + map.w * scale * 0.25);
-  ctx.lineTo(originX + (map.w - map.h) * scale * 0.5, originY + (map.w + map.h) * scale * 0.25);
-  ctx.lineTo(originX - map.h * scale * 0.5, originY + map.h * scale * 0.25);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = "rgba(242,240,223,0.08)";
-  for (let x = 0; x <= map.w; x += 256) drawIsoLine(x, 0, x, map.h, originX, originY, scale);
-  for (let y = 0; y <= map.h; y += 256) drawIsoLine(0, y, map.w, y, originX, originY, scale);
+  drawIsoFloor(originX, originY, scale);
   const sorted = [...map.obstacles].sort((a, b) => (a.x + a.y) - (b.x + b.y));
   for (const obj of sorted) drawIsoBox(obj, originX, originY, scale);
   drawIsoMarker("A", map.sites.A, "#d7bd62", originX, originY, scale);
   drawIsoMarker("B", map.sites.B, "#77b56f", originX, originY, scale);
   drawIsoMarker("T", map.tSpawn, "#c48a45", originX, originY, scale);
   drawIsoMarker("CT", map.ctSpawn, "#8ea9b8", originX, originY, scale);
-  drawViewLabel("3D EDIT", "izometryczny podglad calej mapy");
+  drawViewLabel("3D EDIT", "bezposrednia edycja bryl");
 }
 
 function isoPoint(x, y, originX, originY, scale) {
@@ -325,6 +316,31 @@ function drawViewLabel(title, subtitle) {
   ctx.font = "12px Arial";
   ctx.fillText(subtitle, 28, 57);
   ctx.restore();
+}
+
+function drawIsoFloor(originX, originY, scale) {
+  const corners = [
+    isoPoint(0, 0, originX, originY, scale),
+    isoPoint(map.w, 0, originX, originY, scale),
+    isoPoint(map.w, map.h, originX, originY, scale),
+    isoPoint(0, map.h, originX, originY, scale),
+  ];
+  const floor = ctx.createLinearGradient(0, originY, 0, canvas.height);
+  floor.addColorStop(0, "#303a2f");
+  floor.addColorStop(1, "#1f271f");
+  ctx.fillStyle = floor;
+  ctx.beginPath();
+  ctx.moveTo(corners[0].x, corners[0].y);
+  for (const point of corners.slice(1)) ctx.lineTo(point.x, point.y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(242,240,223,0.16)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(242,240,223,0.075)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= map.w; x += 256) drawIsoLine(x, 0, x, map.h, originX, originY, scale);
+  for (let y = 0; y <= map.h; y += 256) drawIsoLine(0, y, map.w, y, originX, originY, scale);
 }
 
 function isoCanvasPoint(screenX, screenY) {
@@ -392,7 +408,16 @@ function drawIsoBox(obj, originX, originY, scale) {
   const p2 = isoPoint(obj.x + obj.w, obj.y, originX, originY, scale);
   const p3 = isoPoint(obj.x + obj.w, obj.y + obj.h, originX, originY, scale);
   const p4 = isoPoint(obj.x, obj.y + obj.h, originX, originY, scale);
-  ctx.fillStyle = obj.color || "#56614d";
+  const base = obj.color || "#56614d";
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.beginPath();
+  ctx.moveTo(p1.x + 12, p1.y + 8);
+  ctx.lineTo(p2.x + 12, p2.y + 8);
+  ctx.lineTo(p3.x + 12, p3.y + 8);
+  ctx.lineTo(p4.x + 12, p4.y + 8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = shadeColor(base, 20);
   ctx.beginPath();
   ctx.moveTo(p1.x, p1.y - z);
   ctx.lineTo(p2.x, p2.y - z);
@@ -400,7 +425,10 @@ function drawIsoBox(obj, originX, originY, scale) {
   ctx.lineTo(p4.x, p4.y - z);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.strokeStyle = "rgba(242,240,223,0.14)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = shadeColor(base, -26);
   ctx.beginPath();
   ctx.moveTo(p2.x, p2.y - z);
   ctx.lineTo(p3.x, p3.y - z);
@@ -408,7 +436,7 @@ function drawIsoBox(obj, originX, originY, scale) {
   ctx.lineTo(p2.x, p2.y);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillStyle = shadeColor(base, -12);
   ctx.beginPath();
   ctx.moveTo(p1.x, p1.y - z);
   ctx.lineTo(p2.x, p2.y - z);
@@ -416,11 +444,30 @@ function drawIsoBox(obj, originX, originY, scale) {
   ctx.lineTo(p1.x, p1.y);
   ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.22)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
   if (obj.id === selectedId) {
     ctx.strokeStyle = "#77b56f";
-    ctx.lineWidth = 3;
-    ctx.stroke();
+    ctx.lineWidth = 4;
+    for (const face of isoBoxFaces(obj)) {
+      ctx.beginPath();
+      ctx.moveTo(face[0].x, face[0].y);
+      for (const point of face.slice(1)) ctx.lineTo(point.x, point.y);
+      ctx.closePath();
+      ctx.stroke();
+    }
   }
+}
+
+function shadeColor(color, amount) {
+  const hex = color.replace("#", "");
+  if (hex.length !== 6) return color;
+  const number = parseInt(hex, 16);
+  const r = Math.max(0, Math.min(255, (number >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((number >> 8) & 255) + amount));
+  const b = Math.max(0, Math.min(255, (number & 255) + amount));
+  return `rgb(${r},${g},${b})`;
 }
 
 function drawIsoMarker(label, point, color, originX, originY, scale) {
@@ -520,7 +567,8 @@ function renderUi() {
   map.meta = map.meta || {};
   ui.viewportMode.value = studioSettings.viewportMode;
   ui.gameMode.value = map.meta.gameMode || studioSettings.gameMode;
-  ui.testGraphics.value = studioSettings.testGraphics;
+  studioSettings.testGraphics = studioSettings.viewportMode;
+  ui.testGraphics.value = studioSettings.viewportMode;
   ui.matchSize.value = String(map.meta.matchSize || studioSettings.matchSize);
   ui.defaultWeapon.value = map.meta.defaultWeapon || studioSettings.defaultWeapon;
   renderProperties();
@@ -794,16 +842,13 @@ window.addEventListener("keydown", (event) => {
 ui.name.addEventListener("input", () => { map.name = ui.name.value; });
 ui.viewportMode.addEventListener("change", () => {
   studioSettings.viewportMode = ui.viewportMode.value === "3d" ? "3d" : "2d";
+  studioSettings.testGraphics = studioSettings.viewportMode;
   convertMapForViewport(studioSettings.viewportMode);
   saveJson("potatoStrikeStudioSettings", studioSettings);
   renderUi();
   status(`Mapa przekonwertowana do edycji ${studioSettings.viewportMode.toUpperCase()}`);
 });
 ui.gameMode.addEventListener("change", () => { map.meta = { ...(map.meta || {}), gameMode: ui.gameMode.value }; });
-ui.testGraphics.addEventListener("change", () => {
-  studioSettings.testGraphics = ui.testGraphics.value;
-  saveJson("potatoStrikeStudioSettings", studioSettings);
-});
 ui.matchSize.addEventListener("change", () => { map.meta = { ...(map.meta || {}), matchSize: Number(ui.matchSize.value) }; });
 ui.defaultWeapon.addEventListener("change", () => { map.meta = { ...(map.meta || {}), defaultWeapon: ui.defaultWeapon.value }; });
 ui.newMap.addEventListener("click", () => { map = emptyMap(); selectedId = ""; renderUi(); status("Nowa mapa"); });

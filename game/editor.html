@@ -15,10 +15,13 @@
         <h1>Studio</h1>
       </div>
       <div class="studio-actions">
-        <select id="viewport-mode" title="Widok edytora">
-          <option value="2d" selected>2D</option>
-          <option value="3d">3D edit</option>
-        </select>
+        <label class="editor-graphics-switch">
+          Grafika edytora
+          <select id="viewport-mode" title="Grafika edytora">
+            <option value="2d" selected>2D</option>
+            <option value="3d">3D</option>
+          </select>
+        </label>
         <button id="new-map">Nowa</button>
         <button id="generate-map">Generuj</button>
         <button id="save-map">Zapisz</button>
@@ -49,13 +52,7 @@
             <option value="sandbox" selected>Sandbox</option>
           </select>
         </label>
-        <label>
-          Grafika testu
-          <select id="test-graphics">
-            <option value="2d">2D</option>
-            <option value="3d">3D</option>
-          </select>
-        </label>
+        <input id="test-graphics" type="hidden" value="2d">
         <label>
           Rozmiar meczu
           <select id="match-size">
