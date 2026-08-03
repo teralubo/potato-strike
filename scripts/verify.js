@@ -117,6 +117,7 @@ for (const snippet of [
   "applyProfile",
   "renderThirdPerson",
   "drawThirdPersonPlayer",
+  "camera.pitch",
   "normalizeGraphicsMode",
   "isPerspectiveMode",
   "renderGameView",

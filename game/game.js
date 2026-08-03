@@ -611,6 +611,15 @@ function renderGameView() {
   else render2d();
 }
 
+function setGraphicsMode(mode) {
+  settings.graphicsMode = normalizeGraphicsMode(mode);
+  if (!isPerspectiveMode()) camera.pitch = 0;
+  if (hud.graphicsMode) hud.graphicsMode.value = settings.graphicsMode;
+  if (hud.menuGraphics) hud.menuGraphics.value = settings.graphicsMode;
+  mouse.x = isPerspectiveMode() ? window.innerWidth / 2 : mouse.x;
+  mouse.y = isPerspectiveMode() ? window.innerHeight / 2 + camera.pitch * 0.28 : mouse.y;
+}
+
 const player = {
   x: 0,
   y: 0,
@@ -643,7 +652,7 @@ const loadedMods = [];
 const keys = new Set();
 const touchActions = new Set();
 const mouse = { x: 0, y: 0, down: false, clicked: false };
-const camera = { x: 0, y: 0, shake: 0 };
+const camera = { x: 0, y: 0, shake: 0, pitch: 0 };
 let last = performance.now();
 let waitingForBind = "";
 const editor = { active: false, selectedMission: "", selectedObject: null };
@@ -1948,9 +1957,8 @@ function newMatch() {
   state.round = 1;
   state.half = 1;
   state.score = { T: 0, CT: 0 };
-  settings.graphicsMode = normalizeGraphicsMode(hud.menuGraphics.value);
-  hud.menuGraphics.value = settings.graphicsMode;
-  hud.graphicsMode.value = settings.graphicsMode;
+  camera.pitch = 0;
+  setGraphicsMode(hud.menuGraphics.value);
   player.money = 800;
   player.kills = 0;
   player.hits = 0;
@@ -2669,7 +2677,7 @@ function drawMinimap() {
 function drawCrosshair() {
   const weapon = activeWeapon();
   const cx = isPerspectiveMode() ? window.innerWidth / 2 : mouse.x;
-  const cy = isPerspectiveMode() ? window.innerHeight / 2 : mouse.y;
+  const cy = isPerspectiveMode() ? window.innerHeight / 2 + camera.pitch * 0.28 : mouse.y;
   const gap = 10 + weapon.spread * 120 + player.speedFactor * 10 + camera.shake;
   ctx.strokeStyle = settings.crosshairColor;
   ctx.fillStyle = settings.crosshairColor;
@@ -2706,7 +2714,7 @@ function renderThirdPerson() {
   const shakeX = (Math.random() - 0.5) * camera.shake;
   const shakeY = (Math.random() - 0.5) * camera.shake;
   camera.x = clamp(player.x + Math.cos(player.angle) * lead - window.innerWidth / 2 + shakeX, 0, Math.max(0, state.map.w - window.innerWidth));
-  camera.y = clamp(player.y + Math.sin(player.angle) * lead - window.innerHeight / 2 + shakeY, 0, Math.max(0, state.map.h - window.innerHeight));
+  camera.y = clamp(player.y + Math.sin(player.angle) * lead - window.innerHeight / 2 + camera.pitch + shakeY, 0, Math.max(0, state.map.h - window.innerHeight));
   drawMap2d();
   drawProjectiles2d();
   for (const ally of allies) if (ally.hp > 0) drawActor(ally, state.team === "T" ? "#c48a45" : "#8ea9b8", ally === state.spectator.target ? "OBS" : state.team);
@@ -2749,7 +2757,7 @@ function drawThirdPersonPlayer() {
 function drawThirdPersonCameraHud() {
   if (settings.quality === "low") return;
   const cx = window.innerWidth / 2;
-  const cy = window.innerHeight / 2;
+  const cy = window.innerHeight / 2 + camera.pitch * 0.28;
   ctx.strokeStyle = "rgba(242,240,223,0.12)";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -2761,6 +2769,9 @@ function drawThirdPersonCameraHud() {
   ctx.fillStyle = "#f2f0df";
   ctx.font = "800 12px Arial";
   ctx.fillText("THIRD PERSON", 92, window.innerHeight - 26);
+  ctx.fillStyle = "rgba(242,240,223,0.72)";
+  ctx.fillRect(cx - 1, cy - 44, 2, 18);
+  ctx.fillRect(cx - 1, cy + 26, 2, 18);
 }
 
 function castRay(angle) {
@@ -2841,12 +2852,13 @@ function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column) {
 function render3d() {
   camera.shake *= 0.88;
   const w = window.innerWidth, h = window.innerHeight;
-  const sky = ctx.createLinearGradient(0, 0, 0, h / 2);
+  const horizon = clamp(h / 2 + camera.pitch * 0.28, h * 0.28, h * 0.72);
+  const sky = ctx.createLinearGradient(0, 0, 0, horizon);
   sky.addColorStop(0, "#304045");
   sky.addColorStop(1, "#202a2d");
   ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, w, h / 2);
-  draw3dTerrain(w, h);
+  ctx.fillRect(0, 0, w, horizon);
+  draw3dTerrain(w, h, horizon);
   const fov = Math.PI / 2.9;
   const cols = settings.quality === "low" ? 100 : settings.quality === "high" ? 260 : 170;
   const colW = w / cols;
@@ -2859,7 +2871,7 @@ function render3d() {
     const wallH = clamp((h * 700) / d, 10, h * 1.65);
     const shade = clamp(245 - d * 0.11, 68, 220);
     const x = i * colW;
-    const y = h / 2 - wallH / 2 + camera.shake;
+    const y = horizon - wallH / 2 + camera.shake;
     drawPotatoWallColumn(x, y, colW, wallH, hitInfo.hit, shade, d, i);
     if (settings.quality !== "low" && i % 2 === 0) {
       ctx.fillStyle = `rgba(255,245,190,${clamp(0.2 - d / 8500, 0.03, 0.16)})`;
@@ -2879,31 +2891,31 @@ function render3d() {
     const col = clamp(Math.floor(sx / colW), 0, depth.length - 1);
     if (s.d > depth[col] + 45) continue;
     const size = clamp((h * 94) / s.d, 14, 180);
-    draw3dCharacter(sx, h / 2, size, s.color);
+    draw3dCharacter(sx, horizon, size, s.color);
   }
-  draw3dSiteMarkers(w, h, fov, depth, colW);
+  draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
   if (player.alive && !state.spectator.active) draw3dPlayerObject(w, h);
   draw3dWeapon(w, h);
   drawMinimap();
   drawCrosshair();
 }
 
-function draw3dTerrain(w, h) {
-  const floor = ctx.createLinearGradient(0, h / 2, 0, h);
+function draw3dTerrain(w, h, horizon = h / 2) {
+  const floor = ctx.createLinearGradient(0, horizon, 0, h);
   floor.addColorStop(0, "#55614c");
   floor.addColorStop(0.48, simple3dTextures.terrain.base);
   floor.addColorStop(1, "#171d17");
   ctx.fillStyle = floor;
-  ctx.fillRect(0, h / 2, w, h / 2);
-  draw3dFloorGuides(w, h);
+  ctx.fillRect(0, horizon, w, h - horizon);
+  draw3dFloorGuides(w, h, horizon);
 }
 
-function draw3dFloorGuides(w, h) {
+function draw3dFloorGuides(w, h, horizon = h / 2) {
   if (settings.quality === "low") return;
   ctx.save();
   ctx.lineWidth = 1;
   for (let i = 1; i <= 9; i += 1) {
-    const y = h / 2 + Math.pow(i / 9, 1.55) * h * 0.48;
+    const y = horizon + Math.pow(i / 9, 1.55) * (h - horizon);
     ctx.strokeStyle = `rgba(215,189,98,${0.13 - i * 0.008})`;
     ctx.beginPath();
     ctx.moveTo(0, y);
@@ -2914,14 +2926,14 @@ function draw3dFloorGuides(w, h) {
   for (let i = -4; i <= 4; i += 1) {
     const foot = w / 2 + i * w * 0.12;
     ctx.beginPath();
-    ctx.moveTo(w / 2, h / 2);
+    ctx.moveTo(w / 2, horizon);
     ctx.lineTo(foot, h);
     ctx.stroke();
   }
   ctx.restore();
 }
 
-function draw3dSiteMarkers(w, h, fov, depth, colW) {
+function draw3dSiteMarkers(w, h, fov, depth, colW, horizon = h / 2) {
   for (const [key, site] of Object.entries(state.map.sites)) {
     const d = dist(player.x, player.y, site.x, site.y);
     let rel = angleTo(player.x, player.y, site.x, site.y) - player.angle;
@@ -2931,7 +2943,7 @@ function draw3dSiteMarkers(w, h, fov, depth, colW) {
     const sx = (0.5 + rel / fov) * w;
     const col = clamp(Math.floor(sx / colW), 0, depth.length - 1);
     if (d > depth[col] + 110) continue;
-    const y = h / 2 + clamp((h * 180) / d, 18, 130);
+    const y = horizon + clamp((h * 180) / d, 18, 130);
     ctx.fillStyle = key === "A" ? "rgba(215,189,98,0.86)" : "rgba(119,181,111,0.86)";
     ctx.beginPath();
     ctx.arc(sx, y, clamp((h * 22) / d, 8, 24), 0, Math.PI * 2);
@@ -3160,8 +3172,9 @@ canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
     if (isPerspectiveMode()) {
       player.angle += event.movementX * 0.0032 * settings.sensitivity;
+      camera.pitch = clamp(camera.pitch + event.movementY * 0.72 * settings.sensitivity, -window.innerHeight * 0.32, window.innerHeight * 0.32);
       mouse.x = window.innerWidth / 2;
-      mouse.y = window.innerHeight / 2;
+      mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
     } else {
       mouse.x = clamp(mouse.x + event.movementX, 0, window.innerWidth);
       mouse.y = clamp(mouse.y + event.movementY, 0, window.innerHeight);
@@ -3271,7 +3284,7 @@ hud.start.addEventListener("click", async () => {
     closePanels();
     state.running = true;
     mouse.x = window.innerWidth / 2;
-    mouse.y = window.innerHeight / 2;
+    mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
     newMatch();
     renderGameView();
     hud.menu.classList.add("hidden");
@@ -3285,8 +3298,8 @@ hud.start.addEventListener("click", async () => {
   }
 });
 
-hud.graphicsMode.addEventListener("change", () => { settings.graphicsMode = normalizeGraphicsMode(hud.graphicsMode.value); hud.graphicsMode.value = settings.graphicsMode; hud.menuGraphics.value = settings.graphicsMode; saveConfig(); });
-hud.menuGraphics.addEventListener("change", () => { settings.graphicsMode = normalizeGraphicsMode(hud.menuGraphics.value); hud.menuGraphics.value = settings.graphicsMode; hud.graphicsMode.value = settings.graphicsMode; saveConfig(); });
+hud.graphicsMode.addEventListener("change", () => { setGraphicsMode(hud.graphicsMode.value); saveConfig(); });
+hud.menuGraphics.addEventListener("change", () => { setGraphicsMode(hud.menuGraphics.value); saveConfig(); });
 hud.quality.addEventListener("change", () => { settings.quality = hud.quality.value; });
 hud.languageSelect.addEventListener("change", () => {
   settings.language = hud.languageSelect.value;
