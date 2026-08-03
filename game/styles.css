@@ -246,6 +246,23 @@ body {
   letter-spacing: 0;
 }
 
+#story-objective-panel {
+  top: 92px;
+  left: 50%;
+  width: min(520px, calc(100vw - 28px));
+  max-height: none;
+  padding: 14px;
+  transform: translateX(-50%);
+}
+
+#story-objective-panel .panel-head {
+  margin-bottom: 4px;
+}
+
+#story-objective-panel h2 {
+  font-size: 18px;
+}
+
 .panel-head {
   display: flex;
   justify-content: space-between;

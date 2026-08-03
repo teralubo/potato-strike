@@ -137,6 +137,29 @@
             <option value="AWP">AWP</option>
           </select>
         </label>
+        <label>
+          Cel fabularny
+          <select id="story-goal-type">
+            <option value="eliminate" selected>Wyeliminuj wrogow</option>
+            <option value="kills">Zdobadz fragi</option>
+            <option value="plant">Podloz bombe</option>
+            <option value="defuse">Rozbroj bombe</option>
+            <option value="win">Wygraj runde</option>
+            <option value="custom">Custom code</option>
+          </select>
+        </label>
+        <label>
+          Liczba celu
+          <input id="story-goal-target" type="number" min="1" value="1">
+        </label>
+        <label>
+          Tekst celu pod TAB
+          <input id="story-goal-text" value="Wyeliminuj wszystkich wrogow">
+        </label>
+        <label>
+          Kod zakonczenia zadania
+          <textarea id="story-goal-code" class="code-box" spellcheck="false">return ctx.enemiesAlive &lt;= 0;</textarea>
+        </label>
       </div>
       <div class="studio-section">
         <div class="muted">NARZEDZIA</div>

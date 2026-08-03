@@ -32,6 +32,10 @@ const ui = {
   testGraphics: $("test-graphics"),
   matchSize: $("match-size"),
   defaultWeapon: $("default-weapon"),
+  storyGoalType: $("story-goal-type"),
+  storyGoalTarget: $("story-goal-target"),
+  storyGoalText: $("story-goal-text"),
+  storyGoalCode: $("story-goal-code"),
   terrainWidth: $("terrain-width"),
   terrainHeight: $("terrain-height"),
   snapGrid: $("snap-grid"),
@@ -135,7 +139,7 @@ function emptyMap() {
     tSpawn: { x: 180, y: 1220 },
     ctSpawn: { x: 2020, y: 180 },
     sites: { A: { x: 1650, y: 1000, r: 115 }, B: { x: 560, y: 330, r: 110 } },
-    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", defaultTexture: "white", moddingMode: "safe", autosave: true },
+    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", defaultTexture: "white", moddingMode: "safe", autosave: true, storyGoal: defaultStoryGoal() },
     obstacles: [],
   };
 }
@@ -165,13 +169,29 @@ function makeMap(name, w, h, seed) {
     tSpawn: { x: 180, y: h - 180 },
     ctSpawn: { x: w - 180, y: 180 },
     sites: { A: { x: Math.floor(w * 0.74), y: Math.floor(h * 0.72), r: 115 }, B: { x: Math.floor(w * 0.32), y: Math.floor(h * 0.26), r: 110 } },
-    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", defaultTexture: "white", moddingMode: "safe", autosave: true },
+    meta: { gameMode: "sandbox", defaultWeapon: "side-default", matchSize: 5, snapGrid: 16, defaultZ: 96, terrainColor: "#303a2f", ambientColor: "#3d555d", defaultTexture: "white", moddingMode: "safe", autosave: true, storyGoal: defaultStoryGoal() },
     obstacles,
   };
 }
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function defaultStoryGoal() {
+  return { type: "eliminate", target: 1, text: "Wyeliminuj wszystkich wrogow", code: "return ctx.enemiesAlive <= 0;" };
+}
+
+function normalizeStoryGoal(goal = {}) {
+  const fallback = defaultStoryGoal();
+  return {
+    ...fallback,
+    ...goal,
+    type: goal.type || fallback.type,
+    target: Math.max(1, Number(goal.target || fallback.target)),
+    text: goal.text || fallback.text,
+    code: goal.code || "",
+  };
 }
 
 function normalizeStudioMap(rawMap) {
@@ -198,6 +218,7 @@ function normalizeStudioMap(rawMap) {
     meta: {
       ...fallback.meta,
       ...(source.meta || {}),
+      storyGoal: normalizeStoryGoal(source.meta?.storyGoal),
     },
     obstacles: (Array.isArray(source.obstacles) ? source.obstacles : []).map((obj, index) => ({
       id: obj.id || `obj-${Date.now().toString(36)}-${index}`,
@@ -637,6 +658,11 @@ function renderUi() {
   ui.testGraphics.value = studioSettings.testGraphics;
   ui.matchSize.value = String(map.meta.matchSize || studioSettings.matchSize);
   ui.defaultWeapon.value = map.meta.defaultWeapon || studioSettings.defaultWeapon;
+  const storyGoal = normalizeStoryGoal(map.meta.storyGoal);
+  ui.storyGoalType.value = storyGoal.type;
+  ui.storyGoalTarget.value = String(storyGoal.target);
+  ui.storyGoalText.value = storyGoal.text;
+  ui.storyGoalCode.value = storyGoal.code;
   syncAdvancedFields();
   renderProperties();
   renderObjects();
@@ -854,6 +880,12 @@ function saveMap() {
     defaultTexture: ui.defaultTexture.value || "white",
     moddingMode: ui.moddingMode.value || "safe",
     autosave: ui.autosaveMap.checked,
+    storyGoal: normalizeStoryGoal({
+      type: ui.storyGoalType.value,
+      target: Number(ui.storyGoalTarget.value || 1),
+      text: ui.storyGoalText.value,
+      code: ui.storyGoalCode.value,
+    }),
     license: "GNU GPL 3.0",
   };
   const id = `studio-${map.name.replace(/[^a-z0-9_-]/gi, "-").toLowerCase() || Date.now().toString(36)}`;
@@ -1055,6 +1087,19 @@ ui.testGraphics.addEventListener("change", () => {
 });
 ui.matchSize.addEventListener("change", () => { map.meta = { ...(map.meta || {}), matchSize: Number(ui.matchSize.value) }; });
 ui.defaultWeapon.addEventListener("change", () => { map.meta = { ...(map.meta || {}), defaultWeapon: ui.defaultWeapon.value }; });
+["storyGoalType", "storyGoalTarget", "storyGoalText", "storyGoalCode"].forEach((key) => {
+  ui[key].addEventListener("input", () => {
+    map.meta = {
+      ...(map.meta || {}),
+      storyGoal: normalizeStoryGoal({
+        type: ui.storyGoalType.value,
+        target: Number(ui.storyGoalTarget.value || 1),
+        text: ui.storyGoalText.value,
+        code: ui.storyGoalCode.value,
+      }),
+    };
+  });
+});
 ui.applyTerrain.addEventListener("click", applyTerrainSettings);
 ["terrainWidth", "terrainHeight", "snapGrid", "defaultZ", "terrainColor", "ambientColor", "defaultTexture", "moddingMode"].forEach((key) => {
   ui[key].addEventListener("change", () => {

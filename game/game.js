@@ -28,6 +28,8 @@ const hud = {
   timer: $("timer"),
   bomb: $("bomb-pill"),
   missionPill: $("mission-pill"),
+  storyObjectivePanel: $("story-objective-panel"),
+  storyObjectiveText: $("story-objective-text"),
   weaponName: $("weapon-name"),
   ammo: $("ammo"),
   message: $("message"),
@@ -58,6 +60,8 @@ const hud = {
   editorTool: $("editor-tool"),
   editorGoal: $("editor-goal"),
   editorTarget: $("editor-target"),
+  editorObjectiveText: $("editor-objective-text"),
+  editorGoalCode: $("editor-goal-code"),
   editorWidth: $("editor-width"),
   editorHeight: $("editor-height"),
   editorRotation: $("editor-rotation"),
@@ -351,6 +355,9 @@ const state = {
   paused: false,
   winner: "",
   bomb: { status: "carried", carrier: "player", x: 0, y: 0, site: "", timer: 40, defuse: 0 },
+  activeSpecial: "",
+  storyMission: null,
+  storyComplete: false,
   campaignIndex: 0,
   randomMissions: [],
   spectator: { active: false, index: 0, target: null, takeoverLatch: false },
@@ -1293,6 +1300,96 @@ function savedStoryMissions() {
   }
 }
 
+function defaultStoryGoal() {
+  return { type: "eliminate", target: 1, text: "Wyeliminuj wszystkich wrogow", code: "return ctx.enemiesAlive <= 0;" };
+}
+
+function normalizeStoryGoal(goal = {}) {
+  const fallback = defaultStoryGoal();
+  return {
+    ...fallback,
+    ...goal,
+    type: goal.type || fallback.type,
+    target: Math.max(1, Number(goal.target || fallback.target)),
+    text: goal.text || fallback.text,
+    code: goal.code || "",
+  };
+}
+
+function activeStoryGoal() {
+  return normalizeStoryGoal(state.storyMission?.goal || state.map?.meta?.storyGoal || defaultStoryGoal());
+}
+
+function storyContext() {
+  return {
+    player,
+    state,
+    map: state.map,
+    bomb: state.bomb,
+    goal: activeStoryGoal(),
+    enemiesAlive: bots.filter((bot) => bot.hp > 0).length,
+    alliesAlive: allies.filter((bot) => bot.hp > 0).length + (player.alive ? 1 : 0),
+    kills: player.kills,
+    roundKills: player.roundKills,
+    plants: player.plants,
+    defuses: player.defuses,
+  };
+}
+
+function runStoryGoalCode(goal) {
+  if (!goal.code?.trim()) return false;
+  try {
+    return Boolean(Function("ctx", `"use strict";\n${goal.code}`)(storyContext()));
+  } catch (error) {
+    showMessage(`Blad kodu celu: ${error?.message || "unknown"}`);
+    return false;
+  }
+}
+
+function storyGoalProgress(goal = activeStoryGoal()) {
+  if (goal.type === "kills") return player.kills;
+  if (goal.type === "plant") return player.plants;
+  if (goal.type === "defuse") return player.defuses;
+  if (goal.type === "win") return state.score[state.team] || 0;
+  if (goal.type === "eliminate") return goal.target - bots.filter((bot) => bot.hp > 0).length;
+  return runStoryGoalCode(goal) ? goal.target : 0;
+}
+
+function isStoryGoalComplete(reason = "") {
+  if (state.gameMode !== "story" || state.storyComplete) return false;
+  const goal = activeStoryGoal();
+  if (goal.code?.trim() && runStoryGoalCode(goal)) return true;
+  if (goal.type === "plant") return player.plants >= goal.target || reason === "plant";
+  if (goal.type === "defuse") return player.defuses >= goal.target || reason === "defuse";
+  if (goal.type === "kills") return player.kills >= goal.target;
+  if (goal.type === "win") return state.score[state.team] >= goal.target || reason === "win";
+  return bots.every((bot) => bot.hp <= 0);
+}
+
+function renderStoryObjective() {
+  if (!hud.storyObjectiveText) return;
+  const goal = activeStoryGoal();
+  const progress = clamp(storyGoalProgress(goal), 0, goal.target);
+  hud.storyObjectiveText.textContent = `${goal.text} (${progress}/${goal.target})`;
+}
+
+function showStoryObjective(force = false) {
+  if (state.gameMode !== "story") return false;
+  renderStoryObjective();
+  if (force) hud.storyObjectivePanel?.classList.remove("hidden");
+  else hud.storyObjectivePanel?.classList.toggle("hidden");
+  return true;
+}
+
+function checkStoryObjective(reason = "") {
+  if (!isStoryGoalComplete(reason)) return false;
+  state.storyComplete = true;
+  renderStoryObjective();
+  showMessage("Cel fabularny wykonany");
+  if (state.phase === "live") endRound(state.team, "cel fabularny wykonany");
+  return true;
+}
+
 function userMaps() {
   try {
     return JSON.parse(localStorage.getItem("potatoStrikeUserMaps") || "[]");
@@ -1420,7 +1517,8 @@ function renderSavedMissions() {
   for (const mission of savedStoryMissions()) {
     const item = document.createElement("div");
     item.className = "mission-item";
-    item.innerHTML = `<div class="mission-title"><span>${mission.name}</span><span class="tag">${mission.goal.type} ${mission.goal.target}</span></div><div>${mission.map.name} / ${mission.map.obstacles.length} obiektow</div>`;
+    const goal = normalizeStoryGoal(mission.goal);
+    item.innerHTML = `<div class="mission-title"><span>${mission.name}</span><span class="tag">${goal.type} ${goal.target}</span></div><div>${goal.text}</div><div>${mission.map.name} / ${mission.map.obstacles.length} obiektow</div>`;
     item.addEventListener("click", () => {
       editor.selectedMission = mission.id;
       showMessage(`Wybrano misje: ${mission.name}`);
@@ -1431,11 +1529,19 @@ function renderSavedMissions() {
 
 function saveEditorMission() {
   const list = savedStoryMissions();
+  const goal = normalizeStoryGoal({
+    type: hud.editorGoal.value,
+    target: Number(hud.editorTarget.value || 1),
+    text: hud.editorObjectiveText?.value || "",
+    code: hud.editorGoalCode?.value || "",
+  });
+  const map = JSON.parse(JSON.stringify(state.map));
+  map.meta = { ...(map.meta || {}), storyGoal: goal };
   const mission = {
     id: `mission-${Date.now().toString(36)}`,
     name: hud.editorName.value || "Moja misja",
-    goal: { type: hud.editorGoal.value, target: Number(hud.editorTarget.value || 1) },
-    map: JSON.parse(JSON.stringify(state.map)),
+    goal,
+    map,
   };
   list.push(mission);
   writeStoryMissions(list);
@@ -1449,6 +1555,8 @@ function loadEditorMission(id = editor.selectedMission) {
   if (!mission) return showMessage("Najpierw wybierz misje");
   maps.story = JSON.parse(JSON.stringify(mission.map));
   maps.story.name = mission.name;
+  maps.story.meta = { ...(maps.story.meta || {}), storyGoal: normalizeStoryGoal(mission.goal) };
+  state.storyMission = mission;
   if (![...hud.menuMap.options].some((option) => option.value === "story")) {
     const option = document.createElement("option");
     option.value = "story";
@@ -1538,6 +1646,34 @@ function ownedWeapons() {
   return weapons.filter((weapon) => weapon.owned);
 }
 
+function playerHasBomb() {
+  return state.bomb.status === "carried" && state.bomb.carrier === "player";
+}
+
+function isBombSelected() {
+  return state.activeSpecial === "bomb" && playerHasBomb();
+}
+
+function carriedItems() {
+  const items = ownedWeapons().map((weapon) => ({ type: "weapon", weapon, label: weapon.name }));
+  if (playerHasBomb()) items.push({ type: "bomb", label: "C4 Bomb" });
+  return items;
+}
+
+function selectInventoryItem(item) {
+  if (!item) return;
+  if (item.type === "bomb") {
+    state.activeSpecial = "bomb";
+    showMessage("C4 Bomb");
+  } else {
+    state.activeSpecial = "";
+    player.weaponId = item.weapon.id;
+    showMessage(item.weapon.name);
+  }
+  emitAudioEvent("ui", { x: player.x, y: player.y }, false);
+  updateHud();
+}
+
 function defaultWeaponId(team) {
   const name = team === "T" ? "Glock-18" : "USP-S";
   return weapons.find((weapon) => weapon.name === name)?.id || 0;
@@ -1613,6 +1749,7 @@ function normalizeMap(rawMap, fallback = maps.custom) {
     }))
     .filter((obj) => obj.w > 0 && obj.h > 0);
   map.name = source.name || fallback.name || "Custom Mission";
+  map.meta = { ...(fallback.meta || {}), ...(source.meta || {}), storyGoal: normalizeStoryGoal(source.meta?.storyGoal || fallback.meta?.storyGoal) };
   return map;
 }
 
@@ -1944,6 +2081,7 @@ function resetRoundPositions() {
   droppedWeapons.length = 0;
   effects.length = 0;
   player.useLatch = false;
+  state.activeSpecial = "";
   leaveSpectator();
   state.roundTime = 115;
   state.freezeTime = 5;
@@ -2000,6 +2138,7 @@ function spawnBots() {
       angle: 0,
       speed: 92 + Math.random() * 18,
       fire: 520 + Math.random() * 760,
+      weapon: state.team === "T" ? "AK-47" : "M4A4",
       name: `BOT ${i}`,
       source: "BOT",
       flashed: 0,
@@ -2019,6 +2158,7 @@ function makeTeamBot(team, index = 1, source = "BOT") {
     angle: 0,
     speed: source === "LAN" ? 0 : 92 + Math.random() * 18,
     fire: 520 + Math.random() * 760,
+    weapon: team === "T" ? "AK-47" : "M4A4",
     name: `${source} ${index}`,
     source,
     flashed: 0,
@@ -2058,10 +2198,14 @@ function newMatch() {
   state.team = hud.menuTeam.value === "random" ? (Math.random() < 0.5 ? "T" : "CT") : hud.menuTeam.value;
   state.enemyTeam = enemyOf(state.team);
   state.mapKey = hud.menuMap.value;
+  state.storyMission = null;
+  state.storyComplete = false;
   if (state.gameMode === "story" && !maps.story) {
     const first = savedStoryMissions()[0];
     if (first) {
       maps.story = JSON.parse(JSON.stringify(first.map));
+      maps.story.meta = { ...(maps.story.meta || {}), storyGoal: normalizeStoryGoal(first.goal) };
+      state.storyMission = first;
       state.mapKey = "story";
     } else {
       showMessage("Brak zapisanej misji, uzywam Custom Mission");
@@ -2069,6 +2213,9 @@ function newMatch() {
     }
   }
   state.map = normalizeMap(maps[state.mapKey] || maps.custom);
+  if (state.gameMode === "story" && !state.storyMission) {
+    state.storyMission = { id: "default-eliminate", name: state.map.name || "Story", goal: normalizeStoryGoal(state.map.meta?.storyGoal), map: state.map };
+  }
   state.round = 1;
   state.half = 1;
   state.score = { T: 0, CT: 0 };
@@ -2088,6 +2235,7 @@ function newMatch() {
   spawnBots();
   renderShop();
   renderMissions();
+  renderStoryObjective();
   showMessage(`${state.gameMode.toUpperCase()} / ${teamName(state.team)} / ${state.map.name} / dowodca ${settings.nick}`);
 }
 
@@ -2111,6 +2259,7 @@ function endRound(winner, reason) {
   if (winner === state.team) advanceMission("roundWins", 1);
   if (winner === "CT" && state.team === "CT") advanceMission("ctRounds", 1);
   if (winner === state.team) markMapWin();
+  if (winner === state.team && state.gameMode === "story") checkStoryObjective("win");
   if (reason.includes("bomba wybuchla")) emitAudioEvent("bombExplode", { x: state.bomb.x, y: state.bomb.y });
   else emitAudioEvent(winner === state.team ? "buy" : "death", { x: player.x, y: player.y });
   showMessage(`${winner} wygrywa: ${reason}`);
@@ -2130,7 +2279,7 @@ function endRound(winner, reason) {
 }
 
 function plantBomb() {
-  if (state.team !== "T" || state.bomb.status !== "carried") return;
+  if (state.team !== "T" || !playerHasBomb() || !isBombSelected()) return;
   const site = currentSite();
   if (!site) {
     showMessage("Musisz byc na bombsite A albo B");
@@ -2141,8 +2290,11 @@ function plantBomb() {
   state.bomb.y = player.y;
   state.bomb.site = site;
   state.bomb.timer = 40;
+  state.bomb.carrier = "";
+  state.activeSpecial = "";
   player.plants += 1;
   advanceMission("plants", 1);
+  checkStoryObjective("plant");
   emitAudioEvent("bombPlant", { x: player.x, y: player.y });
   showMessage(`Bomba podlozona na ${site}`);
 }
@@ -2159,6 +2311,7 @@ function defuseBomb(dt) {
   if (state.bomb.defuse >= defuseTime) {
     player.defuses += 1;
     advanceMission("defuses", 1);
+    checkStoryObjective("defuse");
     endRound("CT", "bomba rozbrojona");
   }
 }
@@ -2169,7 +2322,7 @@ function useKey(dt) {
     player.useLatch = false;
     return;
   }
-  if (state.team === "T" && state.bomb.status === "carried" && currentSite()) {
+  if (isBombSelected() && currentSite()) {
     plantBomb();
     return;
   }
@@ -2178,7 +2331,9 @@ function useKey(dt) {
     return;
   }
   if (state.team === "CT" && state.bomb.status === "planted") state.bomb.defuse = 0;
-  if (!player.useLatch) pickupDroppedWeapon();
+  if (!player.useLatch) {
+    if (!pickupDroppedBomb()) pickupDroppedWeapon();
+  }
   player.useLatch = true;
 }
 
@@ -2191,6 +2346,8 @@ function updateRoundRules(dt) {
   if (state.phase !== "live") return;
   state.roundTime -= dt;
   state.buyTime = Math.max(0, state.buyTime - dt);
+  checkStoryObjective();
+  if (state.phase === "ended") return;
   if (state.bomb.status === "planted") {
     state.bomb.timer -= dt;
     const beepDelay = state.bomb.timer < 10 ? 360 : state.bomb.timer < 20 ? 620 : 980;
@@ -2282,6 +2439,55 @@ function weaponDropData(weapon, x = player.x, y = player.y) {
   };
 }
 
+function dropWeaponAt(weapon, x, y, angle = Math.random() * Math.PI * 2) {
+  if (!weapon || weapon.droppable === false || weapon.melee) return false;
+  droppedWeapons.push(weaponDropData(weapon, x, y));
+  droppedWeapons[droppedWeapons.length - 1].angle = angle;
+  return true;
+}
+
+function dropPlayerLoadoutOnDeath() {
+  let dropped = 0;
+  for (const weapon of ownedWeapons()) {
+    if (weapon.droppable === false || weapon.melee) continue;
+    if (dropWeaponAt(weapon, player.x + (Math.random() - 0.5) * 34, player.y + (Math.random() - 0.5) * 34)) {
+      weapon.owned = false;
+      weapon.cooldown = 0;
+      weapon.reloading = 0;
+      dropped += 1;
+    }
+  }
+  state.activeSpecial = "";
+  const knife = weapons[knifeWeaponId()];
+  if (knife) {
+    knife.owned = true;
+    player.weaponId = knife.id;
+  }
+  if (playerHasBomb()) dropBombAt(player.x, player.y);
+  if (dropped) renderShop();
+}
+
+function dropActorLoadoutOnDeath(actor) {
+  if (!actor || actor.droppedLoadout) return;
+  actor.droppedLoadout = true;
+  const names = Array.isArray(actor.weapons) ? actor.weapons : [actor.weapon].filter(Boolean);
+  for (const name of names) {
+    const weapon = weapons.find((item) => item.name === name);
+    dropWeaponAt(weapon, actor.x + (Math.random() - 0.5) * 28, actor.y + (Math.random() - 0.5) * 28);
+  }
+}
+
+function dropBombAt(x = player.x, y = player.y) {
+  if (!playerHasBomb()) return false;
+  state.bomb.status = "dropped";
+  state.bomb.carrier = "";
+  state.bomb.x = x;
+  state.bomb.y = y;
+  state.bomb.site = "";
+  state.activeSpecial = "";
+  return true;
+}
+
 function dropWeapon(weapon, { force = false, silent = false } = {}) {
   if (!weapon?.owned) return false;
   if (weapon.droppable === false || weapon.melee) {
@@ -2317,6 +2523,7 @@ function dropOwnedWeaponCategory(category, exceptId = -1) {
 
 function dropActiveWeapon() {
   if (!state.running || state.overlayOpen || !player.alive) return;
+  if (isBombSelected()) return showMessage("Bomby nie wyrzucasz jak broni");
   dropWeapon(activeWeapon());
 }
 
@@ -2340,11 +2547,28 @@ function pickupDroppedWeapon() {
   weapon.currentReserve = clamp(Number(item.currentReserve), 0, weapon.reserve);
   weapon.cooldown = 0;
   weapon.reloading = 0;
+  state.activeSpecial = "";
   player.weaponId = weapon.id;
   droppedWeapons.splice(droppedWeapons.indexOf(item), 1);
   emitAudioEvent("buy", { x: player.x, y: player.y }, false);
   showMessage(`Podniesiono: ${weapon.name}`);
   renderShop();
+  updateHud();
+  return true;
+}
+
+function pickupDroppedBomb() {
+  if (state.bomb.status !== "dropped") return false;
+  if (dist(player.x, player.y, state.bomb.x, state.bomb.y) > 74) return false;
+  if (state.team !== "T") {
+    showMessage("Tylko T moze podniesc bombe");
+    return false;
+  }
+  state.bomb.status = "carried";
+  state.bomb.carrier = "player";
+  state.activeSpecial = "bomb";
+  emitAudioEvent("buy", { x: player.x, y: player.y }, false);
+  showMessage("Podniesiono C4");
   updateHud();
   return true;
 }
@@ -2375,6 +2599,7 @@ function explodeGrenade(grenade) {
     for (const bot of bots) {
       if (bot.hp > 0 && dist(grenade.x, grenade.y, bot.x, bot.y) < 120) {
         bot.hp -= grenade.type === "he" ? 60 : 35;
+        if (bot.hp <= 0) dropActorLoadoutOnDeath(bot);
       }
     }
   }
@@ -2389,6 +2614,7 @@ function awardPlayerHit(bot) {
   player.hits += 1;
   advanceMission("hits", 1);
   if (bot.hp <= 0) {
+    dropActorLoadoutOnDeath(bot);
     player.kills += 1;
     player.roundKills += 1;
     player.money += 300;
@@ -2472,6 +2698,7 @@ function shoot(owner, angle, weapon, hostile = false) {
 }
 
 function reload() {
+  if (isBombSelected()) return;
   const weapon = activeWeapon();
   if (weapon.melee) return;
   if (weapon.reloading > 0 || weapon.ammo === weapon.magSize || weapon.currentReserve <= 0) return;
@@ -2515,7 +2742,7 @@ function updatePlayer(dt) {
       emitAudioEvent("reloadDone", { x: player.x, y: player.y, weapon }, false);
     }
   }
-  if (mouse.down && (weapon.automatic || mouse.clicked)) shoot(player, player.angle, weapon);
+  if (!isBombSelected() && mouse.down && (weapon.automatic || mouse.clicked)) shoot(player, player.angle, weapon);
   mouse.clicked = false;
   player.invuln = Math.max(0, player.invuln - dt);
 }
@@ -2660,6 +2887,7 @@ function damagePlayer(amount) {
   if (player.hp <= 0) {
     player.hp = 0;
     player.alive = false;
+    dropPlayerLoadoutOnDeath();
     emitAudioEvent("death", { x: player.x, y: player.y });
     enterSpectator();
   }
@@ -2681,6 +2909,7 @@ function updateBullets(dt) {
       for (const ally of allies) {
         if (ally.hp > 0 && dist(b.x, b.y, ally.x, ally.y) < ally.r) {
           ally.hp -= b.damage;
+          if (ally.hp <= 0) dropActorLoadoutOnDeath(ally);
           emitAudioEvent(ally.hp <= 0 ? "death" : "hit", { x: ally.x, y: ally.y }, false);
           remove = true;
           break;
@@ -2726,7 +2955,10 @@ function updateGrenades(dt) {
     effects[i].life -= dt;
     if (effects[i].type === "fire") {
       for (const bot of bots) {
-        if (bot.hp > 0 && dist(effects[i].x, effects[i].y, bot.x, bot.y) < effects[i].r) bot.hp -= 16 * dt;
+        if (bot.hp > 0 && dist(effects[i].x, effects[i].y, bot.x, bot.y) < effects[i].r) {
+          bot.hp -= 16 * dt;
+          if (bot.hp <= 0) dropActorLoadoutOnDeath(bot);
+        }
       }
     }
     if (effects[i].life <= 0) effects.splice(i, 1);
@@ -2987,7 +3219,7 @@ function drawProjectiles2d() {
     ctx.beginPath(); ctx.arc(e.x - camera.x, e.y - camera.y, e.r, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
   }
-  if (state.bomb.status === "planted" || state.bomb.status === "hidden") {
+  if (["planted", "hidden", "dropped"].includes(state.bomb.status)) {
     ctx.fillStyle = "#d75f4f"; ctx.fillRect(state.bomb.x - camera.x - 8, state.bomb.y - camera.y - 8, 16, 16);
   }
 }
@@ -3465,7 +3697,7 @@ function draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon) {
       ctx.fillText(`E ${item.name}`, p.x, p.y - size * 0.8);
     }
   }
-  if (state.bomb.status === "planted" || state.bomb.status === "hidden") {
+  if (["planted", "hidden", "dropped"].includes(state.bomb.status)) {
     const p = projectWorldToFps(state.bomb.x, state.bomb.y, fov, depth, colW, horizon, -10, 75);
     if (p) {
       const size = clamp((h * 28) / Math.max(1, p.d), 10, 34);
@@ -3570,6 +3802,20 @@ function drawWeaponMuzzleFlash(x, y, scale) {
 }
 
 function draw3dWeapon(w, h) {
+  if (isBombSelected()) {
+    const scale = clamp(w / 1280, 0.78, 1.15);
+    const x = w / 2 + 84 * scale;
+    const y = h - 128 * scale + camera.shake * 1.8;
+    drawWeaponHands(x, y, scale);
+    drawWeaponPart(x + 8 * scale, y + 18 * scale, 116 * scale, 72 * scale, "#263024");
+    drawWeaponPart(x + 26 * scale, y + 30 * scale, 78 * scale, 34 * scale, "#151913");
+    ctx.fillStyle = "#d75f4f";
+    ctx.fillRect(x + 36 * scale, y + 40 * scale, 24 * scale, 12 * scale);
+    ctx.fillStyle = "#e8d46a";
+    ctx.font = `${Math.round(16 * scale)}px Arial`;
+    ctx.fillText("C4", x + 72 * scale, y + 55 * scale);
+    return;
+  }
   const weapon = activeWeapon();
   const model = weaponViewModel(weapon);
   const scale = clamp(w / 1280, 0.78, 1.15);
@@ -3632,9 +3878,9 @@ function updateHud() {
   hud.score.textContent = `T ${state.score.T} : ${state.score.CT} CT`;
   const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
   hud.timer.textContent = `${Math.floor(time / 60)}:${String(Math.max(0, Math.ceil(time % 60))).padStart(2, "0")}`;
-  hud.bomb.textContent = state.bomb.status === "planted" ? `${tr("bomb")} ${state.bomb.site} ${Math.ceil(state.bomb.timer)}s` : state.bomb.status === "carried" ? `${tr("bomb")} ${tr("you")}` : `${tr("bomb")} --`;
-  hud.weaponName.textContent = weapon.burstCapable ? `${weapon.name} ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}` : weapon.name;
-  hud.ammo.textContent = weapon.melee ? "MELEE" : weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
+  hud.bomb.textContent = state.bomb.status === "planted" ? `${tr("bomb")} ${state.bomb.site} ${Math.ceil(state.bomb.timer)}s` : playerHasBomb() ? `${tr("bomb")} ${isBombSelected() ? "READY" : tr("you")}` : state.bomb.status === "dropped" ? `${tr("bomb")} DROP` : `${tr("bomb")} --`;
+  hud.weaponName.textContent = isBombSelected() ? "C4 Bomb" : weapon.burstCapable ? `${weapon.name} ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}` : weapon.name;
+  hud.ammo.textContent = isBombSelected() ? "HOLD E" : weapon.melee ? "MELEE" : weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
 }
 
 function tick(now) {
@@ -3702,29 +3948,23 @@ function closePanels() {
   hud.missionsPanel.classList.add("hidden");
   hud.networkPanel.classList.add("hidden");
   hud.modsPanel.classList.add("hidden");
+  hud.storyObjectivePanel?.classList.add("hidden");
 }
 
 function equipHotkey(n) {
-  const owned = ownedWeapons();
-  const weapon = owned[n - 1];
-  if (weapon) {
-    player.weaponId = weapon.id;
-    showMessage(weapon.name);
-  }
+  selectInventoryItem(carriedItems()[n - 1]);
 }
 
 function cycleWeapon(direction = 1) {
-  const owned = ownedWeapons();
-  if (owned.length < 2) return;
-  const current = owned.findIndex((weapon) => weapon.id === player.weaponId);
-  const next = owned[(current + direction + owned.length) % owned.length];
-  player.weaponId = next.id;
-  emitAudioEvent("ui", { x: player.x, y: player.y }, false);
-  showMessage(next.name);
-  updateHud();
+  const items = carriedItems();
+  if (items.length < 2) return;
+  const current = items.findIndex((item) => item.type === "bomb" ? isBombSelected() : (!isBombSelected() && item.weapon.id === player.weaponId));
+  const index = current >= 0 ? current : 0;
+  selectInventoryItem(items[(index + direction + items.length) % items.length]);
 }
 
 function toggleWeaponMode() {
+  if (isBombSelected()) return false;
   const weapon = activeWeapon();
   if (!weapon.burstCapable) return false;
   weapon.fireMode = weapon.fireMode === "burst" ? "semi" : "burst";
@@ -3755,9 +3995,10 @@ window.addEventListener("keydown", (event) => {
     renderBinds();
     return;
   }
-  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev].includes(event.code)) event.preventDefault();
+  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev, "Tab"].includes(event.code)) event.preventDefault();
   keys.add(event.code);
   if (event.code === "Escape") closePanels();
+  if (event.code === "Tab" && showStoryObjective()) return;
   if (event.code === bindings.shop) togglePanel(hud.shopPanel);
   if (event.code === bindings.settings) togglePanel(hud.settingsPanel);
   if (event.code === bindings.missions) togglePanel(hud.missionsPanel);

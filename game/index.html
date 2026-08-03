@@ -38,6 +38,15 @@
       </div>
       <div id="message" role="status"></div>
     </div>
+    <div id="story-objective-panel" class="panel compact hidden" aria-label="Cel fabularny">
+      <div class="panel-head">
+        <div>
+          <div class="muted">TAB</div>
+          <h2>Cel fabularny</h2>
+        </div>
+      </div>
+      <div id="story-objective-text" class="panel-note">Wyeliminuj wszystkich wrogow</div>
+    </div>
     <div class="panel hidden" id="shop-panel" aria-label="Sklep broni">
       <div class="panel-head">
         <div>
@@ -358,6 +367,14 @@
         <label>
           Wymagana liczba
           <input id="editor-target" type="number" min="1" value="1">
+        </label>
+        <label>
+          Opis celu pod TAB
+          <input id="editor-objective-text" value="Wyeliminuj wszystkich wrogow">
+        </label>
+        <label>
+          Kod zakonczenia celu
+          <textarea id="editor-goal-code" class="code-box" spellcheck="false">return ctx.enemiesAlive &lt;= 0;</textarea>
         </label>
         <label>
           Szerokosc

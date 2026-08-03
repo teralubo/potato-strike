@@ -119,6 +119,14 @@ for (const snippet of [
   "burstCapable",
   "toggleWeaponMode",
   "fireMode",
+  "dropPlayerLoadoutOnDeath",
+  "dropActorLoadoutOnDeath",
+  "pickupDroppedBomb",
+  "carriedItems",
+  "isBombSelected",
+  "story-objective-panel",
+  "checkStoryObjective",
+  "runStoryGoalCode",
   "bindings.drop",
   "KeyH",
   "openOwnerConsole",
@@ -194,7 +202,7 @@ for (const snippet of [
 }
 
 const editorJs = fs.readFileSync("game/editor.js", "utf8");
-for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "isoCanvasPoint", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps", "testGraphics"]) {
+for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "isoCanvasPoint", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps", "testGraphics", "storyGoal", "story-goal-code"]) {
   if (!editorJs.includes(snippet)) {
     console.error(`Missing required Studio feature: ${snippet}`);
     process.exit(1);
