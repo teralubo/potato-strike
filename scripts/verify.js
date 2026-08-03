@@ -250,7 +250,8 @@ for (const snippet of ["writeLog", "logs", "potato-strike.log", "preload-error",
   }
 }
 
-if (!fs.readFileSync("game/styles.css", "utf8").includes("#menu {\n  position: absolute;\n  inset: 0;\n  z-index: 5;")) {
+const stylesCss = fs.readFileSync("game/styles.css", "utf8").replace(/\r\n/g, "\n");
+if (!stylesCss.includes("#menu {\n  position: absolute;\n  inset: 0;\n  z-index: 5;")) {
   console.error("Menu overlay z-index guard is missing");
   process.exit(1);
 }
