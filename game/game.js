@@ -9,6 +9,7 @@ function showBootError(error) {
     message.textContent = `Blad startu offline: ${error?.message || String(error || "nieznany blad")}`;
     message.classList.add("show");
   }
+  window.potatoNative?.log?.("game:boot-error", error?.message || String(error || "nieznany blad"), error?.stack || "");
   console.error(error);
 }
 
@@ -2851,6 +2852,7 @@ document.querySelectorAll("[data-touch-action]").forEach((button) => {
 });
 
 try {
+  window.potatoNative?.log?.("game:boot", "Starting game renderer boot");
   makeWeapons();
   loadConfig();
   loadUserMapsFromStorage();
@@ -2863,6 +2865,7 @@ try {
   renderModManager();
   renderProfileMenu();
   if (!loadStudioTestMap()) ensureNormalBootMenu();
+  window.potatoNative?.log?.("game:boot", `Boot complete running=${state.running} menuHidden=${hud.menu.classList.contains("hidden")}`);
   requestAnimationFrame(tick);
 } catch (error) {
   showBootError(error);

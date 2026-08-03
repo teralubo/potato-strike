@@ -62,6 +62,11 @@ if (!mainJs.includes("config:save") || !fs.readFileSync("preload.js", "utf8").in
   process.exit(1);
 }
 
+if (!fs.existsSync("logs/.gitkeep")) {
+  console.error("Missing logs folder marker");
+  process.exit(1);
+}
+
 const singleHtml = fs.readFileSync("PotatoStrike.html", "utf8");
 if (!singleHtml.includes("<style>") || !singleHtml.includes("<script>") || singleHtml.includes('src="game.js"') || singleHtml.includes('href="styles.css"')) {
   console.error("Single-file HTML build is not self-contained");
@@ -133,6 +138,14 @@ for (const snippet of ["showFatalError", "normalizeMap", "findSafePoint", "showF
 for (const snippet of ["showBootError", "ensureNormalBootMenu", "if (!loadStudioTestMap()) ensureNormalBootMenu()"]) {
   if (!js.includes(snippet)) {
     console.error(`Missing required offline boot guard: ${snippet}`);
+    process.exit(1);
+  }
+}
+
+const preloadJs = fs.readFileSync("preload.js", "utf8");
+for (const snippet of ["writeLog", "logs", "potato-strike.log", "preload-error", "log:renderer", "crashReporter", "showCrashRecoveryWindow"]) {
+  if (!mainJs.includes(snippet) && !preloadJs.includes(snippet)) {
+    console.error(`Missing required offline logging feature: ${snippet}`);
     process.exit(1);
   }
 }
