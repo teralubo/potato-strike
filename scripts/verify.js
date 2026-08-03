@@ -91,6 +91,7 @@ for (const snippet of [
   "draw3dTerrain",
   "draw3dFloorPerspectiveGrid",
   "drawFpsStatusStrip",
+  "settings.quality === \"high\" ? 520 : 360",
   "draw3dFloorGuides",
   "drawPotatoWallColumn",
   "castRayHit",

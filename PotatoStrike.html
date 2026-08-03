@@ -3837,46 +3837,51 @@ function shadeHex(color, amount) {
   return `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
 }
 
-function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column, side = "") {
+function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column, side = "", texCoord = 0) {
   const texture = textureForHit(hit);
   const baseColor = hit?.color && hit.texture === "custom-color" ? hit.color : wallBaseColor(hit);
   const sideShade = side === "north" || side === "south" ? -18 : 0;
   const base = shadeHex(baseColor, shade - 150 + sideShade);
   ctx.fillStyle = base;
-  ctx.fillRect(x, y, colW + 1, wallH);
-  const stripe = texture.mode === "crate" ? 16 : texture.mode === "brick" ? 28 : texture.mode === "metal" ? 42 : 36;
-  if (settings.quality !== "low" && column % stripe < 3) {
+  const drawX = Math.floor(x);
+  const drawW = Math.ceil(colW) + 1;
+  ctx.fillRect(drawX, y, drawW, wallH);
+  const stripe = texture.mode === "crate" ? 96 : texture.mode === "brick" ? 72 : texture.mode === "metal" ? 112 : 128;
+  if (settings.quality === "high" && Math.floor(texCoord) % stripe < Math.max(5, stripe * 0.08)) {
     ctx.fillStyle = texture.seam;
-    ctx.fillRect(x, y, Math.max(1, colW), wallH);
+    ctx.fillRect(drawX, y, drawW, wallH);
   }
   if (settings.quality !== "low" && texture.mode === "brick") {
     ctx.fillStyle = "rgba(70,48,35,0.16)";
-    for (let row = y + Math.max(12, wallH / 5); row < y + wallH; row += Math.max(12, wallH / 5)) ctx.fillRect(x, row, colW + 1, 1);
+    for (let row = y + Math.max(12, wallH / 5); row < y + wallH; row += Math.max(12, wallH / 5)) ctx.fillRect(drawX, row, drawW, 1);
   }
   if (settings.quality !== "low" && texture.mode === "crate") {
     ctx.fillStyle = "rgba(40,28,18,0.28)";
-    ctx.fillRect(x, y + wallH * 0.48, colW + 1, Math.max(1, wallH * 0.05));
+    ctx.fillRect(drawX, y + wallH * 0.48, drawW, Math.max(1, wallH * 0.05));
   }
   if (settings.quality !== "low" && texture.mode === "glass") {
     ctx.fillStyle = "rgba(255,255,255,0.2)";
-    ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.08));
+    ctx.fillRect(drawX, y + wallH * 0.18, drawW, Math.max(1, wallH * 0.08));
   }
-  ctx.strokeStyle = `rgba(0,0,0,${clamp(0.24 + distance / 4200, 0.2, 0.48)})`;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x + 0.5, y + 0.5, colW, wallH);
+  if (settings.quality === "high" && (column % 24 === 0 || side === "edge")) {
+    ctx.strokeStyle = `rgba(0,0,0,${clamp(0.12 + distance / 6200, 0.1, 0.26)})`;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(drawX + 0.5, y + 0.5, drawW, wallH);
+  }
   ctx.fillStyle = `rgba(255,255,255,${clamp(0.11 - distance / 7600, 0.02, 0.09)})`;
-  ctx.fillRect(x, y, colW + 1, Math.max(1, wallH * 0.025));
+  ctx.fillRect(drawX, y, drawW, Math.max(1, wallH * 0.025));
   ctx.fillStyle = `rgba(0,0,0,${clamp(0.2 + distance / 5200, 0.18, 0.46)})`;
-  ctx.fillRect(x, y + wallH - Math.max(2, wallH * 0.04), colW + 1, Math.max(2, wallH * 0.04));
+  ctx.fillRect(drawX, y + wallH - Math.max(2, wallH * 0.04), drawW, Math.max(2, wallH * 0.04));
   ctx.fillStyle = `rgba(255,255,255,${clamp(0.16 - distance / 8500, 0.025, 0.12)})`;
-  ctx.fillRect(x, y, Math.max(1, colW * 0.35), wallH);
+  ctx.fillRect(drawX, y, Math.max(1, drawW * 0.22), wallH);
   ctx.fillStyle = `rgba(0,0,0,${clamp(distance / 2200, 0.04, 0.4)})`;
-  ctx.fillRect(x, y + wallH * 0.72, colW + 1, Math.max(1, wallH * 0.12));
+  ctx.fillRect(drawX, y + wallH * 0.72, drawW, Math.max(1, wallH * 0.12));
 }
 
 function render3d() {
   camera.shake *= 0.88;
   const w = window.innerWidth, h = window.innerHeight;
+  ctx.imageSmoothingEnabled = true;
   const horizon = clamp(h * 0.52 + camera.pitch * 0.3, h * 0.26, h * 0.74);
   const sky = ctx.createLinearGradient(0, 0, 0, horizon);
   sky.addColorStop(0, "#536a72");
@@ -3886,7 +3891,7 @@ function render3d() {
   ctx.fillRect(0, 0, w, horizon);
   draw3dTerrain(w, h, horizon);
   const fov = Math.PI / 2.9;
-  const cols = settings.quality === "low" ? 100 : settings.quality === "high" ? 260 : 170;
+  const cols = settings.quality === "low" ? 160 : settings.quality === "high" ? 520 : 360;
   const colW = w / cols;
   const depth = [];
   for (let i = 0; i < cols; i += 1) {
@@ -3898,8 +3903,9 @@ function render3d() {
     const shade = clamp(252 - d * 0.095, 84, 232);
     const x = i * colW;
     const y = horizon - wallH / 2 + camera.shake;
-    drawPotatoWallColumn(x, y, colW, wallH, hitInfo.hit, shade, d, i, hitInfo.side);
-    if (settings.quality !== "low" && i % 2 === 0) {
+    const texCoord = hitInfo.hit ? (hitInfo.side === "north" || hitInfo.side === "south" ? hitInfo.x - hitInfo.hit.x : hitInfo.y - hitInfo.hit.y) : i;
+    drawPotatoWallColumn(x, y, colW, wallH, hitInfo.hit, shade, d, i, hitInfo.side, texCoord);
+    if (settings.quality === "high" && i % 8 === 0) {
       ctx.fillStyle = `rgba(255,255,255,${clamp(0.14 - d / 8200, 0.025, 0.1)})`;
       ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.06));
     }
