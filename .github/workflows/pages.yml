@@ -42,6 +42,15 @@ jobs:
           mkdir -p _site
           cp PotatoStrike.html _site/index.html
           cp README.md CHANGELOG.md PATCH-NOTES-1.1-BETA.md _site/
+          touch _site/.nojekyll
+          cat > _site/pages-info.html <<'HTML'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>Potato Strike GitHub Pages</title>
+          <h1>Potato Strike GitHub Pages</h1>
+          <p>This site opens the playable PotatoStrike.html build as index.html, not the repository README.</p>
+          <p><a href="./index.html">Play Potato Strike</a></p>
+          HTML
           cat > _site/README.html <<'HTML'
           <!doctype html>
           <meta charset="utf-8">

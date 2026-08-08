@@ -59,6 +59,14 @@ for (const snippet of ["desktop-compat", "build:win:compat", "build:linux:compat
   }
 }
 
+const pagesWorkflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
+for (const snippet of ["cp PotatoStrike.html _site/index.html", "touch _site/.nojekyll", "pages-info.html", "not the repository README"]) {
+  if (!pagesWorkflow.includes(snippet)) {
+    console.error(`Missing required GitHub Pages HTML-game feature: ${snippet}`);
+    process.exit(1);
+  }
+}
+
 for (const file of [
   "PotatoStrike.bat",
   "PotatoStrike.html",

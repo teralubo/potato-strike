@@ -24,7 +24,7 @@ Wersja `1.1 BETA` skupia sie na kompatybilnosci:
 Android APK buduje sie na GitHubie jako artifact `potato-strike-android-apk`.
 Flipper Zero `.fap` buduje sie na GitHubie jako artifact `potato-strike-flipperzero-fap`.
 Pelna paczka do pobrania buduje sie jako artifact `potato-strike-1.1-beta-folder`.
-Wersja webowa na GitHub Pages jest budowana z `PotatoStrike.html`, czyli dziala jako lekka wersja LAN/BOT bez backendu online.
+Wersja webowa na GitHub Pages jest budowana z `PotatoStrike.html` i publikowana jako `index.html`, wiec po wejsciu na strone otwiera sie gra, a nie README.
 Buildy desktop kompatybilnosci buduja sie jako `potato-strike-windows-compat` oraz `potato-strike-linux-compat`.
 
 Lokalne przygotowanie paczki:

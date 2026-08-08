@@ -38,6 +38,7 @@ Potato Strike 1.1 BETA is a compatibility update.
 ## GitHub
 
 - Added `.github/workflows/potato-strike-1-1-beta.yml`.
+- Added `.github/workflows/pages.yml`, which deploys `PotatoStrike.html` as `index.html` so GitHub Pages opens the playable game instead of README.
 - The workflow builds:
   - Windows compatibility builds,
   - Linux compatibility builds,
