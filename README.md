@@ -18,12 +18,14 @@ Wersja `1.1 BETA` skupia sie na kompatybilnosci:
 - `phone/flipperzero/` zawiera ultra-mini wersje `Potato Strike Mini` dla Flipper Zero.
 - `.github/workflows/potato-strike-1-1-beta.yml` buduje APK, FAP i paczke `PotatoStrike-1.1-BETA.zip` jako artefakty GitHub Actions.
 - `.github/workflows/pages.yml` publikuje jednoplikowa wersje HTML na GitHub Pages, jesli Pages jest wlaczone w repo.
+- `compat/` zawiera launchery i instrukcje dla starszych Windowsow, roznych dystrybucji Linuxa i awaryjnego HTML/server mode.
 - `PATCH-NOTES-1.1-BETA.md` zawiera opis zmian.
 
 Android APK buduje sie na GitHubie jako artifact `potato-strike-android-apk`.
 Flipper Zero `.fap` buduje sie na GitHubie jako artifact `potato-strike-flipperzero-fap`.
 Pelna paczka do pobrania buduje sie jako artifact `potato-strike-1.1-beta-folder`.
 Wersja webowa na GitHub Pages jest budowana z `PotatoStrike.html`, czyli dziala jako lekka wersja LAN/BOT bez backendu online.
+Buildy desktop kompatybilnosci buduja sie jako `potato-strike-windows-compat` oraz `potato-strike-linux-compat`.
 
 Lokalne przygotowanie paczki:
 

@@ -61,6 +61,7 @@ copyDir(path.join(root, "game"), path.join(releaseDir, "game"));
 copyDir(path.join(root, "configs"), path.join(releaseDir, "configs"), (from) => from.includes(`${path.sep}players${path.sep}`));
 copyDir(path.join(root, "mods"), path.join(releaseDir, "mods"));
 copyDir(path.join(root, "DEV-tools"), path.join(releaseDir, "DEV-tools"));
+copyDir(path.join(root, "compat"), path.join(releaseDir, "compat"));
 copyDir(path.join(root, "phone"), path.join(releaseDir, "phone"), (from, entry) => {
   return entry.isDirectory() && ["build", ".gradle", "dist"].includes(entry.name);
 });

@@ -3,6 +3,10 @@ set -eu
 
 cd "$(dirname "$0")"
 
+if [ -x "./compat/linux/PotatoStrike-Linux-Portable.sh" ]; then
+  exec "./compat/linux/PotatoStrike-Linux-Portable.sh"
+fi
+
 if [ -x ./node_modules/.bin/electron ]; then
   exec ./node_modules/.bin/electron .
 fi

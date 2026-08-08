@@ -27,10 +27,20 @@ Potato Strike 1.1 BETA is a compatibility update.
   - Android source and APK build instructions,
   - Flipper Zero source and `.fap` build instructions.
 
+## Desktop OS Compatibility
+
+- Added `compat/windows/PotatoStrike-Windows-Legacy.cmd` for older Windows systems that should use the one-file browser build instead of Electron.
+- Added `compat/linux/PotatoStrike-Linux-Portable.sh` with fallbacks for Electron, xdg-open, gio, KDE/GNOME openers and common browsers.
+- Added `compat/linux/PotatoStrike-Linux-Server.sh` for distros where local file opening is blocked or broken.
+- Added `compat/macos/PotatoStrike-macOS.command` as best-effort HTML launch support.
+- Added GitHub Actions desktop artifacts for Windows x64/ia32 and Linux AppImage, deb, rpm, tar.gz and unpacked builds.
+
 ## GitHub
 
 - Added `.github/workflows/potato-strike-1-1-beta.yml`.
 - The workflow builds:
+  - Windows compatibility builds,
+  - Linux compatibility builds,
   - Android APK,
   - Flipper Zero FAP,
   - complete compatibility ZIP.

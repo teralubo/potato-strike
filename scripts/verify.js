@@ -13,7 +13,7 @@ if (missing.length) {
   process.exit(1);
 }
 
-if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["start:safe"] || !packageJson.scripts["start:editor"] || !packageJson.scripts["build:win"] || !packageJson.scripts["build:linux"] || !packageJson.scripts.serve || !packageJson.scripts["phone:sync"] || !packageJson.scripts["package:compat"]) {
+if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["start:safe"] || !packageJson.scripts["start:editor"] || !packageJson.scripts["build:win"] || !packageJson.scripts["build:win:compat"] || !packageJson.scripts["build:linux"] || !packageJson.scripts["build:linux:compat"] || !packageJson.scripts.serve || !packageJson.scripts["phone:sync"] || !packageJson.scripts["package:compat"]) {
   console.error("package.json is missing start/build scripts");
   process.exit(1);
 }
@@ -39,9 +39,22 @@ for (const file of [
   "phone/flipperzero/application.fam",
   "phone/flipperzero/potato_strike_mini.c",
   "phone/flipperzero/build-flipper.ps1",
+  "compat/README.md",
+  "compat/windows/PotatoStrike-Windows-Legacy.cmd",
+  "compat/linux/PotatoStrike-Linux-Portable.sh",
+  "compat/linux/PotatoStrike-Linux-Server.sh",
+  "compat/macos/PotatoStrike-macOS.command",
 ]) {
   if (!fs.existsSync(file)) {
     console.error(`Missing required 1.1 compatibility file: ${file}`);
+    process.exit(1);
+  }
+}
+
+const compatWorkflow = fs.readFileSync(".github/workflows/potato-strike-1-1-beta.yml", "utf8");
+for (const snippet of ["desktop-compat", "build:win:compat", "build:linux:compat", "potato-strike-windows-compat", "potato-strike-linux-compat"]) {
+  if (!compatWorkflow.includes(snippet)) {
+    console.error(`Missing required desktop compatibility workflow feature: ${snippet}`);
     process.exit(1);
   }
 }

@@ -16,7 +16,9 @@
     "start:safe": "electron . --safe-offline",
     "start:editor": "electron . --editor",
     "build:win": "electron-builder --win portable",
-    "build:linux": "electron-builder --linux dir AppImage"
+    "build:win:compat": "electron-builder --win portable --x64 --ia32",
+    "build:linux": "electron-builder --linux dir AppImage",
+    "build:linux:compat": "electron-builder --linux AppImage deb rpm tar.gz"
   },
   "devDependencies": {
     "electron": "^31.0.0",
@@ -40,13 +42,18 @@
       "server.js"
     ],
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
     },
     "linux": {
       "target": [
         "dir",
-        "AppImage"
+        "AppImage",
+        "deb",
+        "rpm",
+        "tar.gz"
       ],
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
       "category": "Game"
     }
   }

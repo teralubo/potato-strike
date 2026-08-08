@@ -12,6 +12,9 @@ Compatibility update focused on portable builds.
 - Added `scripts/sync-phone-assets.js` to copy the current `PotatoStrike.html` into Android assets.
 - Added `scripts/package-compat.js` to create the 1.1 compatibility release folder/zip.
 - Added GitHub Actions workflow for APK, FAP and compatibility ZIP artifacts.
+- Added desktop compatibility CI for Windows x64/ia32 portable builds.
+- Added Linux compatibility CI for AppImage, deb, rpm, tar.gz and unpacked Linux builds.
+- Added `compat/` launchers for legacy Windows, portable Linux, Linux local-server mode and macOS best-effort HTML launch.
 - Kept the main game runtime unchanged for this compatibility update.
 
 ## 1.0 BETA FINAL
