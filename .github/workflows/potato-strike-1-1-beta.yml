@@ -74,12 +74,11 @@ jobs:
         run: gradle assembleDebug
       - name: Collect APK
         run: |
-          mkdir -p phone/apk
-          cp phone/android/app/build/outputs/apk/debug/app-debug.apk phone/apk/PotatoStrike-1.1-BETA-debug.apk
+          cp phone/android/app/build/outputs/apk/debug/app-debug.apk phone/android/PotatoStrike-1.1-BETA.apk
       - uses: actions/upload-artifact@v4
         with:
           name: potato-strike-android-apk
-          path: phone/apk/PotatoStrike-1.1-BETA-debug.apk
+          path: phone/android/PotatoStrike-1.1-BETA.apk
 
   flipperzero-fap:
     name: Flipper Zero FAP
@@ -94,10 +93,18 @@ jobs:
       - name: Build FAP
         working-directory: phone/flipperzero
         run: ufbt
+      - name: Collect FAP
+        working-directory: phone/flipperzero
+        shell: bash
+        run: |
+          mkdir -p dist
+          fap_file="$(find . -name '*.fap' -type f | head -n 1)"
+          test -n "$fap_file"
+          cp "$fap_file" dist/PotatoStrikeMini-1.1-BETA.fap
       - uses: actions/upload-artifact@v4
         with:
           name: potato-strike-flipperzero-fap
-          path: phone/flipperzero/dist/*.fap
+          path: phone/flipperzero/dist/PotatoStrikeMini-1.1-BETA.fap
 
   release-folder:
     name: Compatibility ZIP
@@ -117,7 +124,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: potato-strike-android-apk
-          path: dist/PotatoStrike-1.1-BETA/phone
+          path: dist/PotatoStrike-1.1-BETA/phone/android
       - uses: actions/download-artifact@v4
         with:
           name: potato-strike-flipperzero-fap

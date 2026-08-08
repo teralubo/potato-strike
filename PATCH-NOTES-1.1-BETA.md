@@ -8,6 +8,8 @@ Potato Strike 1.1 BETA is a compatibility update.
 - The Android version loads the self-contained `PotatoStrike.html` in a native WebView.
 - Minimum Android target is Android 5.0 (`minSdk 21`) to support older phones.
 - The APK is built by GitHub Actions as `potato-strike-android-apk`.
+- The complete release zip places the ready install file at `phone/android/PotatoStrike-1.1-BETA.apk`.
+- Added `phone/android/README.md` with simple install steps.
 
 ## Flipper Zero
 
@@ -15,6 +17,8 @@ Potato Strike 1.1 BETA is a compatibility update.
 - This is a deliberately tiny Flipper version, not the full HTML game.
 - It removes heavy systems such as editor, LAN, textures and complex AI.
 - It is built as a `.fap` by GitHub Actions using `ufbt`.
+- The complete release zip places the ready SD-card file at `phone/flipperzero/PotatoStrikeMini-1.1-BETA.fap`.
+- Simplified `phone/flipperzero/README.md` with copy-to-SD steps.
 
 ## Release Folder
 

@@ -29,6 +29,7 @@ for (const file of [
   ".github/workflows/potato-strike-1-1-beta.yml",
   ".github/workflows/pages.yml",
   "phone/README.md",
+  "phone/android/README.md",
   "phone/android/settings.gradle",
   "phone/android/build.gradle",
   "phone/android/app/build.gradle",
@@ -52,7 +53,7 @@ for (const file of [
 }
 
 const compatWorkflow = fs.readFileSync(".github/workflows/potato-strike-1-1-beta.yml", "utf8");
-for (const snippet of ["desktop-compat", "build:win:compat", "build:linux:compat", "potato-strike-windows-compat", "potato-strike-linux-compat"]) {
+for (const snippet of ["desktop-compat", "build:win:compat", "build:linux:compat", "potato-strike-windows-compat", "potato-strike-linux-compat", "phone/android/PotatoStrike-1.1-BETA.apk", "PotatoStrikeMini-1.1-BETA.fap"]) {
   if (!compatWorkflow.includes(snippet)) {
     console.error(`Missing required desktop compatibility workflow feature: ${snippet}`);
     process.exit(1);

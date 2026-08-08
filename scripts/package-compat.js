@@ -67,7 +67,7 @@ copyDir(path.join(root, "phone"), path.join(releaseDir, "phone"), (from, entry) 
 });
 
 const apk = path.join(root, "phone", "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk");
-if (fs.existsSync(apk)) copyFile(apk, path.join(releaseDir, "phone", "PotatoStrike-1.1-BETA-debug.apk"));
+if (fs.existsSync(apk)) copyFile(apk, path.join(releaseDir, "phone", "android", "PotatoStrike-1.1-BETA.apk"));
 
 const flipperDist = path.join(root, "phone", "flipperzero", "dist");
 if (fs.existsSync(flipperDist)) {

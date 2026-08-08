@@ -17,7 +17,8 @@ Build on GitHub:
 1. Push to `beta`.
 2. Open GitHub Actions.
 3. Run or wait for `Potato Strike 1.1 BETA Compatibility Builds`.
-4. Download the `potato-strike-android-apk` artifact.
+4. Download the `potato-strike-android-apk` artifact or the complete `potato-strike-1.1-beta-folder` zip.
+5. In the complete zip, click `phone/android/PotatoStrike-1.1-BETA.apk` on Android and install it.
 
 Build locally if Android SDK and Gradle are installed:
 
@@ -41,7 +42,8 @@ Build on GitHub:
 
 1. Push to `beta`.
 2. Open GitHub Actions.
-3. Download the `potato-strike-flipperzero-fap` artifact.
+3. Download the `potato-strike-flipperzero-fap` artifact or the complete `potato-strike-1.1-beta-folder` zip.
+4. In the complete zip, copy `phone/flipperzero/PotatoStrikeMini-1.1-BETA.fap` to the Flipper Zero SD card.
 
 Build locally if `ufbt` is installed:
 
