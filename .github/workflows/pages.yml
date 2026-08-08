@@ -1,0 +1,69 @@
+name: Potato Strike HTML Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - beta
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: potato-strike-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build single-file web game
+        run: npm run build:single
+
+      - name: Prepare Pages bundle
+        shell: bash
+        run: |
+          mkdir -p _site
+          cp PotatoStrike.html _site/index.html
+          cp README.md CHANGELOG.md PATCH-NOTES-1.1-BETA.md _site/
+          touch _site/.nojekyll
+          cat > _site/pages-info.html <<'HTML'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>Potato Strike GitHub Pages</title>
+          <h1>Potato Strike GitHub Pages</h1>
+          <p>This site opens the playable PotatoStrike.html build as index.html, not the repository README.</p>
+          <p><a href="./index.html">Play Potato Strike</a></p>
+          HTML
+          cat > _site/README.html <<'HTML'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>Potato Strike 1.1 BETA</title>
+          <meta http-equiv="refresh" content="0; url=./index.html">
+          <a href="./index.html">Open Potato Strike</a>
+          HTML
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

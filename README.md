@@ -10,6 +10,31 @@ Workflow repo:
 - `beta` - wszystkie nowe zmiany, testy, eksperymenty i wersje beta.
 - `main` - pelne wydanie gry po potwierdzeniu.
 
+## 1.1 BETA Compatibility Pack
+
+Wersja `1.1 BETA` skupia sie na kompatybilnosci:
+
+- `phone/android/` zawiera natywna wersje Android WebView ladujaca `PotatoStrike.html`.
+- `phone/flipperzero/` zawiera ultra-mini wersje `Potato Strike Mini` dla Flipper Zero.
+- `.github/workflows/potato-strike-1-1-beta.yml` buduje APK, FAP i paczke `PotatoStrike-1.1-BETA.zip` jako artefakty GitHub Actions.
+- `.github/workflows/pages.yml` publikuje jednoplikowa wersje HTML na GitHub Pages, jesli Pages jest wlaczone w repo.
+- `compat/` zawiera launchery i instrukcje dla starszych Windowsow, roznych dystrybucji Linuxa i awaryjnego HTML/server mode.
+- `PATCH-NOTES-1.1-BETA.md` zawiera opis zmian.
+
+Android APK buduje sie na GitHubie jako artifact `potato-strike-android-apk`.
+Flipper Zero `.fap` buduje sie na GitHubie jako artifact `potato-strike-flipperzero-fap`.
+Pelna paczka do pobrania buduje sie jako artifact `potato-strike-1.1-beta-folder`.
+Wersja webowa na GitHub Pages jest budowana z `PotatoStrike.html` i publikowana jako `index.html`, wiec po wejsciu na strone otwiera sie gra, a nie README.
+Buildy desktop kompatybilnosci buduja sie jako `potato-strike-windows-compat` oraz `potato-strike-linux-compat`.
+
+Lokalne przygotowanie paczki:
+
+```powershell
+npm run package:compat
+```
+
+Jesli lokalnie nie masz Android SDK/Gradle albo `ufbt`, skorzystaj z GitHub Actions.
+
 ## Uruchamianie w przegladarce
 
 - Najlzejsza wersja gry to jeden plik `PotatoStrike.html`. Kliknij go dwa razy albo uruchom `PotatoStrike.bat`.
