@@ -1,6 +1,6 @@
 {
   "name": "potato-strike",
-  "version": "1.0.0",
+  "version": "1.1.0-beta",
   "private": true,
   "description": "Lightweight CS-like Potato Strike prototype.",
   "license": "GPL-3.0-only",
@@ -10,6 +10,8 @@
     "verify": "node scripts/verify.js",
     "build:single": "node scripts/build-single-html.js",
     "package:offline": "node scripts/package-offline.js",
+    "phone:sync": "node scripts/sync-phone-assets.js",
+    "package:compat": "node scripts/package-compat.js",
     "start": "electron .",
     "start:safe": "electron . --safe-offline",
     "start:editor": "electron . --editor",

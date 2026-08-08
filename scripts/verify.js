@@ -13,14 +13,35 @@ if (missing.length) {
   process.exit(1);
 }
 
-if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["start:safe"] || !packageJson.scripts["start:editor"] || !packageJson.scripts["build:win"] || !packageJson.scripts["build:linux"] || !packageJson.scripts.serve) {
+if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["start:safe"] || !packageJson.scripts["start:editor"] || !packageJson.scripts["build:win"] || !packageJson.scripts["build:linux"] || !packageJson.scripts.serve || !packageJson.scripts["phone:sync"] || !packageJson.scripts["package:compat"]) {
   console.error("package.json is missing start/build scripts");
   process.exit(1);
 }
 
-for (const file of ["main.js", "preload.js", "game/index.html", "game/styles.css", "game/game.js", "game/editor.html", "game/editor.css", "game/editor.js", "launch-offline-window.bat", "scripts/package-offline.js", "scripts/build-single-html.js", "DEV-tools/README.md", "DEV-tools/mod-template.json", "mods/README.md"]) {
+for (const file of ["main.js", "preload.js", "game/index.html", "game/styles.css", "game/game.js", "game/editor.html", "game/editor.css", "game/editor.js", "launch-offline-window.bat", "scripts/package-offline.js", "scripts/build-single-html.js", "scripts/sync-phone-assets.js", "scripts/package-compat.js", "DEV-tools/README.md", "DEV-tools/mod-template.json", "mods/README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md"]) {
   if (!fs.existsSync(file)) {
     console.error(`Missing required offline file: ${file}`);
+    process.exit(1);
+  }
+}
+
+for (const file of [
+  ".github/workflows/potato-strike-1-1-beta.yml",
+  ".github/workflows/pages.yml",
+  "phone/README.md",
+  "phone/android/settings.gradle",
+  "phone/android/build.gradle",
+  "phone/android/app/build.gradle",
+  "phone/android/app/src/main/AndroidManifest.xml",
+  "phone/android/app/src/main/java/local/potatostrike/android/MainActivity.java",
+  "phone/android/app/src/main/assets/PotatoStrike.html",
+  "phone/flipperzero/README.md",
+  "phone/flipperzero/application.fam",
+  "phone/flipperzero/potato_strike_mini.c",
+  "phone/flipperzero/build-flipper.ps1",
+]) {
+  if (!fs.existsSync(file)) {
+    console.error(`Missing required 1.1 compatibility file: ${file}`);
     process.exit(1);
   }
 }

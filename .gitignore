@@ -6,6 +6,12 @@ logs/*.txt
 logs/*.json
 logs/crashes/
 *.exe
+*.apk
+*.fap
+PotatoStrike-*.zip
+phone/android/.gradle/
+phone/android/app/build/
+phone/flipperzero/dist/
 PotatoStrike-Linux.txt
 npm-debug.log*
 .DS_Store

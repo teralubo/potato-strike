@@ -1,0 +1,10 @@
+App(
+    appid="potato_strike_mini",
+    name="Potato Strike",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="potato_strike_mini_app",
+    sources=["potato_strike_mini.c"],
+    requires=["gui"],
+    stack_size=2048,
+    fap_category="Games",
+)

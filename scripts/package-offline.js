@@ -9,7 +9,7 @@ fs.mkdirSync(path.join(root, "mods"), { recursive: true });
 require("./build-single-html");
 
 fs.writeFileSync(path.join(root, "PotatoStrike.bat"), '@echo off\r\ncd /d "%~dp0"\r\nstart "" "PotatoStrike.html"\r\n');
-fs.writeFileSync(path.join(root, "PotatoStrike-Window.bat"), '@echo off\r\ncd /d "%~dp0"\r\nif exist "node_modules\\electron\\dist\\electron.exe" (\r\n  start "" "node_modules\\electron\\dist\\electron.exe" .\r\n) else (\r\n  echo Electron runtime not found. Run npm install first.\r\n  pause\r\n)\r\n');
+fs.writeFileSync(path.join(root, "PotatoStrike-Window.bat"), '@echo off\r\ncd /d "%~dp0"\r\nif exist "node_modules\\electron\\dist\\electron.exe" (\r\n  set POTATO_SAFE_OFFLINE=1\r\n  start "" "node_modules\\electron\\dist\\electron.exe" . --safe-offline\r\n) else (\r\n  echo Electron runtime not found. Run npm install first.\r\n  pause\r\n)\r\n');
 fs.writeFileSync(path.join(root, "PotatoStrike-Studio.bat"), '@echo off\r\ncd /d "%~dp0"\r\nif exist "node_modules\\electron\\dist\\electron.exe" (\r\n  start "" "node_modules\\electron\\dist\\electron.exe" . --editor\r\n) else (\r\n  start "" "game\\editor.html"\r\n)\r\n');
 
 const portableExe = path.join(root, "dist", `Potato Strike ${packageJson.version}.exe`);

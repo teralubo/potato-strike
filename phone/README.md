@@ -1,0 +1,57 @@
+# Potato Strike 1.1 BETA Phone Pack
+
+This folder contains compatibility builds and build instructions.
+
+## Android APK
+
+`phone/android` is a small native Android WebView wrapper for the self-contained `PotatoStrike.html` build.
+
+Targets:
+
+- Android 5.0+ (`minSdk 21`) for old devices.
+- Modern Android with hardware acceleration enabled.
+- LAN/browser features that work inside Android WebView.
+
+Build on GitHub:
+
+1. Push to `beta`.
+2. Open GitHub Actions.
+3. Run or wait for `Potato Strike 1.1 BETA Compatibility Builds`.
+4. Download the `potato-strike-android-apk` artifact.
+
+Build locally if Android SDK and Gradle are installed:
+
+```powershell
+npm run phone:sync
+cd phone/android
+gradle assembleDebug
+```
+
+The debug APK output is:
+
+```text
+phone/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+## Flipper Zero
+
+`phone/flipperzero` is not the full Potato Strike game. Flipper Zero has very limited RAM, CPU, screen size, and controls, so this is `Potato Strike Mini`: a tiny monochrome survival/shooting mini-game inspired by the main game.
+
+Build on GitHub:
+
+1. Push to `beta`.
+2. Open GitHub Actions.
+3. Download the `potato-strike-flipperzero-fap` artifact.
+
+Build locally if `ufbt` is installed:
+
+```powershell
+cd phone/flipperzero
+ufbt
+```
+
+Install the `.fap` on Flipper Zero by copying it to:
+
+```text
+/ext/apps/Games/
+```
