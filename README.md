@@ -21,6 +21,12 @@ Na branchu `unreleased` znajduje sie pakiet pomyslow 1.2:
 Aktualne prototypy: `Aim Lab Bunker`, `Extraction Sweep` i `Micro Royale`.
 Nie sa jeszcze finalnym wydaniem; sluzy to do sprawdzenia, ktore pomysly warto potem przeniesc do `beta`.
 
+## GitHub Actions Costs
+
+Zeby oszczedzac minuty GitHub Actions, ciezkie buildy APK/FAP/EXE/Linux nie uruchamiaja sie juz na kazdy push. Odpalaja sie recznie albo po tagu `v*`.
+GitHub Pages publikuje gotowy `PotatoStrike.html` jako `index.html` bez `npm ci`.
+Szczegoly sa w `GITHUB-ACTIONS-COST-SAVING.md`.
+
 ## 1.1 BETA Compatibility Pack
 
 Wersja `1.1 BETA` skupia sie na kompatybilnosci:

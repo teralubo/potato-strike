@@ -2,13 +2,18 @@ name: Potato Strike 1.1 BETA Compatibility Builds
 
 on:
   workflow_dispatch:
+    inputs:
+      note:
+        description: "Optional release/build note"
+        required: false
+        default: "manual compatibility build"
   push:
-    branches:
-      - beta
-      - main
     tags:
-      - "v1.1-BETA"
-      - "v1.1-beta"
+      - "v*"
+
+concurrency:
+  group: potato-strike-compat-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   desktop-compat:

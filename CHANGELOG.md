@@ -4,6 +4,7 @@
 
 Experimental branch-only ideas for future gameplay and sandbox updates.
 
+- Optimized GitHub Actions cost usage by moving heavy compatibility builds to manual/tag-only runs and making Pages publish the committed HTML without npm install.
 - Added `UNRELEASED-1.2-BETA.md` as the working plan for 1.2 ideas.
 - Added `mods/unreleased/1.2-beta/aim-lab-bunker.json`, a small aim and recoil training prototype.
 - Added `mods/unreleased/1.2-beta/extraction-sweep.json`, a story/extraction prototype with a custom objective.
