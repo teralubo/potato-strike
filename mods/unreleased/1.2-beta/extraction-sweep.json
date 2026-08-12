@@ -1,0 +1,56 @@
+{
+  "id": "ps12-extraction-sweep",
+  "name": "1.2 Idea - Extraction Sweep",
+  "enabled": true,
+  "priority": 14,
+  "mode": "story",
+  "roundTime": 150,
+  "map": {
+    "name": "Extraction Sweep",
+    "w": 1700,
+    "h": 1200,
+    "tSpawn": { "x": 180, "y": 1040 },
+    "ctSpawn": { "x": 1510, "y": 180 },
+    "sites": {
+      "A": { "x": 1390, "y": 850, "r": 115 },
+      "B": { "x": 470, "y": 330, "r": 105 }
+    },
+    "meta": {
+      "format": "potato-map-3d-lite",
+      "idea": "1.2-beta-extraction",
+      "storyGoal": {
+        "type": "custom",
+        "target": 1,
+        "text": "Wyczysc strefe i przezyj extraction sweep.",
+        "code": "return ctx.enemiesAlive <= 0 && ctx.player.hp > 0;"
+      }
+    },
+    "obstacles": [
+      { "id": "warehouse-north", "type": "wall", "x": 820, "y": 140, "w": 980, "h": 80, "z": 128, "rot": 0, "color": "#ecebe2", "material": "potato-concrete" },
+      { "id": "warehouse-south", "type": "wall", "x": 860, "y": 1030, "w": 1020, "h": 80, "z": 128, "rot": 0, "color": "#ecebe2", "material": "potato-concrete" },
+      { "id": "warehouse-west", "type": "wall", "x": 300, "y": 620, "w": 80, "h": 780, "z": 128, "rot": 0, "color": "#d6d8ce", "material": "tile" },
+      { "id": "warehouse-east", "type": "wall", "x": 1400, "y": 610, "w": 80, "h": 780, "z": 128, "rot": 0, "color": "#d6d8ce", "material": "tile" },
+      { "id": "mid-box-1", "type": "crate", "x": 690, "y": 530, "w": 120, "h": 120, "z": 76, "rot": 0, "color": "#83694a", "material": "potato-wood" },
+      { "id": "mid-box-2", "type": "crate", "x": 880, "y": 685, "w": 120, "h": 120, "z": 76, "rot": 0, "color": "#917552", "material": "potato-wood" },
+      { "id": "extraction-zone", "type": "prop", "x": 1430, "y": 980, "w": 180, "h": 70, "z": 12, "rot": 0, "color": "#44b66d", "material": "greenpanel" },
+      { "id": "hazard-pipe", "type": "prop", "x": 1110, "y": 380, "w": 210, "h": 45, "z": 45, "rot": 0, "color": "#c5b25f", "material": "hazard" }
+    ]
+  },
+  "weapons": [
+    {
+      "id": "ps12-scout-carbine",
+      "name": "PS-12 Scout Carbine",
+      "category": "Rifle",
+      "price": 1700,
+      "damage": 29,
+      "magSize": 24,
+      "reserve": 72,
+      "fireDelay": 125,
+      "reloadTime": 1.8,
+      "spread": 0.038,
+      "recoil": 0.048,
+      "automatic": true,
+      "color": "#d4ded2"
+    }
+  ]
+}

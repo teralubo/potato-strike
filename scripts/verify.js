@@ -26,6 +26,32 @@ for (const file of ["main.js", "preload.js", "game/index.html", "game/styles.css
 }
 
 for (const file of [
+  "UNRELEASED-1.2-BETA.md",
+  "mods/unreleased/README.md",
+  "mods/unreleased/1.2-beta/README.md",
+  "mods/unreleased/1.2-beta/aim-lab-bunker.json",
+  "mods/unreleased/1.2-beta/extraction-sweep.json",
+  "mods/unreleased/1.2-beta/micro-royale.json",
+]) {
+  if (!fs.existsSync(file)) {
+    console.error(`Missing required 1.2 unreleased idea file: ${file}`);
+    process.exit(1);
+  }
+}
+
+for (const file of [
+  "mods/unreleased/1.2-beta/aim-lab-bunker.json",
+  "mods/unreleased/1.2-beta/extraction-sweep.json",
+  "mods/unreleased/1.2-beta/micro-royale.json",
+]) {
+  const mod = JSON.parse(fs.readFileSync(file, "utf8"));
+  if (!mod.id || !mod.name || !mod.map || !Array.isArray(mod.map.obstacles) || !Array.isArray(mod.weapons)) {
+    console.error(`Invalid 1.2 unreleased mod shape: ${file}`);
+    process.exit(1);
+  }
+}
+
+for (const file of [
   ".github/workflows/potato-strike-1-1-beta.yml",
   ".github/workflows/pages.yml",
   "phone/README.md",

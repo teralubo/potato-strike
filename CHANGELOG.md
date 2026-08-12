@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2 BETA Unreleased
+
+Experimental branch-only ideas for future gameplay and sandbox updates.
+
+- Added `UNRELEASED-1.2-BETA.md` as the working plan for 1.2 ideas.
+- Added `mods/unreleased/1.2-beta/aim-lab-bunker.json`, a small aim and recoil training prototype.
+- Added `mods/unreleased/1.2-beta/extraction-sweep.json`, a story/extraction prototype with a custom objective.
+- Added `mods/unreleased/1.2-beta/micro-royale.json`, a tiny fast-round combat prototype.
+- Kept these ideas on `unreleased` so they can be tested before moving anything to `beta`.
+
 ## 1.1 BETA
 
 Compatibility update focused on portable builds.

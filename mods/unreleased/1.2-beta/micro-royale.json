@@ -1,0 +1,54 @@
+{
+  "id": "ps12-micro-royale",
+  "name": "1.2 Idea - Micro Royale",
+  "enabled": true,
+  "priority": 16,
+  "mode": "micro-royale",
+  "roundTime": 55,
+  "map": {
+    "name": "Micro Royale",
+    "w": 980,
+    "h": 760,
+    "tSpawn": { "x": 120, "y": 640 },
+    "ctSpawn": { "x": 860, "y": 120 },
+    "sites": {
+      "A": { "x": 500, "y": 380, "r": 90 },
+      "B": { "x": 780, "y": 580, "r": 70 }
+    },
+    "meta": {
+      "format": "potato-map-3d-lite",
+      "idea": "1.2-beta-fast-rounds",
+      "storyGoal": {
+        "type": "win",
+        "target": 1,
+        "text": "Wygraj szybka mikro-runde.",
+        "code": "return ctx.enemiesAlive <= 0 || ctx.state.roundWinner;"
+      }
+    },
+    "obstacles": [
+      { "id": "micro-top", "type": "wall", "x": 490, "y": 70, "w": 830, "h": 60, "z": 105, "rot": 0, "color": "#f1f1ed", "material": "potato-concrete" },
+      { "id": "micro-bottom", "type": "wall", "x": 490, "y": 695, "w": 830, "h": 60, "z": 105, "rot": 0, "color": "#f1f1ed", "material": "potato-concrete" },
+      { "id": "micro-mid-a", "type": "wall", "x": 395, "y": 360, "w": 70, "h": 250, "z": 95, "rot": 0, "color": "#d9e0ec", "material": "bluewall" },
+      { "id": "micro-mid-b", "type": "wall", "x": 595, "y": 390, "w": 70, "h": 230, "z": 95, "rot": 0, "color": "#e4ddd1", "material": "tile" },
+      { "id": "micro-crate-a", "type": "crate", "x": 245, "y": 530, "w": 90, "h": 90, "z": 65, "rot": 0, "color": "#8a714e", "material": "potato-wood" },
+      { "id": "micro-crate-b", "type": "crate", "x": 745, "y": 230, "w": 90, "h": 90, "z": 65, "rot": 0, "color": "#8a714e", "material": "potato-wood" }
+    ]
+  },
+  "weapons": [
+    {
+      "id": "ps12-pocket-smg",
+      "name": "PS-12 Pocket SMG",
+      "category": "SMG",
+      "price": 800,
+      "damage": 18,
+      "magSize": 28,
+      "reserve": 84,
+      "fireDelay": 70,
+      "reloadTime": 1.35,
+      "spread": 0.085,
+      "recoil": 0.035,
+      "automatic": true,
+      "color": "#e6d996"
+    }
+  ]
+}

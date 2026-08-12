@@ -7,8 +7,19 @@ Repozytorium gry: [teralubo/potato-strike](https://github.com/teralubo/potato-st
 Licencja: GNU GPL 3.0 (`GPL-3.0-only`). Potato Strike ma byc lekkim sandboxem LAN/BOT do edycji, modowania i przerabiania przez graczy.
 
 Workflow repo:
+- `unreleased` - moje eksperymentalne pomysly, szkice trybow i rzeczy do update 1.2 BETA.
 - `beta` - wszystkie nowe zmiany, testy, eksperymenty i wersje beta.
 - `main` - pelne wydanie gry po potwierdzeniu.
+
+## 1.2 BETA Unreleased
+
+Na branchu `unreleased` znajduje sie pakiet pomyslow 1.2:
+
+- `UNRELEASED-1.2-BETA.md` - plan i opis eksperymentow.
+- `mods/unreleased/1.2-beta/` - importowalne prototypy modow/map do testow.
+
+Aktualne prototypy: `Aim Lab Bunker`, `Extraction Sweep` i `Micro Royale`.
+Nie sa jeszcze finalnym wydaniem; sluzy to do sprawdzenia, ktore pomysly warto potem przeniesc do `beta`.
 
 ## 1.1 BETA Compatibility Pack
 
