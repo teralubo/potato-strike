@@ -81,8 +81,21 @@ jobs:
           path: phone/android/PotatoStrike-1.1-BETA.apk
 
   flipperzero-fap:
-    name: Flipper Zero FAP
+    name: Flipper Zero FAP (${{ matrix.firmware }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - firmware: official
+            sdk_index: https://update.flipperzero.one/firmware/directory.json
+            output: PotatoStrikeMini-1.1-BETA-official.fap
+          - firmware: momentum
+            sdk_index: https://up.momentum-fw.dev/firmware/directory.json
+            output: PotatoStrikeMini-1.1-BETA-momentum.fap
+          - firmware: unleashed
+            sdk_index: https://up.unleashedflip.com/directory.json
+            output: PotatoStrikeMini-1.1-BETA-unleashed.fap
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -90,6 +103,9 @@ jobs:
           python-version: "3.12"
       - name: Install ufbt
         run: python -m pip install --upgrade ufbt
+      - name: Select firmware SDK
+        working-directory: phone/flipperzero
+        run: ufbt update --index-url=${{ matrix.sdk_index }}
       - name: Build FAP
         working-directory: phone/flipperzero
         run: ufbt
@@ -100,11 +116,11 @@ jobs:
           mkdir -p dist
           fap_file="$(find . -name '*.fap' -type f | head -n 1)"
           test -n "$fap_file"
-          cp "$fap_file" dist/PotatoStrikeMini-1.1-BETA.fap
+          cp "$fap_file" "dist/${{ matrix.output }}"
       - uses: actions/upload-artifact@v4
         with:
-          name: potato-strike-flipperzero-fap
-          path: phone/flipperzero/dist/PotatoStrikeMini-1.1-BETA.fap
+          name: potato-strike-flipperzero-${{ matrix.firmware }}-fap
+          path: phone/flipperzero/dist/${{ matrix.output }}
 
   release-folder:
     name: Compatibility ZIP
@@ -127,8 +143,9 @@ jobs:
           path: dist/PotatoStrike-1.1-BETA/phone/android
       - uses: actions/download-artifact@v4
         with:
-          name: potato-strike-flipperzero-fap
+          pattern: potato-strike-flipperzero-*-fap
           path: dist/PotatoStrike-1.1-BETA/phone/flipperzero
+          merge-multiple: true
       - uses: actions/download-artifact@v4
         with:
           name: potato-strike-windows-compat

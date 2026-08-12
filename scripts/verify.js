@@ -40,6 +40,7 @@ for (const file of [
   "phone/flipperzero/application.fam",
   "phone/flipperzero/potato_strike_mini.c",
   "phone/flipperzero/build-flipper.ps1",
+  "phone/flipperzero/build-variants.ps1",
   "compat/README.md",
   "compat/windows/PotatoStrike-Windows-Legacy.cmd",
   "compat/linux/PotatoStrike-Linux-Portable.sh",
@@ -53,7 +54,7 @@ for (const file of [
 }
 
 const compatWorkflow = fs.readFileSync(".github/workflows/potato-strike-1-1-beta.yml", "utf8");
-for (const snippet of ["desktop-compat", "build:win:compat", "build:linux:compat", "potato-strike-windows-compat", "potato-strike-linux-compat", "phone/android/PotatoStrike-1.1-BETA.apk", "PotatoStrikeMini-1.1-BETA.fap"]) {
+for (const snippet of ["desktop-compat", "build:win:compat", "build:linux:compat", "potato-strike-windows-compat", "potato-strike-linux-compat", "phone/android/PotatoStrike-1.1-BETA.apk", "PotatoStrikeMini-1.1-BETA-official.fap", "PotatoStrikeMini-1.1-BETA-momentum.fap", "PotatoStrikeMini-1.1-BETA-unleashed.fap", "https://up.momentum-fw.dev/firmware/directory.json", "merge-multiple: true"]) {
   if (!compatWorkflow.includes(snippet)) {
     console.error(`Missing required desktop compatibility workflow feature: ${snippet}`);
     process.exit(1);

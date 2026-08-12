@@ -42,8 +42,11 @@ Build on GitHub:
 
 1. Push to `beta`.
 2. Open GitHub Actions.
-3. Download the `potato-strike-flipperzero-fap` artifact or the complete `potato-strike-1.1-beta-folder` zip.
-4. In the complete zip, copy `phone/flipperzero/PotatoStrikeMini-1.1-BETA.fap` to the Flipper Zero SD card.
+3. Download the matching Flipper artifact or the complete `potato-strike-1.1-beta-folder` zip.
+4. In the complete zip, copy the matching file from `phone/flipperzero/` to the Flipper Zero SD card:
+   - `PotatoStrikeMini-1.1-BETA-official.fap`
+   - `PotatoStrikeMini-1.1-BETA-momentum.fap`
+   - `PotatoStrikeMini-1.1-BETA-unleashed.fap`
 
 Build locally if `ufbt` is installed:
 

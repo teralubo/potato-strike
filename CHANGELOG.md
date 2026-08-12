@@ -16,6 +16,7 @@ Compatibility update focused on portable builds.
 - Added Linux compatibility CI for AppImage, deb, rpm, tar.gz and unpacked Linux builds.
 - Added `compat/` launchers for legacy Windows, portable Linux, Linux local-server mode and macOS best-effort HTML launch.
 - Added simple Android and Flipper Zero READMEs with ready-file paths for `PotatoStrike-1.1-BETA.apk` and `PotatoStrikeMini-1.1-BETA.fap`.
+- Added Flipper Zero firmware variants for Official, Momentum and Unleashed `.fap` builds.
 - Kept the main game runtime unchanged for this compatibility update.
 
 ## 1.0 BETA FINAL

@@ -17,7 +17,8 @@ Potato Strike 1.1 BETA is a compatibility update.
 - This is a deliberately tiny Flipper version, not the full HTML game.
 - It removes heavy systems such as editor, LAN, textures and complex AI.
 - It is built as a `.fap` by GitHub Actions using `ufbt`.
-- The complete release zip places the ready SD-card file at `phone/flipperzero/PotatoStrikeMini-1.1-BETA.fap`.
+- GitHub Actions now builds separate ready SD-card files for Official, Momentum and Unleashed firmware.
+- The complete release zip places them at `phone/flipperzero/PotatoStrikeMini-1.1-BETA-official.fap`, `phone/flipperzero/PotatoStrikeMini-1.1-BETA-momentum.fap` and `phone/flipperzero/PotatoStrikeMini-1.1-BETA-unleashed.fap`.
 - Simplified `phone/flipperzero/README.md` with copy-to-SD steps.
 
 ## Release Folder
