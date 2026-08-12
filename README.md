@@ -27,6 +27,12 @@ Pelna paczka do pobrania buduje sie jako artifact `potato-strike-1.1-beta-folder
 Wersja webowa na GitHub Pages jest budowana z `PotatoStrike.html` i publikowana jako `index.html`, wiec po wejsciu na strone otwiera sie gra, a nie README.
 Buildy desktop kompatybilnosci buduja sie jako `potato-strike-windows-compat` oraz `potato-strike-linux-compat`.
 
+## GitHub Actions Costs
+
+Zeby oszczedzac minuty GitHub Actions, ciezkie buildy APK/FAP/EXE/Linux nie uruchamiaja sie juz na kazdy push. Odpalaja sie recznie albo po tagu `v*`.
+GitHub Pages publikuje gotowy `PotatoStrike.html` jako `index.html` bez `npm ci`.
+Szczegoly sa w `GITHUB-ACTIONS-COST-SAVING.md`.
+
 Lokalne przygotowanie paczki:
 
 ```powershell

@@ -4,6 +4,7 @@
 
 Compatibility update focused on portable builds.
 
+- Optimized GitHub Actions cost usage by moving heavy compatibility builds to manual/tag-only runs and making Pages publish the committed HTML without npm install.
 - Added `phone/android`, a lightweight Android WebView wrapper for the one-file Potato Strike HTML build.
 - Added Android GitHub Actions build for `PotatoStrike-1.1-BETA-debug.apk`.
 - Added `phone/flipperzero`, a tiny Flipper Zero mini-game version designed for low RAM and the 128x64 monochrome screen.

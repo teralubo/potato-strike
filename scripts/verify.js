@@ -18,7 +18,7 @@ if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["
   process.exit(1);
 }
 
-for (const file of ["main.js", "preload.js", "game/index.html", "game/styles.css", "game/game.js", "game/editor.html", "game/editor.css", "game/editor.js", "launch-offline-window.bat", "scripts/package-offline.js", "scripts/build-single-html.js", "scripts/sync-phone-assets.js", "scripts/package-compat.js", "DEV-tools/README.md", "DEV-tools/mod-template.json", "mods/README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md"]) {
+for (const file of ["main.js", "preload.js", "game/index.html", "game/styles.css", "game/game.js", "game/editor.html", "game/editor.css", "game/editor.js", "launch-offline-window.bat", "scripts/package-offline.js", "scripts/build-single-html.js", "scripts/sync-phone-assets.js", "scripts/package-compat.js", "DEV-tools/README.md", "DEV-tools/mod-template.json", "mods/README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md", "GITHUB-ACTIONS-COST-SAVING.md"]) {
   if (!fs.existsSync(file)) {
     console.error(`Missing required offline file: ${file}`);
     process.exit(1);
@@ -54,7 +54,7 @@ for (const file of [
 }
 
 const compatWorkflow = fs.readFileSync(".github/workflows/potato-strike-1-1-beta.yml", "utf8");
-for (const snippet of ["desktop-compat", "build:win:compat", "build:linux:compat", "potato-strike-windows-compat", "potato-strike-linux-compat", "phone/android/PotatoStrike-1.1-BETA.apk", "PotatoStrikeMini-1.1-BETA-official.fap", "PotatoStrikeMini-1.1-BETA-momentum.fap", "PotatoStrikeMini-1.1-BETA-unleashed.fap", "https://up.momentum-fw.dev/firmware/directory.json", "merge-multiple: true"]) {
+for (const snippet of ["workflow_dispatch", "tags:", "\"v*\"", "concurrency:", "desktop-compat", "build:win:compat", "build:linux:compat", "potato-strike-windows-compat", "potato-strike-linux-compat", "phone/android/PotatoStrike-1.1-BETA.apk", "PotatoStrikeMini-1.1-BETA-official.fap", "PotatoStrikeMini-1.1-BETA-momentum.fap", "PotatoStrikeMini-1.1-BETA-unleashed.fap", "https://up.momentum-fw.dev/firmware/directory.json", "merge-multiple: true"]) {
   if (!compatWorkflow.includes(snippet)) {
     console.error(`Missing required desktop compatibility workflow feature: ${snippet}`);
     process.exit(1);
@@ -62,9 +62,16 @@ for (const snippet of ["desktop-compat", "build:win:compat", "build:linux:compat
 }
 
 const pagesWorkflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
-for (const snippet of ["cp PotatoStrike.html _site/index.html", "touch _site/.nojekyll", "pages-info.html", "not the repository README"]) {
+for (const snippet of ["paths:", "PotatoStrike.html", "test -f PotatoStrike.html", "cp PotatoStrike.html _site/index.html", "touch _site/.nojekyll", "pages-info.html", "not the repository README"]) {
   if (!pagesWorkflow.includes(snippet)) {
     console.error(`Missing required GitHub Pages HTML-game feature: ${snippet}`);
+    process.exit(1);
+  }
+}
+
+for (const forbidden of ["npm ci", "npm run build:single", "actions/setup-node"]) {
+  if (pagesWorkflow.includes(forbidden)) {
+    console.error(`GitHub Pages workflow should stay cheap and must not include: ${forbidden}`);
     process.exit(1);
   }
 }
