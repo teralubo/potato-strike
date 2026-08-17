@@ -1,6 +1,6 @@
 {
   "id": "ps12-aim-lab-bunker",
-  "name": "1.2 Idea - Aim Lab Bunker",
+  "name": "1.2 Example - Aim Lab Bunker",
   "enabled": true,
   "priority": 12,
   "mode": "training",

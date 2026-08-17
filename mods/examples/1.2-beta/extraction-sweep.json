@@ -1,6 +1,6 @@
 {
   "id": "ps12-extraction-sweep",
-  "name": "1.2 Idea - Extraction Sweep",
+  "name": "1.2 Example - Extraction Sweep",
   "enabled": true,
   "priority": 14,
   "mode": "story",

@@ -71,4 +71,4 @@ On death, actors drop their weapons, but never the knife. The bomb is a special 
 ## Unreleased ideas
 
 Eksperymentalne pomysly do przyszlych wersji sa w `mods/unreleased/`.
-Na branchu `unreleased` folder `mods/unreleased/1.2-beta/` zawiera gotowe JSON-y do importu w menu `Mody`.
+Folder `mods/examples/1.2-beta/` zawiera gotowe, domyslnie wylaczone JSON-y do importu w menu `Mody`.

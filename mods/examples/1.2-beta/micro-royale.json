@@ -1,6 +1,6 @@
 {
   "id": "ps12-micro-royale",
-  "name": "1.2 Idea - Micro Royale",
+  "name": "1.2 Example - Micro Royale",
   "enabled": true,
   "priority": 16,
   "mode": "micro-royale",

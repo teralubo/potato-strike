@@ -1,4 +1,4 @@
-# Potato Strike 1.2 BETA Ideas Pack
+# Potato Strike 1.2 BETA Examples Pack
 
 Importuj te pliki przez menu `Mody`:
 

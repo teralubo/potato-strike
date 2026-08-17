@@ -1,6 +1,6 @@
 {
   "name": "potato-strike",
-  "version": "1.1.0-beta",
+  "version": "1.2.0-beta",
   "private": true,
   "description": "Lightweight CS-like Potato Strike prototype.",
   "license": "GPL-3.0-only",
@@ -8,6 +8,7 @@
   "scripts": {
     "serve": "node server.js",
     "verify": "node scripts/verify.js",
+    "build:editor-vendor": "esbuild DEV-tools/three-vendor-entry.js --bundle --minify --format=iife --target=es2020 --legal-comments=none --outfile=game/vendor/three.min.js && node scripts/clean-editor-vendor.js",
     "build:single": "node scripts/build-single-html.js",
     "package:offline": "node scripts/package-offline.js",
     "phone:sync": "node scripts/sync-phone-assets.js",
@@ -22,7 +23,8 @@
   },
   "devDependencies": {
     "electron": "^31.0.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "esbuild": "^0.28.2"
   },
   "build": {
     "appId": "local.potatostrike.game",
@@ -35,6 +37,8 @@
       "game/editor.css",
       "game/game.js",
       "game/editor.js",
+      "game/vendor/three.min.js",
+      "game/vendor/THREE-LICENSE.txt",
       "main.js",
       "preload.js",
       "configs/default-config.json",
@@ -56,5 +60,8 @@
       "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
       "category": "Game"
     }
+  },
+  "dependencies": {
+    "three": "^0.185.1"
   }
 }
