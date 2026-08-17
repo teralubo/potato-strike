@@ -1,5 +1,7 @@
 # Potato Strike 1.3 BETA FINAL
 
+Zawiera poprawki 1.3 FINAL: czytelne modele broni 2D, AWP one-shot, 50% obrazen teammate, scisle buy-zone/buy-time, skale botow `0-5` i rozszerzone ustawienia dowodcy LAN.
+
 Ta paczka zawiera ten sam runtime i mechaniki co `1.3 FINAL`, ale jest przygotowana jako maksymalnie lekki wariant testowy.
 
 - Zachowuje gre 2D/3D, boty, LAN, Studio runtime, mody, tekstury broni, sklep, buy-zone i wszystkie ustawienia gracza.

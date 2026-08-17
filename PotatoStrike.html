@@ -783,7 +783,7 @@ button:disabled {
         <div class="pill" id="team-pill">TEAM T</div>
         <div class="pill" id="health">HP 100</div>
         <div class="pill" id="armor">ARMOR 0</div>
-        <div class="pill" id="money">$800</div>
+        <div class="pill" id="money">KASA $800</div>
         <div class="pill hidden" id="buy-zone-pill">BUY ZONE</div>
         <div class="pill" id="round">R 1/32</div>
         <div class="pill" id="score">T 0 : 0 CT</div>
@@ -860,9 +860,12 @@ button:disabled {
         <label>
           Poziom botow
           <select id="difficulty">
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
+            <option value="0">0 - bardzo latwy</option>
+            <option value="1">1 - latwy</option>
+            <option value="2">2 - sredni</option>
+            <option value="3">3 - trudny</option>
+            <option value="4">4 - ekspert</option>
+            <option value="5" selected>5 - najwyzszy</option>
           </select>
         </label>
         <label>
@@ -1109,9 +1112,12 @@ button:disabled {
         <label>
           Trudnosc teamu
           <select id="team-difficulty">
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
+            <option value="0">0 - bardzo latwy</option>
+            <option value="1">1 - latwy</option>
+            <option value="2">2 - sredni</option>
+            <option value="3">3 - trudny</option>
+            <option value="4">4 - ekspert</option>
+            <option value="5" selected>5 - najwyzszy</option>
           </select>
         </label>
       </div>
@@ -1343,6 +1349,38 @@ button:disabled {
         <label>
           Limit graczy
           <input id="server-maxplayers" type="number" min="2" max="20" value="10">
+        </label>
+        <label>
+          Poziom botow (0-5)
+          <input id="server-bot-difficulty" type="number" min="0" max="5" step="1" value="5">
+        </label>
+        <label>
+          Czas kupowania (sekundy)
+          <input id="server-buytime" type="number" min="0" max="120" value="20">
+        </label>
+        <label>
+          Freeze time (sekundy)
+          <input id="server-freezetime" type="number" min="0" max="30" value="5">
+        </label>
+        <label>
+          Czas rundy (sekundy)
+          <input id="server-roundtime" type="number" min="15" max="600" value="115">
+        </label>
+        <label>
+          Pieniadze startowe
+          <input id="server-startmoney" type="number" min="0" max="16000" value="800">
+        </label>
+        <label>
+          Grawitacja
+          <input id="server-gravity" type="number" min="100" max="1600" value="720">
+        </label>
+        <label class="check">
+          <input id="server-friendly-fire" type="checkbox">
+          Friendly fire
+        </label>
+        <label>
+          Obrazenia teamu (0-100%)
+          <input id="server-team-damage" type="number" min="0" max="100" value="50">
         </label>
         <label class="check">
           <input id="server-enemy-minimap" type="checkbox">
@@ -1641,6 +1679,14 @@ const hud = {
   networkStatus: $("network-status"),
   serverHostname: $("server-hostname"),
   serverMaxplayers: $("server-maxplayers"),
+  serverBotDifficulty: $("server-bot-difficulty"),
+  serverBuyTime: $("server-buytime"),
+  serverFreezeTime: $("server-freezetime"),
+  serverRoundTime: $("server-roundtime"),
+  serverStartMoney: $("server-startmoney"),
+  serverGravity: $("server-gravity"),
+  serverFriendlyFire: $("server-friendly-fire"),
+  serverTeamDamage: $("server-team-damage"),
   serverEnemyMinimap: $("server-enemy-minimap"),
   serverCheats: $("server-cheats"),
   serverAimMode: $("server-aim-mode"),
@@ -1958,7 +2004,7 @@ const state = {
 const settings = {
   graphicsMode: "2d",
   quality: "medium",
-  difficulty: "normal",
+  difficulty: 5,
   resolution: "auto",
   hzLimit: "vsync",
   crosshairEnabled: true,
@@ -2015,10 +2061,11 @@ const serverSettings = {
   buyTime: 20,
   startMoney: 800,
   botQuota: 5,
-  botDifficulty: "normal",
+  botDifficulty: 5,
   botStop: false,
   gravity: 720,
   friendlyFire: false,
+  teamDamageScale: 0.5,
   aimMode: "sights",
   gameRules: "classic",
 };
@@ -2036,12 +2083,12 @@ const lobbySession = {
 };
 
 const gameRulePresets = {
-  classic: { label: "Classic", matchSize: 0, roundTime: 115, freezeTime: 5, buyTime: 20, maxRounds: 32, respawn: false, bomb: true },
-  competitive: { label: "Competitive 5v5", matchSize: 5, roundTime: 115, freezeTime: 5, buyTime: 20, maxRounds: 24, respawn: false, bomb: true },
-  wingman: { label: "Wingman 2v2", matchSize: 2, roundTime: 90, freezeTime: 4, buyTime: 15, maxRounds: 16, respawn: false, bomb: true },
+  classic: { label: "Classic", matchSize: 0, roundTime: 115, freezeTime: 5, buyTime: 20, maxRounds: 32, respawn: false, bomb: true, friendlyFire: true },
+  competitive: { label: "Competitive 5v5", matchSize: 5, roundTime: 115, freezeTime: 5, buyTime: 20, maxRounds: 24, respawn: false, bomb: true, friendlyFire: true },
+  wingman: { label: "Wingman 2v2", matchSize: 2, roundTime: 90, freezeTime: 4, buyTime: 20, maxRounds: 16, respawn: false, bomb: true, friendlyFire: true },
   retake: { label: "Retake", matchSize: 4, roundTime: 40, freezeTime: 3, buyTime: 0, maxRounds: 12, respawn: false, bomb: true, planted: true },
   deathmatch: { label: "Deathmatch", matchSize: 5, roundTime: 300, freezeTime: 1, buyTime: 300, maxRounds: 1, respawn: true, fragLimit: 30, bomb: false },
-  casual: { label: "Casual 10v10", matchSize: 10, roundTime: 135, freezeTime: 5, buyTime: 30, maxRounds: 16, respawn: false, bomb: true },
+  casual: { label: "Casual 10v10", matchSize: 10, roundTime: 135, freezeTime: 5, buyTime: 30, maxRounds: 16, respawn: false, bomb: true, friendlyFire: false },
   training: { label: "Training 1v1", matchSize: 1, roundTime: 300, freezeTime: 1, buyTime: 300, maxRounds: 1, respawn: true, fragLimit: 15, bomb: false },
 };
 
@@ -3178,12 +3225,15 @@ function saveConfig() {
 }
 
 function syncProfileFields() {
+  settings.difficulty = normalizeBotDifficulty(settings.difficulty);
   hud.configNick.value = settings.nick;
   hud.configId.value = settings.configId;
   hud.configPlayerId.value = settings.playerId;
   hud.profileNick.value = settings.nick;
   hud.playerName.value = settings.nick;
   hud.languageSelect.value = settings.language;
+  hud.difficulty.value = String(settings.difficulty);
+  hud.teamDifficulty.value = String(settings.difficulty);
   hud.resolution.value = settings.resolution;
   hud.hzLimit.value = String(settings.hzLimit);
   if (!hud.hzLimit.value) {
@@ -3359,6 +3409,12 @@ function canManageServer() {
   return !state.lobbyOwnerId || isLobbyCommander();
 }
 
+function normalizeBotDifficulty(value, fallback = 5) {
+  const legacy = { easy: 1, normal: 3, hard: 5 };
+  const parsed = Object.prototype.hasOwnProperty.call(legacy, value) ? legacy[value] : Number(value);
+  return Number.isFinite(parsed) ? Math.round(clamp(parsed, 0, 5)) : fallback;
+}
+
 function serverConfigSnapshot() {
   return {
     type: "potato-strike-server-config",
@@ -3385,10 +3441,11 @@ function normalizeServerConfig(config = {}) {
     buyTime: clamp(Number(source.buyTime ?? serverSettings.buyTime), 0, 120),
     startMoney: clamp(Number(source.startMoney ?? serverSettings.startMoney), 0, 16000),
     botQuota: clamp(Number(source.botQuota ?? serverSettings.botQuota), 0, 19),
-    botDifficulty: ["easy", "normal", "hard"].includes(source.botDifficulty) ? source.botDifficulty : serverSettings.botDifficulty,
+    botDifficulty: normalizeBotDifficulty(source.botDifficulty, serverSettings.botDifficulty),
     botStop: bool(source.botStop, serverSettings.botStop),
     gravity: clamp(Number(source.gravity ?? serverSettings.gravity), 100, 1600),
     friendlyFire: bool(source.friendlyFire, serverSettings.friendlyFire),
+    teamDamageScale: clamp(Number(source.teamDamageScale ?? serverSettings.teamDamageScale), 0, 1),
     aimMode: ["none", "zoom", "sights"].includes(source.aimMode) ? source.aimMode : serverSettings.aimMode,
     gameRules: gameRulePresets[source.gameRules] ? source.gameRules : serverSettings.gameRules,
   };
@@ -3426,10 +3483,18 @@ function syncServerControls() {
   const editable = canManageServer();
   hud.serverHostname.value = serverSettings.hostname;
   hud.serverMaxplayers.value = String(serverSettings.maxPlayers);
+  hud.serverBotDifficulty.value = String(serverSettings.botDifficulty);
+  hud.serverBuyTime.value = String(serverSettings.buyTime);
+  hud.serverFreezeTime.value = String(serverSettings.freezeTime);
+  hud.serverRoundTime.value = String(serverSettings.roundTime);
+  hud.serverStartMoney.value = String(serverSettings.startMoney);
+  hud.serverGravity.value = String(serverSettings.gravity);
+  hud.serverFriendlyFire.checked = serverSettings.friendlyFire;
+  hud.serverTeamDamage.value = String(Math.round(serverSettings.teamDamageScale * 100));
   hud.serverEnemyMinimap.checked = serverSettings.enemyMinimap;
   hud.serverCheats.checked = serverSettings.svCheats;
   hud.serverAimMode.value = serverSettings.aimMode;
-  for (const control of [hud.serverHostname, hud.serverMaxplayers, hud.serverEnemyMinimap, hud.serverCheats, hud.serverAimMode, hud.serverApply, hud.serverImport]) {
+  for (const control of [hud.serverHostname, hud.serverMaxplayers, hud.serverBotDifficulty, hud.serverBuyTime, hud.serverFreezeTime, hud.serverRoundTime, hud.serverStartMoney, hud.serverGravity, hud.serverFriendlyFire, hud.serverTeamDamage, hud.serverEnemyMinimap, hud.serverCheats, hud.serverAimMode, hud.serverApply, hud.serverImport]) {
     if (control) control.disabled = !editable;
   }
   if (hud.networkStatus) {
@@ -3444,6 +3509,14 @@ function serverConfigFromControls() {
     ...serverConfigSnapshot(),
     hostname: hud.serverHostname.value,
     maxPlayers: Number(hud.serverMaxplayers.value),
+    botDifficulty: Number(hud.serverBotDifficulty.value),
+    buyTime: Number(hud.serverBuyTime.value),
+    freezeTime: Number(hud.serverFreezeTime.value),
+    roundTime: Number(hud.serverRoundTime.value),
+    startMoney: Number(hud.serverStartMoney.value),
+    gravity: Number(hud.serverGravity.value),
+    friendlyFire: hud.serverFriendlyFire.checked,
+    teamDamageScale: Number(hud.serverTeamDamage.value) / 100,
     enemyMinimap: hud.serverEnemyMinimap.checked,
     svCheats: hud.serverCheats.checked,
     aimMode: hud.serverAimMode.value,
@@ -3456,7 +3529,7 @@ function parseCfgText(source) {
     hostname: "hostname", sv_lan: "svLan", sv_cheats: "svCheats", mp_show_enemy_minimap: "enemyMinimap",
     maxplayers: "maxPlayers", mp_freezetime: "freezeTime", mp_roundtime: "roundTime", mp_roundtime_defuse: "roundTime",
     mp_buytime: "buyTime", mp_startmoney: "startMoney", bot_quota: "botQuota", bot_difficulty: "botDifficulty",
-    bot_stop: "botStop", sv_gravity: "gravity", mp_friendlyfire: "friendlyFire", mp_aim_mode: "aimMode", game_mode: "gameRules",
+    bot_stop: "botStop", sv_gravity: "gravity", mp_friendlyfire: "friendlyFire", mp_friendlyfire_damage_reduction: "teamDamageScale", mp_aim_mode: "aimMode", game_mode: "gameRules",
   };
   for (const line of String(source).split(/\r?\n/)) {
     const tokens = line.trim().match(/"[^"]*"|'[^']*'|[^\s]+/g) || [];
@@ -4015,6 +4088,7 @@ const consoleCvars = {
   sv_gravity: ["gravity", "number", 100, 1600],
   mp_show_enemy_minimap: ["enemyMinimap", "bool"],
   mp_friendlyfire: ["friendlyFire", "bool"],
+  mp_friendlyfire_damage_reduction: ["teamDamageScale", "number", 0, 1],
   mp_freezetime: ["freezeTime", "number", 0, 30],
   mp_roundtime: ["roundTime", "number", 15, 600],
   mp_roundtime_defuse: ["roundTime", "number", 15, 600],
@@ -4056,7 +4130,7 @@ function setConsoleCvar(command, value) {
   }
   if (type === "bool") serverSettings[key] = consoleBool(String(value).toLowerCase());
   else if (type === "number") serverSettings[key] = clamp(Number(value), min, max);
-  else if (type === "difficulty") serverSettings[key] = ["easy", "normal", "hard"].includes(value) ? value : "normal";
+  else if (type === "difficulty") serverSettings[key] = normalizeBotDifficulty(value);
   else if (type === "aimMode") serverSettings[key] = ["none", "zoom", "sights"].includes(value) ? value : "sights";
   else if (type === "gameRules") serverSettings[key] = gameRulePresets[value] ? value : "classic";
   else serverSettings[key] = String(value).slice(0, 64);
@@ -4329,9 +4403,7 @@ function knifeWeaponId() {
 }
 
 function difficultyScale() {
-  if (settings.difficulty === "easy") return 0.75;
-  if (settings.difficulty === "hard") return 1.3;
-  return 1;
+  return [0.55, 0.7, 0.85, 1, 1.18, 1.35][normalizeBotDifficulty(settings.difficulty)];
 }
 
 function botRoundBudget(team) {
@@ -4414,6 +4486,8 @@ function actorWeaponStats(actor) {
   const weapon = weaponStatsByName(actor.weapon);
   const scale = actor.source === "LAN" ? 1 : difficultyScale();
   return {
+    name: weapon.name,
+    category: weapon.category,
     damage: weapon.damage * (actor.hostile ? 0.42 : 0.36) * scale,
     spread: (weapon.spread || 0.08) + (actor.hostile ? 0.05 : 0.06),
     recoil: weapon.recoil || 0,
@@ -5057,9 +5131,10 @@ function resetRoundPositions() {
   state.activeSpecial = "";
   state.grenadePrime = null;
   leaveSpectator();
-  state.roundTime = rules.roundTime ?? serverSettings.roundTime;
-  state.freezeTime = rules.freezeTime ?? serverSettings.freezeTime;
-  state.buyTime = rules.buyTime ?? serverSettings.buyTime;
+  const commanderRules = state.gameMode === "lan";
+  state.roundTime = commanderRules ? serverSettings.roundTime : (rules.roundTime ?? serverSettings.roundTime);
+  state.freezeTime = commanderRules ? serverSettings.freezeTime : (rules.freezeTime ?? serverSettings.freezeTime);
+  state.buyTime = commanderRules ? serverSettings.buyTime : (rules.buyTime ?? serverSettings.buyTime);
   state.phase = "freeze";
   state.winner = "";
   state.bomb.timer = 40;
@@ -5213,7 +5288,14 @@ function newMatch({ preserveLobbyOwner = false } = {}) {
   state.gameMode = hud.menuMode.value;
   const rules = applyGameRulePreset(hud.gameRules.value);
   serverSettings.gameRules = state.ruleMode;
-  if (state.gameMode === "story") serverSettings.aimMode = "sights";
+  if (state.gameMode !== "lan" && typeof rules.friendlyFire === "boolean") serverSettings.friendlyFire = rules.friendlyFire;
+  if (state.gameMode === "story") {
+    serverSettings.aimMode = "sights";
+    serverSettings.botDifficulty = 5;
+    settings.difficulty = 5;
+    hud.difficulty.value = "5";
+    hud.teamDifficulty.value = "5";
+  }
   else if (state.gameMode !== "lan") serverSettings.aimMode = settings.botAimMode || "sights";
   ensurePlayerId();
   if (!preserveLobbyOwner) {
@@ -5683,6 +5765,12 @@ function explodeGrenade(grenade) {
         awardPlayerHit(bot);
       }
     }
+    if (serverSettings.friendlyFire) {
+      const amount = teamDamage(grenade.type === "he" ? 60 : 35);
+      for (const ally of allies) {
+        if (ally.hp > 0 && dist(grenade.x, grenade.y, ally.x, ally.y) < 120) damageActor(ally, amount);
+      }
+    }
   }
   if (grenade.type === "flash") {
     for (const bot of bots) {
@@ -5738,6 +5826,10 @@ function meleeAttack(owner, angle, weapon, hostile = false) {
   if (best) {
     damageActor(best.bot, weapon.damage);
     awardPlayerHit(best.bot);
+  } else if (owner === player && serverSettings.friendlyFire) {
+    const ally = allies.find((item) => item.hp > 0 && dist(owner.x, owner.y, item.x, item.y) <= reach && Math.abs(angleDiff(angle, angleTo(owner.x, owner.y, item.x, item.y))) <= arc && hasLineOfSight(owner.x, owner.y, item.x, item.y));
+    if (ally) damageActor(ally, teamDamage(weapon.damage));
+    else emitAudioEvent("dryfire", { x: owner.x, y: owner.y }, false);
   } else {
     emitAudioEvent("dryfire", { x: owner.x, y: owner.y }, false);
   }
@@ -5776,6 +5868,10 @@ function shoot(owner, angle, weapon, hostile = false) {
         vx: Math.cos(a) * (hostile ? weapon.bulletSpeed || 760 * difficultyScale() : weapon.bulletSpeed),
         vy: Math.sin(a) * (hostile ? weapon.bulletSpeed || 760 * difficultyScale() : weapon.bulletSpeed),
         damage: hostile ? weapon.damage || 10 * difficultyScale() : weapon.damage,
+        owner,
+        team: owner.team || (hostile ? state.enemyTeam : state.team),
+        weaponName: weapon.name || owner.weapon || "",
+        weaponCategory: weapon.category || "",
         hostile,
         life: 0.95,
         color: hostile ? "#f06d58" : "#f5df88",
@@ -6094,11 +6190,15 @@ function updateRespawns(dt) {
   }
 }
 
-function damageActor(actor, amount) {
+function damageActor(actor, amount, ignoreArmor = false) {
   const armor = Number(actor.armor || 0);
-  const armorBlock = Math.min(armor, amount * 0.45);
+  const armorBlock = ignoreArmor ? 0 : Math.min(armor, amount * 0.45);
   actor.armor = Math.max(0, armor - armorBlock);
   actor.hp -= amount - armorBlock;
+}
+
+function teamDamage(amount) {
+  return amount * serverSettings.teamDamageScale;
 }
 
 function updateBullets(dt) {
@@ -6109,7 +6209,7 @@ function updateBullets(dt) {
     b.life -= dt;
     const hitWall = pointInObstacle(b.x, b.y);
     let remove = b.life <= 0 || b.x < 0 || b.y < 0 || b.x > state.map.w || b.y > state.map.h || hitWall;
-  if (!remove && b.hostile && dist(b.x, b.y, player.x, player.y) < player.r) {
+    if (!remove && b.hostile && dist(b.x, b.y, player.x, player.y) < player.r) {
       damagePlayer(b.damage);
       remove = true;
     }
@@ -6133,12 +6233,26 @@ function updateBullets(dt) {
     if (!remove && !b.hostile) {
       for (const bot of bots) {
         if (bot.hp > 0 && dist(b.x, b.y, bot.x, bot.y) < bot.r) {
-          damageActor(bot, b.damage);
-          awardPlayerHit(bot);
+          const awpKill = b.owner === player && b.weaponName === "AWP";
+          damageActor(bot, awpKill ? Math.max(200, b.damage) : b.damage, awpKill);
+          if (b.owner === player) awardPlayerHit(bot);
           remove = true;
           break;
         }
       }
+    }
+    if (!remove && !b.hostile && b.owner === player && serverSettings.friendlyFire) {
+      for (const ally of allies) {
+        if (ally.hp > 0 && dist(b.x, b.y, ally.x, ally.y) < ally.r) {
+          damageActor(ally, teamDamage(b.damage));
+          remove = true;
+          break;
+        }
+      }
+    }
+    if (!remove && !b.hostile && b.owner !== player && serverSettings.friendlyFire && player.alive && dist(b.x, b.y, player.x, player.y) < player.r) {
+      damagePlayer(teamDamage(b.damage));
+      remove = true;
     }
     if (remove) {
       if (hitWall) emitAudioEvent("impact", { x: b.x, y: b.y, material: materialAt(b.x, b.y) }, false);
@@ -6413,6 +6527,35 @@ function drawMap2d() {
   ctx.strokeStyle = "#786544"; ctx.lineWidth = 12; ctx.strokeRect(-camera.x, -camera.y, state.map.w, state.map.h);
 }
 
+function weaponForActor(actor) {
+  if (actor === player) return activeWeapon();
+  return weaponStatsByName(actor.weapon);
+}
+
+function drawWeaponSilhouette2d(weapon, scale = 1) {
+  const category = weapon?.melee ? "Melee" : weapon?.category || "Pistol";
+  ctx.fillStyle = weapon?.color || "#20231e";
+  ctx.strokeStyle = "#f0e7c8";
+  ctx.lineWidth = Math.max(1, 1.3 * scale);
+  ctx.beginPath();
+  if (category === "Melee") {
+    ctx.moveTo(5 * scale, -3 * scale); ctx.lineTo(28 * scale, 0); ctx.lineTo(5 * scale, 4 * scale); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#433a2a"; ctx.fillRect(0, -5 * scale, 8 * scale, 10 * scale);
+    return;
+  }
+  const sniper = category === "Sniper";
+  const pistol = category === "Pistol";
+  const heavy = category === "Heavy";
+  const body = pistol ? 15 : heavy ? 29 : sniper ? 30 : 25;
+  const barrel = pistol ? 9 : sniper ? 25 : heavy ? 16 : 18;
+  ctx.rect(3 * scale, -5 * scale, body * scale, 10 * scale); ctx.fill(); ctx.stroke();
+  ctx.fillRect((3 + body) * scale, -2 * scale, barrel * scale, 4 * scale);
+  ctx.save(); ctx.translate((pistol ? 9 : 15) * scale, 4 * scale); ctx.rotate(pistol ? 0.45 : 0.25); ctx.fillRect(0, 0, 6 * scale, (pistol ? 12 : 15) * scale); ctx.restore();
+  if (!pistol) ctx.fillRect((heavy ? 12 : 17) * scale, 4 * scale, (heavy ? 12 : 7) * scale, (heavy ? 10 : 13) * scale);
+  if (sniper) { ctx.beginPath(); ctx.arc(18 * scale, -7 * scale, 4 * scale, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+}
+
 function drawActor(actor, color, label) {
   const x = actor.x - camera.x;
   const y = actor.y - camera.y;
@@ -6424,8 +6567,7 @@ function drawActor(actor, color, label) {
   ctx.beginPath(); ctx.arc(0, 0, actor.r + 2, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = color;
   ctx.beginPath(); ctx.arc(0, 0, actor.r, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#1a1d18"; ctx.fillRect(4, -5, actor.r + 16, 10);
-  ctx.fillStyle = "#ede2b7"; ctx.fillRect(actor.r + 12, -2, 14, 4);
+  drawWeaponSilhouette2d(weaponForActor(actor));
   ctx.restore();
   ctx.fillStyle = "#f2f0df"; ctx.font = "12px Arial"; ctx.textAlign = "center"; ctx.fillText(label, x, y - actor.r - 10);
 }
@@ -6446,10 +6588,8 @@ function drawProjectiles2d() {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(item.angle || 0);
-    ctx.fillStyle = item.color || "#d7bd62";
-    ctx.fillRect(-15, -4, 30, 8);
-    ctx.fillStyle = "#171812";
-    ctx.fillRect(3, -9, 22, 4);
+    ctx.translate(-12, 0);
+    drawWeaponSilhouette2d(item, 0.8);
     ctx.restore();
     ctx.fillStyle = "#f2f0df";
     ctx.font = "10px Arial";
@@ -7471,7 +7611,7 @@ function updateHud() {
   hud.team.textContent = spectated ? `SPECTATE ${spectated.name} ${living.length ? state.spectator.index + 1 : 0}/${living.length}${spectated.source === "LAN" ? "" : " / E TAKEOVER"}` : `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
   hud.health.textContent = spectated ? `OBS HP ${Math.ceil(spectated.hp)}` : `HP ${Math.ceil(player.hp)}`;
   hud.armor.textContent = `${tr("armor")} ${Math.ceil(player.armor)}${player.helmet ? " +H" : ""}${player.defuseKit ? " KIT" : ""}${player.zeus ? " ZEUS" : ""}`;
-  hud.money.textContent = `${player.money}`;
+  hud.money.textContent = `${settings.language === "en" ? "MONEY" : "KASA"} ${player.money}`;
   const buyingOpen = canBuyNow();
   hud.buyZone.classList.toggle("hidden", !buyingOpen);
   hud.buyZone.textContent = `${settings.language === "en" ? "BUY ZONE" : "STREFA KUPNA"} ${Math.ceil(state.buyTime)}s`;
@@ -7868,8 +8008,9 @@ hud.teamAddLan.addEventListener("click", () => addTeamSlot("ally", "LAN"));
 hud.teamRemoveLan.addEventListener("click", () => removeTeamSlot("ally", "LAN"));
 hud.teamBalance.addEventListener("click", balanceTeams);
 hud.teamDifficulty.addEventListener("change", () => {
-  settings.difficulty = hud.teamDifficulty.value;
-  hud.difficulty.value = settings.difficulty;
+  settings.difficulty = normalizeBotDifficulty(hud.teamDifficulty.value);
+  serverSettings.botDifficulty = settings.difficulty;
+  hud.difficulty.value = String(settings.difficulty);
   saveConfig();
 });
 hud.downloadGame.addEventListener("click", downloadLauncher);
@@ -7947,7 +8088,12 @@ hud.languageSelect.addEventListener("change", () => {
   showMessage(tr("languageChanged"));
   saveConfig();
 });
-hud.difficulty.addEventListener("change", () => { settings.difficulty = hud.difficulty.value; });
+hud.difficulty.addEventListener("change", () => {
+  settings.difficulty = normalizeBotDifficulty(hud.difficulty.value);
+  serverSettings.botDifficulty = settings.difficulty;
+  hud.teamDifficulty.value = String(settings.difficulty);
+  saveConfig();
+});
 hud.resolution.addEventListener("change", () => { settings.resolution = hud.resolution.value; resize(); saveConfig(); });
 hud.hzLimit.addEventListener("change", () => { settings.hzLimit = hud.hzLimit.value; saveConfig(); });
 hud.fastBindKey.addEventListener("click", () => {

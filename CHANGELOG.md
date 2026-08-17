@@ -16,6 +16,10 @@ Final 3D weapon texture, FPS controls and CS-style buying update.
 - Kept procedural weapon rendering as the automatic missing-asset fallback and as the ADS/scope view.
 - Excluded the original WAD files from Git and release packages; the runtime does not read them.
 - Added BSD 3-Clause attribution and license files beside the exported assets.
+- Added distinct 2D silhouettes for pistols, rifles, sniper rifles, heavy weapons and the knife.
+- Made player AWP hits lethal through armor and added configurable 50% teammate damage when friendly fire is enabled.
+- Clarified the top money HUD, enforced team buy zones and exposed buy time, round time, freeze time, economy, gravity and friendly fire to the LAN commander.
+- Expanded bot difficulty to `0-5`, migrated old difficulty names automatically and made Story use level `5`.
 
 ## 1.2 FINAL
 

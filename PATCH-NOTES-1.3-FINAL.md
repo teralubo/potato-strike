@@ -11,6 +11,8 @@ Potato Strike 1.3 FINAL stabilizuje lekki tryb FPS 3D bez usuwania widoku 2D, St
 - Domyslny celownik to staly punkt; dostepne sa presety, wylaczenie, mini-paint oraz import i export.
 - Strefy kupowania T/CT dzialaja w 2D i 3D, a sklep i Fast Bind respektuja buy-time, druzyne, pieniadze i pozycje gracza.
 - Wygenerowane i wlasne mapy otrzymuja buy-zone automatycznie; przesuniecie spawnu w edytorze przesuwa strefe.
+- Bronie 2D maja rozne sylwetki, AWP zabija przeciwnika jednym trafieniem w cialo lub glowe, a friendly fire zadaje domyslnie 50% obrazen.
+- Poziom botow ma skale `0-5` (kampania: `5`), a dowodca LAN ustawia buy-time, czasy rundy, pieniadze, grawitacje i zasady friendly fire.
 
 ## Warianty wydania
 
