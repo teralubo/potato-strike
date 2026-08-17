@@ -11,6 +11,14 @@ Workflow repo:
 - `beta` - zmiany gotowe do szerszych testow.
 - `main` - wydania zaakceptowane do publikacji.
 
+## 1.3 BETA texture update
+
+- Widok 3D korzysta z lekkich sprite'ow broni wyeksportowanych z FreEDoom 0.13.0; tryb 2D pozostaje bez zmian.
+- Pliki `freedoom1.wad` i `freedoom2.wad` sa potrzebne tylko do ponownego eksportu przez `npm run assets:freedoom`. Nie trafiaja do Git ani paczki i mozna je usunac bez wplywu na gre.
+- Brak lub blad PNG wlacza dotychczasowy proceduralny model broni, a ADS/scope zawsze zachowuja czytelny stary model.
+- Licencja BSD 3-Clause, hash zrodla i mapa lumpow sa w `game/assets/weapons/freedoom/`.
+- Szczegoly: `PATCH-NOTES-1.3-BETA.md`.
+
 ## 1.2 FINAL Sandbox Studio
 
 Wersja `1.2 FINAL` rozwija Potato Strike w lekka platforme sandbox:

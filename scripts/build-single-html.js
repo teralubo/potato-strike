@@ -9,7 +9,13 @@ const outPath = path.join(root, "PotatoStrike.html");
 
 const html = fs.readFileSync(htmlPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
-const js = fs.readFileSync(jsPath, "utf8");
+let js = fs.readFileSync(jsPath, "utf8");
+
+js = js.replace(/assets\/weapons\/freedoom\/[a-z-]+\.png/g, (assetPath) => {
+  const file = path.join(root, "game", ...assetPath.split("/"));
+  if (!fs.existsSync(file)) return assetPath;
+  return `data:image/png;base64,${fs.readFileSync(file).toString("base64")}`;
+});
 
 const single = html
   .replace('<link rel="stylesheet" href="styles.css">', `<style>\n${css}\n</style>`)

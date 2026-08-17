@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3 BETA
+
+3D weapon texture update.
+
+- Added tiny FreEDoom 0.13.0 weapon viewmodel PNGs to the 3D renderer without changing 2D weapons.
+- Added a dependency-free WAD/PLAYPAL/Doom Patch extraction tool and reproducible source manifest.
+- Embedded weapon PNGs into the one-file HTML and included standalone assets in desktop packages.
+- Kept procedural weapon rendering as the automatic missing-asset fallback and as the ADS/scope view.
+- Excluded the original WAD files from Git and release packages; the runtime does not read them.
+- Added BSD 3-Clause attribution and license files beside the exported assets.
+
 ## 1.2 FINAL
 
 Sandbox Studio and 3D readability update.

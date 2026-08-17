@@ -48,20 +48,20 @@ const defaultConfig = JSON.parse(fs.readFileSync("configs/default-config.json", 
 const gameIdCount = verifyDomIds(gameJs, gameHtml, "Game");
 const editorIdCount = verifyDomIds(editorJs, editorHtml, "Studio");
 
-if (packageJson.version !== "1.2.0") fail(`Unexpected package version: ${packageJson.version}`);
+if (packageJson.version !== "1.3.0") fail(`Unexpected package version: ${packageJson.version}`);
 if (packageLock.version !== packageJson.version || packageLock.packages?.[""]?.version !== packageJson.version) {
   fail("package-lock.json version does not match package.json");
 }
 
 for (const script of [
-  "start", "start:safe", "start:editor", "serve", "verify", "build:editor-vendor", "build:single",
+  "start", "start:safe", "start:editor", "serve", "verify", "build:editor-vendor", "build:single", "assets:freedoom",
   "package:offline", "package:compat", "package:beta-final", "phone:sync", "build:win", "build:win:compat", "build:linux", "build:linux:compat",
 ]) {
   if (!packageJson.scripts?.[script]) fail(`package.json is missing script: ${script}`);
 }
 
 if (!packageJson.dependencies?.three || !packageJson.devDependencies?.esbuild) fail("Studio 3D build dependencies are missing");
-if (!packageJson.build?.files?.includes("game/vendor/three.min.js") || !packageJson.build?.files?.includes("game/vendor/THREE-LICENSE.txt")) {
+if (!packageJson.build?.files?.includes("game/vendor/three.min.js") || !packageJson.build?.files?.includes("game/vendor/THREE-LICENSE.txt") || !packageJson.build?.files?.includes("game/assets/**/*")) {
   fail("Electron package does not include the local Studio 3D vendor and license");
 }
 
@@ -69,9 +69,13 @@ requireFiles([
   "main.js", "preload.js", "server.js", "game/index.html", "game/styles.css", "game/game.js",
   "game/editor.html", "game/editor.css", "game/editor.js", "game/vendor/three.min.js", "game/vendor/THREE-LICENSE.txt",
   "DEV-tools/three-vendor-entry.js", "DEV-tools/README.md", "DEV-tools/mod-template.json",
+  "DEV-tools/extract-freedoom-weapons.js",
   "scripts/package-offline.js", "scripts/build-single-html.js", "scripts/clean-editor-vendor.js", "scripts/sync-phone-assets.js", "scripts/package-compat.js", "scripts/package-beta-final.js",
   "PotatoStrike.html", "PotatoStrike.bat", "PotatoStrike-Window.bat", "PotatoStrike-Studio.bat",
-  "README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md", "PATCH-NOTES-1.2-BETA.md", "PATCH-NOTES-1.2-FINAL.md", "SANDBOX-EXAMPLES-1.2-BETA.md",
+  "README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md", "PATCH-NOTES-1.2-BETA.md", "PATCH-NOTES-1.2-FINAL.md", "PATCH-NOTES-1.3-BETA.md", "SANDBOX-EXAMPLES-1.2-BETA.md",
+  "game/assets/weapons/freedoom/README.md", "game/assets/weapons/freedoom/LICENSE-FREEDOOM.txt", "game/assets/weapons/freedoom/manifest.json",
+  "game/assets/weapons/freedoom/pistol.png", "game/assets/weapons/freedoom/shotgun.png", "game/assets/weapons/freedoom/super-shotgun.png",
+  "game/assets/weapons/freedoom/chaingun.png", "game/assets/weapons/freedoom/launcher.png", "game/assets/weapons/freedoom/plasma.png", "game/assets/weapons/freedoom/bfg.png",
   "mods/README.md", "mods/examples/README.md", "mods/examples/1.2-beta/README.md",
   "mods/default/fps_info/mod.json", "mods/default/fps_info/README.md",
   "mods/examples/1.2-beta/aim-lab-bunker.json", "mods/examples/1.2-beta/extraction-sweep.json", "mods/examples/1.2-beta/micro-royale.json",
@@ -132,6 +136,19 @@ if (!singleHtml.includes("<style>") || !singleHtml.includes("<script>") || singl
   fail("PotatoStrike.html is not self-contained");
 }
 
+const freedoomManifest = JSON.parse(fs.readFileSync("game/assets/weapons/freedoom/manifest.json", "utf8"));
+if (freedoomManifest.sourceVersion !== "0.13.0" || freedoomManifest.license !== "BSD-3-Clause" || freedoomManifest.sprites.length !== 9) {
+  fail("FreEDoom weapon export manifest is invalid");
+}
+for (const sprite of freedoomManifest.sprites) {
+  const png = fs.readFileSync(path.join("game/assets/weapons/freedoom", sprite.file));
+  if (png.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") fail(`Invalid FreEDoom PNG: ${sprite.file}`);
+}
+if (!fs.readFileSync(".gitignore", "utf8").includes("texture/*.wad")) fail("Source WAD files must remain ignored");
+if (!singleHtml.includes("data:image/png;base64,") || singleHtml.includes("assets/weapons/freedoom/pistol.png")) {
+  fail("PotatoStrike.html must embed FreEDoom weapon PNGs");
+}
+
 requireSnippets(mainJs, [
   "config:save", "playersDir", "profile.json", "assets.json", "crashReporter", "showCrashRecoveryWindow",
   "POTATO_SAFE_OFFLINE", "PotatoStrike.html", "log:renderer", "listModManifests", 'entry.name.toLowerCase() !== "mod.json"',
@@ -156,6 +173,7 @@ requireSnippets(gameJs, [
   "openingMove", "botStop", "isAwpScoped", "drawAwpScope", "aimZoom", "mouse.rightDown",
   "gameRulePresets", "applyGameRulePreset", "updateRespawns", "isIronSights", "drawPotatoIronSights", "showStoryHint",
   "openLanLobby", "lanLobbyRequest", "renderLanLobby", "startLanLobbyMatch", "launchLanLobbyMatch", "botAimMode",
+  "freedoomWeaponTextureSources", "freedoomWeaponTexture", "freedoomWeaponTextureKey", "drawFreedoomWeaponTexture",
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
@@ -219,9 +237,9 @@ for (const forbidden of ["npm ci", "npm run build:single", "actions/setup-node"]
 const packageScript = fs.readFileSync("scripts/package-compat.js", "utf8");
 requireSnippets(packageScript, ["PotatoStrike-1.2-FINAL", "PATCH-NOTES-1.2-FINAL.md", "PotatoStrike-1.2-FINAL.apk"], "release packager feature");
 const betaPackageScript = fs.readFileSync("scripts/package-beta-final.js", "utf8");
-requireSnippets(betaPackageScript, ["PotatoStrike-1.2-BETA-FINAL", "CompressionLevel Optimal", "mods", "game"], "compressed beta packager feature");
+requireSnippets(betaPackageScript, ["PotatoStrike-1.3-BETA-texture-update", "PATCH-NOTES-1.3-BETA.md", "CompressionLevel Optimal", "mods", "game"], "compressed beta packager feature");
 
 console.log(`Game DOM IDs OK: ${gameIdCount}`);
 console.log(`Studio DOM IDs OK: ${editorIdCount}`);
 console.log(`Studio 3D vendor OK: ${(vendorSize / 1024).toFixed(1)} KiB`);
-console.log("Potato Strike 1.2 FINAL runtime, sandbox, packages and workflows OK");
+console.log("Potato Strike 1.3 BETA texture update runtime, assets, packages and workflows OK");

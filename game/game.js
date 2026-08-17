@@ -5453,6 +5453,57 @@ function weaponViewModel(weapon) {
   };
 }
 
+const freedoomWeaponTextureSources = Object.freeze({
+  pistol: "assets/weapons/freedoom/pistol.png",
+  shotgun: "assets/weapons/freedoom/shotgun.png",
+  "super-shotgun": "assets/weapons/freedoom/super-shotgun.png",
+  chaingun: "assets/weapons/freedoom/chaingun.png",
+  launcher: "assets/weapons/freedoom/launcher.png",
+  plasma: "assets/weapons/freedoom/plasma.png",
+  bfg: "assets/weapons/freedoom/bfg.png",
+});
+const freedoomWeaponTextures = new Map();
+function freedoomWeaponTexture(name) {
+  if (!name) return null;
+  if (freedoomWeaponTextures.has(name)) return freedoomWeaponTextures.get(name);
+  const source = freedoomWeaponTextureSources[name];
+  if (!source) return null;
+  const image = new Image();
+  image.decoding = "async";
+  image.src = source;
+  freedoomWeaponTextures.set(name, image);
+  return image;
+}
+
+function freedoomWeaponTextureKey(weapon) {
+  if (!weapon || weapon.melee) return "";
+  if (weapon.category === "Pistol") return "pistol";
+  if (["Nova", "MAG-7"].includes(weapon.name)) return "shotgun";
+  if (["XM1014", "Sawed-Off"].includes(weapon.name)) return "super-shotgun";
+  if (weapon.category === "Sniper") return "launcher";
+  if (["AUG", "SG 553"].includes(weapon.name)) return "plasma";
+  if (["M249", "Negev"].includes(weapon.name)) return "bfg";
+  return "chaingun";
+}
+
+function drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop) {
+  const image = freedoomWeaponTexture(freedoomWeaponTextureKey(weapon));
+  if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return false;
+  const scale = clamp(Math.min(w / 400, h / 190), 2, 5);
+  const width = image.naturalWidth * scale;
+  const height = image.naturalHeight * scale;
+  const x = (w - width) / 2 + sway;
+  const y = h - height + recoilDrop;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.shadowColor = "rgba(0,0,0,0.38)";
+  ctx.shadowBlur = 8 * scale;
+  ctx.drawImage(image, Math.round(x), Math.round(y), Math.round(width), Math.round(height));
+  ctx.restore();
+  drawWeaponMuzzleFlash(w / 2 - 3 * scale + sway, y + 8 * scale, scale * 0.8);
+  return true;
+}
+
 function drawWeaponPart(x, y, w, h, color, stroke = "rgba(17,18,12,0.72)") {
   ctx.fillStyle = color;
   ctx.fillRect(x, y, w, h);
@@ -5548,6 +5599,7 @@ function draw3dWeapon(w, h) {
     ctx.restore();
     return;
   }
+  if (!aiming && drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop)) return;
   const x = w / 2 + (aiming ? (weapon.category === "Pistol" ? -18 : -74) : weapon.category === "Pistol" ? 84 : 44) * scale + sway;
   const y = h - (aiming ? 116 : weapon.category === "Pistol" ? 132 : 150) * scale + recoilDrop;
   const bodyH = (weapon.category === "Pistol" ? 28 : 34) * scale;
