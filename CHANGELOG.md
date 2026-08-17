@@ -9,9 +9,11 @@ Sandbox Studio and 3D readability update.
 - Added unlimited profile-backed Fast Binds with same-key action sequences, per-entry and global enable controls, permanent removal and full config round-tripping while preserving all economy, side and buy-time checks.
 - Added default adaptive V-Sync frame pacing with Eco/Balanced 30/60 FPS ceilings and optional manual caps.
 - Added LAN room ownership, authoritative server-config writes, enemy-minimap control and JSON/CFG import/export.
+- Added a LAN waiting room with explicit hosting/joining, live roster refresh, commander transfer and commander-controlled match start.
 - Expanded the owner console with CS/GoldSrc-style cvars, config execution, map/bot controls, bind inspection and `sv_cheats`-gated debugging.
 - Added immediate live-round bot movement and complete weapon/equipment transfer when taking over a teammate bot.
 - Added commander-controlled RMB policies: disabled, zoom with classic crosshair, or Potato weapon sights with AWP scope and mobile AIM control.
+- Added profile-backed BOT RMB selection in the main menu and a fixed ready-to-use sights policy for Story mode.
 - Added functional Classic, Competitive 5v5, Wingman, Retake, Deathmatch, Casual and Training presets with enforced team sizes, timers, loadouts, respawns and frag scoring where applicable.
 - Added configurable Story hint bind `J` and custom mission hints in Studio.
 - Replaced the fixed isometric Studio preview with a direct, persistent WebGL scene editor and a software fallback.

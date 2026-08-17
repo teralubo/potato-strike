@@ -35,6 +35,18 @@ const hud = {
   message: $("message"),
   menu: $("menu"),
   start: $("start"),
+  createLan: $("create-lan"),
+  lanLobbyPanel: $("lan-lobby-panel"),
+  lanLobbyRoom: $("lan-lobby-room"),
+  lanLobbyStatus: $("lan-lobby-status"),
+  lanLobbyOwner: $("lan-lobby-owner"),
+  lanLobbyPlayers: $("lan-lobby-players"),
+  lanTransferTarget: $("lan-transfer-target"),
+  lanLobbyStart: $("lan-lobby-start"),
+  lanLobbyTransfer: $("lan-lobby-transfer"),
+  lanLobbySettings: $("lan-lobby-settings"),
+  lanLobbyRefresh: $("lan-lobby-refresh"),
+  lanLobbyLeave: $("lan-lobby-leave"),
   shopPanel: $("shop-panel"),
   shopList: $("shop-list"),
   settingsPanel: $("settings-panel"),
@@ -175,6 +187,7 @@ const hud = {
   menuTeam: $("menu-team"),
   menuMap: $("menu-map"),
   menuGraphics: $("menu-graphics"),
+  menuAimMode: $("menu-aim-mode"),
   quickEditor: $("quick-editor"),
   openSettings: $("open-settings"),
   openBinds: $("open-binds"),
@@ -434,6 +447,7 @@ const settings = {
   matchSize: 5,
   fillMode: "bots",
   gameRules: "classic",
+  botAimMode: "sights",
   controlMode: "keyboard",
   showMinimap: true,
   autoReload: true,
@@ -462,6 +476,16 @@ const serverSettings = {
 };
 
 const networkSync = { lastHeartbeat: 0, ownerId: "", connected: false };
+const lobbySession = {
+  active: false,
+  hosting: false,
+  room: "",
+  players: [],
+  status: "waiting",
+  startedAt: 0,
+  lastPoll: 0,
+  launching: false,
+};
 
 const gameRulePresets = {
   classic: { label: "Classic", matchSize: 0, roundTime: 115, freezeTime: 5, buyTime: 20, maxRounds: 32, respawn: false, bomb: true },
@@ -566,6 +590,20 @@ const i18n = {
   pl: {
     close: "Zamknij",
     play: "Graj",
+    createLan: "Utworz serwer LAN",
+    lobbyTitle: "Poczekalnia LAN",
+    lobbyLeave: "Opusc lobby",
+    lobbyStart: "Rozpocznij mecz",
+    lobbyTransfer: "Przekaz dowodce",
+    lobbySettings: "Ustawienia serwera",
+    lobbyRefresh: "Odswiez",
+    lobbyRoom: "Pokoj",
+    lobbyStatus: "Status",
+    lobbyOwner: "Dowodca",
+    lobbyAimLabel: "Celowanie PPM (BOTY)",
+    lobbyTransferLabel: "Przekaz dowodzenie",
+    lobbyKicker: "serwer lokalny",
+    lobbyNote: "Dowodca ustawia serwer i rozpoczyna mecz, gdy gracze sa gotowi.",
     profile: "Profil",
     mods: "Mody",
     settings: "Ustawienia",
@@ -657,6 +695,20 @@ const i18n = {
   en: {
     close: "Close",
     play: "Play",
+    createLan: "Create LAN server",
+    lobbyTitle: "LAN waiting room",
+    lobbyLeave: "Leave lobby",
+    lobbyStart: "Start match",
+    lobbyTransfer: "Transfer commander",
+    lobbySettings: "Server settings",
+    lobbyRefresh: "Refresh",
+    lobbyRoom: "Room",
+    lobbyStatus: "Status",
+    lobbyOwner: "Commander",
+    lobbyAimLabel: "RMB aiming (BOTS)",
+    lobbyTransferLabel: "Transfer command",
+    lobbyKicker: "local server",
+    lobbyNote: "The commander configures the server and starts once players are ready.",
     profile: "Profile",
     mods: "Mods",
     settings: "Settings",
@@ -940,6 +992,18 @@ function setOptionText(selectId, value, text) {
 function applyLanguage() {
   document.documentElement.lang = settings.language === "en" ? "en" : "pl";
   setText("#start", tr("play"));
+  setText("#create-lan", tr("createLan"));
+  setText("#lan-lobby-title", tr("lobbyTitle"));
+  setText("#lan-lobby-leave", tr("lobbyLeave"));
+  setText("#lan-lobby-start", tr("lobbyStart"));
+  setText("#lan-lobby-transfer", tr("lobbyTransfer"));
+  setText("#lan-lobby-settings", tr("lobbySettings"));
+  setText("#lan-lobby-refresh", tr("lobbyRefresh"));
+  setText("#lan-lobby-room-label", tr("lobbyRoom"));
+  setText("#lan-lobby-status-label", tr("lobbyStatus"));
+  setText("#lan-lobby-owner-label", tr("lobbyOwner"));
+  setText("#lan-lobby-kicker", tr("lobbyKicker"));
+  setText("#lan-lobby-note", tr("lobbyNote"));
   setText("#open-profile", tr("profile"));
   setText("#open-mods", tr("mods"));
   setText("#open-settings", tr("settings"));
@@ -1003,6 +1067,8 @@ function applyLanguage() {
   setLabel("menu-team", tr("startSideLabel"));
   setLabel("menu-map", tr("mapLabel"));
   setLabel("menu-graphics", tr("menuGraphicsLabel"));
+  setLabel("menu-aim-mode", tr("lobbyAimLabel"));
+  setLabel("lan-transfer-target", tr("lobbyTransferLabel"));
   if (settings.language === "en") {
     setOptionText("hz-limit", "vsync", "V-Sync (recommended)");
     setOptionText("hz-limit", "0", "Unlimited");
@@ -1032,6 +1098,9 @@ function applyLanguage() {
     setOptionText("server-aim-mode", "sights", "Weapon sights / scope");
     setOptionText("server-aim-mode", "zoom", "Zoom only + classic crosshair");
     setOptionText("server-aim-mode", "none", "No action");
+    setOptionText("menu-aim-mode", "sights", "Weapon sights / scope");
+    setOptionText("menu-aim-mode", "zoom", "Zoom only + classic crosshair");
+    setOptionText("menu-aim-mode", "none", "No action");
   } else {
     setOptionText("hz-limit", "vsync", "V-Sync (zalecane)");
     setOptionText("hz-limit", "0", "Bez limitu");
@@ -1061,6 +1130,9 @@ function applyLanguage() {
     setOptionText("server-aim-mode", "sights", "Przyrzady celownicze / scope");
     setOptionText("server-aim-mode", "zoom", "Tylko przyblizenie + klasyczny celownik");
     setOptionText("server-aim-mode", "none", "Brak akcji");
+    setOptionText("menu-aim-mode", "sights", "Przyrzady celownicze / scope");
+    setOptionText("menu-aim-mode", "zoom", "Tylko przyblizenie + klasyczny celownik");
+    setOptionText("menu-aim-mode", "none", "Brak akcji");
   }
   const sound = $("sound-enabled")?.closest("label");
   if (sound) sound.lastChild.textContent = `\n          ${tr("soundLabel")}\n        `;
@@ -1077,6 +1149,7 @@ function applyLanguage() {
   renderMissions();
   renderTeams();
   renderModManager();
+  syncMenuAimMode();
   updateHud();
 }
 
@@ -1500,6 +1573,7 @@ function syncProfileFields() {
   hud.footstepVolume.value = String(settings.footstepVolume);
   hud.serverAudio.checked = settings.serverAudio;
   hud.controlMode.value = settings.controlMode;
+  hud.menuAimMode.value = ["none", "zoom", "sights"].includes(settings.botAimMode) ? settings.botAimMode : "sights";
   applyGameRulePreset(settings.gameRules || "classic");
   hud.showMinimap.checked = settings.showMinimap;
   hud.mobileControls.classList.toggle("hidden", settings.controlMode !== "mobile");
@@ -1508,6 +1582,21 @@ function syncProfileFields() {
   renderFastBinds();
   drawCrosshairPaint();
   syncServerControls();
+  syncMenuAimMode();
+}
+
+function syncMenuAimMode() {
+  if (!hud.menuAimMode) return;
+  const mode = hud.menuMode.value;
+  const story = mode === "story";
+  hud.menuAimMode.disabled = story || mode === "lan";
+  if (story) hud.menuAimMode.value = "sights";
+  else if (mode !== "lan") hud.menuAimMode.value = settings.botAimMode || "sights";
+  hud.menuAimMode.title = story
+    ? (settings.language === "en" ? "Story mode uses weapon sights." : "Kampania uzywa przyrzadow celowniczych.")
+    : mode === "lan"
+      ? (settings.language === "en" ? "The LAN commander sets RMB in server settings." : "W LAN zachowanie PPM ustawia dowodca serwera.")
+      : "";
 }
 
 function loadConfig() {
@@ -1785,6 +1874,173 @@ async function syncLanHeartbeat(force = false) {
     networkSync.connected = false;
   }
   syncServerControls();
+}
+
+function applyLobbyConfig(config) {
+  if (!config || typeof config !== "object") return;
+  Object.assign(serverSettings, normalizeServerConfig(config));
+  if (config.map && maps[config.map]) {
+    state.mapKey = config.map;
+    hud.menuMap.value = config.map;
+  }
+  if (config.matchSize) {
+    settings.matchSize = clamp(Number(config.matchSize), 1, 10);
+    hud.matchSize.value = String(settings.matchSize);
+  }
+  if (config.fillMode) {
+    settings.fillMode = config.fillMode;
+    hud.fillMode.value = config.fillMode;
+  }
+  applyGameRulePreset(config.gameRules || serverSettings.gameRules || "classic");
+  syncServerControls();
+}
+
+async function lanLobbyRequest(action, extra = {}) {
+  const response = await fetch(`${serverAudioBase()}/api/lobby`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      action,
+      room: lobbySession.room || hud.lanRoom.value,
+      playerId: settings.playerId,
+      name: settings.nick,
+      team: state.team,
+      ...extra,
+    }),
+  });
+  if (!response.ok) throw new Error((await response.text()) || `HTTP ${response.status}`);
+  return response.json();
+}
+
+function renderLanLobby(payload = {}) {
+  lobbySession.players = Array.isArray(payload.players) ? payload.players : lobbySession.players;
+  lobbySession.status = payload.status || lobbySession.status;
+  lobbySession.startedAt = Number(payload.startedAt) || lobbySession.startedAt;
+  state.lobbyOwnerId = payload.ownerId || state.lobbyOwnerId;
+  networkSync.ownerId = state.lobbyOwnerId;
+  networkSync.connected = true;
+  if (payload.config && !isLobbyCommander()) applyLobbyConfig(payload.config);
+  const owner = lobbySession.players.find((entry) => entry.playerId === state.lobbyOwnerId);
+  hud.lanLobbyRoom.textContent = lobbySession.room || hud.lanRoom.value;
+  hud.lanLobbyStatus.textContent = lobbySession.status === "started"
+    ? (settings.language === "en" ? "Match starting" : "Mecz startuje")
+    : (settings.language === "en" ? "Waiting for players" : "Oczekiwanie na graczy");
+  hud.lanLobbyOwner.textContent = owner?.name || state.lobbyOwnerId || "--";
+  hud.lanLobbyPlayers.innerHTML = "";
+  for (const entry of lobbySession.players) {
+    const row = document.createElement("div");
+    row.className = "lan-player-row";
+    const name = document.createElement("strong");
+    name.textContent = entry.name || "Potato";
+    const role = document.createElement("span");
+    role.className = "tag";
+    role.textContent = entry.playerId === state.lobbyOwnerId ? (settings.language === "en" ? "COMMANDER" : "DOWODCA") : (entry.team || "T");
+    row.append(name, role);
+    hud.lanLobbyPlayers.appendChild(row);
+  }
+  hud.lanTransferTarget.innerHTML = "";
+  for (const entry of lobbySession.players.filter((playerEntry) => playerEntry.playerId !== settings.playerId)) {
+    const option = document.createElement("option");
+    option.value = entry.playerId;
+    option.textContent = `${entry.name || "Potato"} / ${entry.playerId}`;
+    hud.lanTransferTarget.appendChild(option);
+  }
+  const commander = isLobbyCommander();
+  hud.lanLobbyStart.disabled = !commander || lobbySession.status === "started";
+  hud.lanLobbyTransfer.disabled = !commander || !hud.lanTransferTarget.options.length;
+  syncServerControls();
+}
+
+async function openLanLobby(hosting) {
+  if (lobbySession.active) {
+    closePanels();
+    state.overlayOpen = true;
+    hud.lanLobbyPanel.classList.remove("hidden");
+    renderLanLobby();
+    return;
+  }
+  ensurePlayerId();
+  settings.nick = hud.playerName.value.trim() || settings.nick || "Potato";
+  hud.menuMode.value = "lan";
+  state.gameMode = "lan";
+  state.running = false;
+  lobbySession.room = hud.lanRoom.value.trim() || "potato-lan";
+  lobbySession.hosting = hosting;
+  lobbySession.launching = false;
+  try {
+    const payload = await lanLobbyRequest(hosting ? "create" : "join");
+    lobbySession.active = true;
+    closePanels();
+    state.overlayOpen = true;
+    hud.lanLobbyPanel.classList.remove("hidden");
+    renderLanLobby(payload);
+    showMessage(hosting ? "Serwer LAN utworzony" : "Dolaczono do poczekalni LAN");
+  } catch (error) {
+    lobbySession.active = false;
+    networkSync.connected = false;
+    showMessage(`LAN: ${error.message}`);
+  }
+}
+
+async function pollLanLobby(force = false) {
+  if (!lobbySession.active || state.running || lobbySession.launching) return;
+  const now = performance.now();
+  if (!force && now - lobbySession.lastPoll < 1800) return;
+  lobbySession.lastPoll = now;
+  try {
+    const payload = await lanLobbyRequest("join");
+    renderLanLobby(payload);
+    if (payload.status === "started" && Number(payload.startedAt) > 0) launchLanLobbyMatch(payload);
+  } catch {
+    networkSync.connected = false;
+    hud.lanLobbyStatus.textContent = settings.language === "en" ? "Server unavailable" : "Serwer niedostepny";
+  }
+}
+
+function prepareLanMatchConfig() {
+  settings.matchSize = Number(hud.matchSize.value);
+  settings.fillMode = hud.fillMode.value;
+  state.mapKey = hud.menuMap.value;
+  applyGameRulePreset(hud.gameRules.value, false);
+  serverSettings.gameRules = state.ruleMode;
+  return serverConfigSnapshot();
+}
+
+async function startLanLobbyMatch() {
+  if (!isLobbyCommander()) return showMessage("Tylko dowodca moze rozpoczac mecz");
+  try {
+    const payload = await lanLobbyRequest("start", { config: prepareLanMatchConfig() });
+    renderLanLobby(payload);
+    launchLanLobbyMatch(payload);
+  } catch (error) {
+    showMessage(`LAN: ${error.message}`);
+  }
+}
+
+function launchLanLobbyMatch(payload) {
+  if (lobbySession.launching) return;
+  lobbySession.launching = true;
+  applyLobbyConfig(payload.config);
+  closePanels();
+  state.running = true;
+  mouse.x = window.innerWidth / 2;
+  mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
+  newMatch({ preserveLobbyOwner: true });
+  renderGameView();
+  hud.menu.classList.add("hidden");
+  showMessage(`LAN / ${lobbySession.players.length} graczy / ${isLobbyCommander() ? "dowodca" : "gracz"}`);
+}
+
+async function leaveLanLobby() {
+  try { await lanLobbyRequest("leave"); } catch { /* leaving a stopped server is still local */ }
+  lobbySession.active = false;
+  lobbySession.launching = false;
+  lobbySession.players = [];
+  state.running = false;
+  state.lobbyOwnerId = "";
+  closePanels();
+  hud.menu.classList.remove("hidden");
+  syncMenuAimMode();
 }
 
 function openOwnerConsole() {
@@ -3287,13 +3543,17 @@ function balanceTeams() {
   renderTeams();
 }
 
-function newMatch() {
+function newMatch({ preserveLobbyOwner = false } = {}) {
   state.gameMode = hud.menuMode.value;
   const rules = applyGameRulePreset(hud.gameRules.value);
   serverSettings.gameRules = state.ruleMode;
+  if (state.gameMode === "story") serverSettings.aimMode = "sights";
+  else if (state.gameMode !== "lan") serverSettings.aimMode = settings.botAimMode || "sights";
   ensurePlayerId();
-  state.lobbyOwnerId = settings.playerId;
-  networkSync.ownerId = settings.playerId;
+  if (!preserveLobbyOwner) {
+    state.lobbyOwnerId = settings.playerId;
+    networkSync.ownerId = settings.playerId;
+  }
   if (hud.launchTarget.value === "exe") showMessage("EXE: uzyj Pobierz lokalnie albo npm run build:win");
   settings.matchSize = Number(hud.matchSize.value);
   settings.fillMode = hud.fillMode.value;
@@ -5411,6 +5671,7 @@ function tick(now) {
     runtimeStats.frames = 0;
     runtimeStats.sampleStarted = now;
   }
+  pollLanLobby();
   if (state.running && !state.paused) {
     syncLanHeartbeat();
     updateRoundRules(dt);
@@ -5456,6 +5717,7 @@ function togglePanel(panel) {
     if (panel === hud.bindsPanel) renderBinds();
     if (panel === hud.editorPanel) renderSavedMissions();
     if (panel === hud.modsPanel) renderModManager();
+    if (panel === hud.lanLobbyPanel) renderLanLobby();
   }
 }
 
@@ -5472,6 +5734,7 @@ function closePanels() {
   hud.consolePanel.classList.add("hidden");
   hud.missionsPanel.classList.add("hidden");
   hud.networkPanel.classList.add("hidden");
+  hud.lanLobbyPanel.classList.add("hidden");
   hud.modsPanel.classList.add("hidden");
   hud.storyObjectivePanel?.classList.add("hidden");
 }
@@ -5671,6 +5934,24 @@ hud.openNetwork.addEventListener("click", () => {
   syncServerControls();
   togglePanel(hud.networkPanel);
 });
+hud.createLan.addEventListener("click", () => openLanLobby(true));
+hud.lanLobbyStart.addEventListener("click", startLanLobbyMatch);
+hud.lanLobbyTransfer.addEventListener("click", async () => {
+  const targetId = hud.lanTransferTarget.value;
+  if (!targetId) return;
+  try {
+    renderLanLobby(await lanLobbyRequest("transfer", { targetId }));
+    showMessage("Przekazano dowodzenie");
+  } catch (error) {
+    showMessage(`LAN: ${error.message}`);
+  }
+});
+hud.lanLobbySettings.addEventListener("click", () => {
+  syncServerControls();
+  togglePanel(hud.networkPanel);
+});
+hud.lanLobbyRefresh.addEventListener("click", () => pollLanLobby(true));
+hud.lanLobbyLeave.addEventListener("click", leaveLanLobby);
 hud.serverApply.addEventListener("click", async () => {
   if (!applyServerConfig(serverConfigFromControls())) return;
   localStorage.setItem("potatoStrikeServerConfig", JSON.stringify(serverConfigSnapshot()));
@@ -5740,6 +6021,10 @@ hud.pauseMenu.addEventListener("click", () => {
 });
 hud.start.addEventListener("click", async () => {
   try {
+    if (hud.menuMode.value === "lan") {
+      await openLanLobby(false);
+      return;
+    }
     ensureAudio();
     closePanels();
     state.running = true;
@@ -5748,7 +6033,7 @@ hud.start.addEventListener("click", async () => {
     newMatch();
     renderGameView();
     hud.menu.classList.add("hidden");
-    if (state.gameMode !== "offline") {
+    if (state.gameMode === "online") {
       hud.networkStatus.textContent = `${state.gameMode.toUpperCase()} jest przygotowany w menu. Aktualny build gra lokalnie z botami, dopoki nie zostanie podpiety serwer.`;
       showMessage(`${state.gameMode.toUpperCase()}: fallback do botow`);
     }
@@ -5760,6 +6045,11 @@ hud.start.addEventListener("click", async () => {
 
 hud.graphicsMode.addEventListener("change", () => { setGraphicsMode(hud.graphicsMode.value); saveConfig(); });
 hud.menuGraphics.addEventListener("change", () => { setGraphicsMode(hud.menuGraphics.value); saveConfig(); });
+hud.menuMode.addEventListener("change", syncMenuAimMode);
+hud.menuAimMode.addEventListener("change", () => {
+  settings.botAimMode = hud.menuAimMode.value;
+  saveConfig();
+});
 hud.quality.addEventListener("change", () => { settings.quality = hud.quality.value; });
 hud.languageSelect.addEventListener("change", () => {
   settings.language = hud.languageSelect.value;

@@ -4,11 +4,13 @@ Potato Strike 1.2 FINAL closes the Sandbox Studio line with finished FPS movemen
 
 ## LAN owner, console and aiming
 
+- Added a dedicated LAN server button and waiting room. Players join through `Play` with LAN selected, while the host can wait, refresh the roster, transfer commander rights, edit server settings and start everyone together.
 - The player who creates a LAN room is its commander. The lightweight server keeps the owner ID and rejects server-config writes from other players.
 - The commander can toggle enemy minimap visibility, set the hostname/player limit, enable debug cheats, and import/export a complete JSON or Valve-style `.cfg` server configuration.
 - The owner console now supports command batches and a safe CS/GoldSrc-style set including `status`, `cvarlist`, `exec`, `writecfg`, `map`, bot commands, round cvars, binds and cheat-gated debugging commands.
 - Bots receive an opening movement order as soon as freeze time ends. Taking over a teammate bot transfers its weapon, ammunition, armor, helmet, kit, Zeus and grenades immediately.
 - The commander chooses one authoritative RMB policy: no action, zoom with the classic crosshair, or Potato sights inspired by direct weapon-sight views. The sights policy gives AWP its scope and aligns simple iron sights for other guns; Glock keeps RMB burst switching.
+- Offline BOT matches expose the same RMB policy in the main menu. Story mode consistently uses weapon sights so campaign missions have a ready aiming setup.
 - Server rules, minimap ownership and inventory behavior are shared by the 2D and 3D game paths.
 
 ## Match modes and story hints
