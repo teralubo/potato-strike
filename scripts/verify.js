@@ -118,8 +118,8 @@ for (const key of ["type", "configId", "userMaps", "storyMissions", "customTextu
 if (defaultConfig.settings.hzLimit !== "vsync" || defaultConfig.settings.fastBindsEnabled !== true || !Array.isArray(defaultConfig.settings.fastBinds)) {
   fail("default config must enable V-Sync and contain Fast Binds");
 }
-if (defaultConfig.settings.adsEnabled !== true || defaultConfig.serverConfig.enemyMinimap !== false || defaultConfig.serverConfig.svCheats !== false) {
-  fail("default ADS or safe server settings are invalid");
+if (defaultConfig.settings.gameRules !== "classic" || defaultConfig.serverConfig.aimMode !== "sights" || defaultConfig.serverConfig.enemyMinimap !== false || defaultConfig.serverConfig.svCheats !== false) {
+  fail("default game rules, aiming or safe server settings are invalid");
 }
 const defaultFpsMod = JSON.parse(fs.readFileSync("mods/default/fps_info/mod.json", "utf8"));
 if (defaultFpsMod.id !== "default.fps_info" || defaultFpsMod.category !== "default" || defaultFpsMod.enabled !== false || defaultFpsMod.builtin !== "fps_info") {
@@ -153,12 +153,13 @@ requireSnippets(gameJs, [
   "runEditorTriggerExpression", "activateEditorTrigger",
   "serverConfigSnapshot", "syncLanHeartbeat", "mp_show_enemy_minimap", "writecfg", "cvarlist", "requireCheats",
   "openingMove", "botStop", "isAwpScoped", "drawAwpScope", "aimZoom", "mouse.rightDown",
+  "gameRulePresets", "applyGameRulePreset", "updateRespawns", "isIronSights", "drawPotatoIronSights", "showStoryHint",
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
   'id="fast-bind-key"', 'id="fast-bind-action"', 'id="fast-bind-add"', 'id="fast-bind-enabled"',
   'id="fast-bind-clear"', 'id="fast-bind-count"', 'id="fast-bind-list"',
-  'id="ads-enabled"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
+  'id="game-rules"', 'id="server-aim-mode"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
 
@@ -174,7 +175,7 @@ requireSnippets(editorHtml, [
   'data-editor-mode="objects"', 'data-editor-mode="groups"', 'data-editor-mode="triggers"',
   'data-editor-mode="waypoints"', 'data-editor-mode="sync"', 'data-editor-mode="markers"',
   'data-transform="select"', 'data-transform="translate"', 'data-transform="rotate"', 'data-transform="scale"',
-  'id="layer-list"', 'id="add-layer"', 'id="undo-editor"', 'id="redo-editor"',
+  'id="layer-list"', 'id="add-layer"', 'id="undo-editor"', 'id="redo-editor"', 'id="story-goal-hint"',
 ], "Studio UI feature");
 
 requireSnippets(editorJs, [
@@ -185,6 +186,7 @@ requireSnippets(editorJs, [
   "new THREE.Raycaster", "new THREE.CanvasTexture", "draw3dCanvasFallback", "handleStudio3dMouseDown",
   "studio3dGroundPoint", "focusStudioSelection", "setTransformMode", "setEditorMode",
   "units", "groups", "triggers", "waypoints", "markers", "systems", "pickups", "connections",
+  "storyGoalHint",
 ], "Studio 1.2 feature");
 
 requireSnippets(editorCss, ["#studio-viewport-3d", ".studio-viewport-toolbar", "#studio-viewport-stage", "@media"], "Studio layout feature");

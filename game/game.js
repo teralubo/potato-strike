@@ -99,6 +99,7 @@ const hud = {
   serverMaxplayers: $("server-maxplayers"),
   serverEnemyMinimap: $("server-enemy-minimap"),
   serverCheats: $("server-cheats"),
+  serverAimMode: $("server-aim-mode"),
   serverApply: $("server-apply"),
   serverExport: $("server-export"),
   serverImport: $("server-import"),
@@ -154,9 +155,9 @@ const hud = {
   botCount: $("bot-count"),
   controlMode: $("control-mode"),
   showMinimap: $("show-minimap"),
-  adsEnabled: $("ads-enabled"),
   autoReload: $("auto-reload"),
   menuMode: $("menu-mode"),
+  gameRules: $("game-rules"),
   profileCurrent: $("profile-current"),
   playerMenu: $("player-menu"),
   profileNick: $("profile-nick"),
@@ -394,6 +395,8 @@ const state = {
   campaignIndex: 0,
   randomMissions: [],
   spectator: { active: false, index: 0, target: null, takeoverLatch: false },
+  ruleMode: "classic",
+  fragScore: { player: 0, enemy: 0 },
   frameSkip: 0,
   triggerPoll: 0,
   triggerStates: {},
@@ -430,9 +433,9 @@ const settings = {
   botCount: 10,
   matchSize: 5,
   fillMode: "bots",
+  gameRules: "classic",
   controlMode: "keyboard",
   showMinimap: true,
-  adsEnabled: true,
   autoReload: true,
   fastBindsEnabled: true,
   fastBinds: [],
@@ -454,9 +457,44 @@ const serverSettings = {
   botStop: false,
   gravity: 720,
   friendlyFire: false,
+  aimMode: "sights",
+  gameRules: "classic",
 };
 
 const networkSync = { lastHeartbeat: 0, ownerId: "", connected: false };
+
+const gameRulePresets = {
+  classic: { label: "Classic", matchSize: 0, roundTime: 115, freezeTime: 5, buyTime: 20, maxRounds: 32, respawn: false, bomb: true },
+  competitive: { label: "Competitive 5v5", matchSize: 5, roundTime: 115, freezeTime: 5, buyTime: 20, maxRounds: 24, respawn: false, bomb: true },
+  wingman: { label: "Wingman 2v2", matchSize: 2, roundTime: 90, freezeTime: 4, buyTime: 15, maxRounds: 16, respawn: false, bomb: true },
+  retake: { label: "Retake", matchSize: 4, roundTime: 40, freezeTime: 3, buyTime: 0, maxRounds: 12, respawn: false, bomb: true, planted: true },
+  deathmatch: { label: "Deathmatch", matchSize: 5, roundTime: 300, freezeTime: 1, buyTime: 300, maxRounds: 1, respawn: true, fragLimit: 30, bomb: false },
+  casual: { label: "Casual 10v10", matchSize: 10, roundTime: 135, freezeTime: 5, buyTime: 30, maxRounds: 16, respawn: false, bomb: true },
+  training: { label: "Training 1v1", matchSize: 1, roundTime: 300, freezeTime: 1, buyTime: 300, maxRounds: 1, respawn: true, fragLimit: 15, bomb: false },
+};
+
+function activeGameRules() {
+  return gameRulePresets[state.ruleMode] || gameRulePresets.classic;
+}
+
+function isRespawnMode() {
+  return Boolean(activeGameRules().respawn);
+}
+
+function applyGameRulePreset(mode, updateMenu = true) {
+  const key = gameRulePresets[mode] ? mode : "classic";
+  const preset = gameRulePresets[key];
+  state.ruleMode = key;
+  settings.gameRules = key;
+  if (updateMenu) hud.gameRules.value = key;
+  if (preset.matchSize) {
+    settings.matchSize = preset.matchSize;
+    hud.matchSize.value = String(preset.matchSize);
+    hud.botCount.value = String(preset.matchSize * 2);
+  }
+  hud.matchSize.disabled = Boolean(preset.matchSize);
+  return preset;
+}
 
 const simple3dTextures = {
   white: { base: "#d8d8ce", side: "#aeb2a8", seam: "rgba(34,38,33,0.32)", mark: "rgba(255,255,255,0.22)", mode: "panel", footstep: "concrete" },
@@ -495,6 +533,7 @@ const bindings = {
   crouch: "ControlLeft",
   pause: "KeyP",
   console: "Backquote",
+  hint: "KeyJ",
   spectatorNext: "ArrowRight",
   spectatorPrev: "ArrowLeft",
 };
@@ -518,6 +557,7 @@ const actionLabels = {
   crouch: "Kucanie 3D",
   pause: "Pauza",
   console: "Komendy lobby",
+  hint: "Podpowiedz fabularna",
   spectatorNext: "Spectator nastepny",
   spectatorPrev: "Spectator poprzedni",
 };
@@ -546,7 +586,7 @@ const i18n = {
     modsTitle: "Mody",
     profileTitle: "profil gracza",
     menuLead: "CS-like dla slabych komputerow: misje, boty, bomba, sklep stron, 2D albo lekkie 3D. Pod I sa bindy, ktore mozna zobaczyc i zmienic.",
-    controlsHelp: "WASD ruch / mysz / Spacja skok 3D lub dash 2D / Ctrl kucanie 3D / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H wybierz granat / LPM przytrzymaj i pusc aby rzucic / R reload / B sklep / PPM tryb Glocka / O ustawienia / M misje / I bindy / 1-0 ekwipunek / po dead strzalki lub klik zmieniaja teammate",
+    controlsHelp: "WASD ruch / mysz / Spacja skok 3D lub dash 2D / Ctrl kucanie 3D / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H granat / J podpowiedz fabularna / R reload / B sklep / PPM wg serwera / I bindy / 1-0 ekwipunek",
     languageLabel: "Jezyk / Language",
     graphicsLabel: "Tryb grafiki",
     qualityLabel: "Jakosc",
@@ -606,6 +646,7 @@ const i18n = {
     exportProfile: "Export profilu",
     importProfile: "Import profilu",
     modeLabel: "Tryb",
+    gameRulesLabel: "Tryb gry",
     versionLabel: "Wersja",
     matchSizeLabel: "Rozmiar meczu",
     fillLabel: "Uzupelnienie",
@@ -636,7 +677,7 @@ const i18n = {
     modsTitle: "Mods",
     profileTitle: "player profile",
     menuLead: "CS-like for weak computers: missions, bots, bomb mode, side shop, 2D or light 3D. Press I to view and change binds.",
-    controlsHelp: "WASD movement / mouse / Space jump in 3D or dash in 2D / Ctrl crouch in 3D / E use-plant-defuse-pickup / G drop weapon / H select grenade / hold and release LMB to throw / R reload / B shop / RMB Glock mode / O settings / M missions / I binds / 1-0 inventory / after death arrows or click change teammate",
+    controlsHelp: "WASD movement / mouse / Space jump or 2D dash / Ctrl crouch / E use / G drop / H grenade / J story hint / R reload / B shop / server-defined RMB / I binds / 1-0 inventory",
     languageLabel: "Language / Jezyk",
     graphicsLabel: "Graphics mode",
     qualityLabel: "Quality",
@@ -697,6 +738,7 @@ const i18n = {
     exportProfile: "Export profile",
     importProfile: "Import profile",
     modeLabel: "Mode",
+    gameRulesLabel: "Game mode",
     versionLabel: "Version",
     matchSizeLabel: "Match size",
     fillLabel: "Fill",
@@ -726,6 +768,7 @@ const actionLabelI18n = {
     crouch: "3D crouch",
     pause: "Pause",
     console: "Lobby commands",
+    hint: "Story hint",
     spectatorNext: "Spectator next",
     spectatorPrev: "Spectator previous",
   },
@@ -953,6 +996,7 @@ function applyLanguage() {
   setLabel("bot-count", tr("botCountLabel"));
   setLabel("control-mode", tr("controlsLabel"));
   setLabel("menu-mode", tr("modeLabel"));
+  setLabel("game-rules", tr("gameRulesLabel"));
   setLabel("launch-target", tr("versionLabel"));
   setLabel("match-size", tr("matchSizeLabel"));
   setLabel("fill-mode", tr("fillLabel"));
@@ -966,6 +1010,13 @@ function applyLanguage() {
     setOptionText("menu-mode", "story", "Story mode");
     setOptionText("menu-mode", "lan", "LAN");
     setOptionText("menu-mode", "online", "Online HTML");
+    setOptionText("game-rules", "classic", "Classic / custom size");
+    setOptionText("game-rules", "competitive", "Competitive 5v5");
+    setOptionText("game-rules", "wingman", "Wingman 2v2");
+    setOptionText("game-rules", "retake", "Retake");
+    setOptionText("game-rules", "deathmatch", "Deathmatch");
+    setOptionText("game-rules", "casual", "Casual 10v10");
+    setOptionText("game-rules", "training", "Training 1v1");
     setOptionText("launch-target", "html", "HTML / browser");
     setOptionText("launch-target", "exe", "Offline EXE");
     setOptionText("fill-mode", "bots", "BOTS");
@@ -978,6 +1029,9 @@ function applyLanguage() {
     setOptionText("graphics-mode", "3d", "3D FPS");
     setOptionText("control-mode", "keyboard", "Keyboard + mouse");
     setOptionText("control-mode", "mobile", "Phone / touch screen");
+    setOptionText("server-aim-mode", "sights", "Weapon sights / scope");
+    setOptionText("server-aim-mode", "zoom", "Zoom only + classic crosshair");
+    setOptionText("server-aim-mode", "none", "No action");
   } else {
     setOptionText("hz-limit", "vsync", "V-Sync (zalecane)");
     setOptionText("hz-limit", "0", "Bez limitu");
@@ -985,6 +1039,13 @@ function applyLanguage() {
     setOptionText("menu-mode", "story", "Tryb fabularny");
     setOptionText("menu-mode", "lan", "LAN");
     setOptionText("menu-mode", "online", "Online HTML");
+    setOptionText("game-rules", "classic", "Classic / wlasny rozmiar");
+    setOptionText("game-rules", "competitive", "Competitive 5v5");
+    setOptionText("game-rules", "wingman", "Wingman 2v2");
+    setOptionText("game-rules", "retake", "Retake");
+    setOptionText("game-rules", "deathmatch", "Deathmatch");
+    setOptionText("game-rules", "casual", "Casual 10v10");
+    setOptionText("game-rules", "training", "Trening 1v1");
     setOptionText("launch-target", "html", "HTML / przegladarka");
     setOptionText("launch-target", "exe", "Offline EXE");
     setOptionText("fill-mode", "bots", "BOTY");
@@ -997,6 +1058,9 @@ function applyLanguage() {
     setOptionText("graphics-mode", "3d", "3D FPS");
     setOptionText("control-mode", "keyboard", "Klawiatura + mysz");
     setOptionText("control-mode", "mobile", "Telefon / ekran dotykowy");
+    setOptionText("server-aim-mode", "sights", "Przyrzady celownicze / scope");
+    setOptionText("server-aim-mode", "zoom", "Tylko przyblizenie + klasyczny celownik");
+    setOptionText("server-aim-mode", "none", "Brak akcji");
   }
   const sound = $("sound-enabled")?.closest("label");
   if (sound) sound.lastChild.textContent = `\n          ${tr("soundLabel")}\n        `;
@@ -1004,8 +1068,6 @@ function applyLanguage() {
   if (serverAudio) serverAudio.lastChild.textContent = `\n          ${tr("serverAudioLabel")}\n        `;
   const minimap = $("show-minimap")?.closest("label");
   if (minimap) minimap.lastChild.textContent = `\n          ${tr("minimapLabel")}\n        `;
-  const ads = $("ads-enabled")?.closest("label");
-  if (ads) ads.lastChild.textContent = settings.language === "en" ? "\n          Hold RMB: ADS in 3D\n        " : "\n          Przytrzymaj PPM: ADS w 3D\n        ";
   const autoReload = $("auto-reload")?.closest("label");
   if (autoReload) autoReload.lastChild.textContent = `\n          ${tr("autoReloadLabel")}\n        `;
   renderShop();
@@ -1438,8 +1500,8 @@ function syncProfileFields() {
   hud.footstepVolume.value = String(settings.footstepVolume);
   hud.serverAudio.checked = settings.serverAudio;
   hud.controlMode.value = settings.controlMode;
+  applyGameRulePreset(settings.gameRules || "classic");
   hud.showMinimap.checked = settings.showMinimap;
-  hud.adsEnabled.checked = settings.adsEnabled;
   hud.mobileControls.classList.toggle("hidden", settings.controlMode !== "mobile");
   normalizeFastBinds();
   renderFastBindOptions();
@@ -1567,6 +1629,7 @@ function serverConfigSnapshot() {
     map: state.mapKey,
     matchSize: Number(settings.matchSize),
     fillMode: settings.fillMode,
+    gameRules: state.ruleMode,
   };
 }
 
@@ -1588,6 +1651,8 @@ function normalizeServerConfig(config = {}) {
     botStop: bool(source.botStop, serverSettings.botStop),
     gravity: clamp(Number(source.gravity ?? serverSettings.gravity), 100, 1600),
     friendlyFire: bool(source.friendlyFire, serverSettings.friendlyFire),
+    aimMode: ["none", "zoom", "sights"].includes(source.aimMode) ? source.aimMode : serverSettings.aimMode,
+    gameRules: gameRulePresets[source.gameRules] ? source.gameRules : serverSettings.gameRules,
   };
 }
 
@@ -1608,6 +1673,7 @@ function applyServerConfig(config, { quiet = false } = {}) {
   }
   if (config.fillMode) settings.fillMode = config.fillMode;
   settings.difficulty = serverSettings.botDifficulty;
+  applyGameRulePreset(config.gameRules || serverSettings.gameRules || settings.gameRules);
   state.freezeTime = serverSettings.freezeTime;
   state.roundTime = serverSettings.roundTime;
   state.buyTime = serverSettings.buyTime;
@@ -1624,7 +1690,8 @@ function syncServerControls() {
   hud.serverMaxplayers.value = String(serverSettings.maxPlayers);
   hud.serverEnemyMinimap.checked = serverSettings.enemyMinimap;
   hud.serverCheats.checked = serverSettings.svCheats;
-  for (const control of [hud.serverHostname, hud.serverMaxplayers, hud.serverEnemyMinimap, hud.serverCheats, hud.serverApply, hud.serverImport]) {
+  hud.serverAimMode.value = serverSettings.aimMode;
+  for (const control of [hud.serverHostname, hud.serverMaxplayers, hud.serverEnemyMinimap, hud.serverCheats, hud.serverAimMode, hud.serverApply, hud.serverImport]) {
     if (control) control.disabled = !editable;
   }
   if (hud.networkStatus) {
@@ -1641,6 +1708,7 @@ function serverConfigFromControls() {
     maxPlayers: Number(hud.serverMaxplayers.value),
     enemyMinimap: hud.serverEnemyMinimap.checked,
     svCheats: hud.serverCheats.checked,
+    aimMode: hud.serverAimMode.value,
   };
 }
 
@@ -1650,7 +1718,7 @@ function parseCfgText(source) {
     hostname: "hostname", sv_lan: "svLan", sv_cheats: "svCheats", mp_show_enemy_minimap: "enemyMinimap",
     maxplayers: "maxPlayers", mp_freezetime: "freezeTime", mp_roundtime: "roundTime", mp_roundtime_defuse: "roundTime",
     mp_buytime: "buyTime", mp_startmoney: "startMoney", bot_quota: "botQuota", bot_difficulty: "botDifficulty",
-    bot_stop: "botStop", sv_gravity: "gravity", mp_friendlyfire: "friendlyFire",
+    bot_stop: "botStop", sv_gravity: "gravity", mp_friendlyfire: "friendlyFire", mp_aim_mode: "aimMode", game_mode: "gameRules",
   };
   for (const line of String(source).split(/\r?\n/)) {
     const tokens = line.trim().match(/"[^"]*"|'[^']*'|[^\s]+/g) || [];
@@ -1709,7 +1777,10 @@ async function syncLanHeartbeat(force = false) {
     state.lobbyOwnerId = payload.ownerId || state.lobbyOwnerId || settings.playerId;
     networkSync.ownerId = state.lobbyOwnerId;
     networkSync.connected = true;
-    if (payload.config && !isLobbyCommander()) Object.assign(serverSettings, normalizeServerConfig(payload.config));
+    if (payload.config && !isLobbyCommander()) {
+      Object.assign(serverSettings, normalizeServerConfig(payload.config));
+      applyGameRulePreset(serverSettings.gameRules);
+    } else if (!payload.config && isLobbyCommander()) saveServerConfigRemote();
   } catch {
     networkSync.connected = false;
   }
@@ -1733,7 +1804,7 @@ function savedStoryMissions() {
 }
 
 function defaultStoryGoal() {
-  return { type: "eliminate", target: 1, text: "Wyeliminuj wszystkich wrogow", code: "return ctx.enemiesAlive <= 0;" };
+  return { type: "eliminate", target: 1, text: "Wyeliminuj wszystkich wrogow", hint: "Trzymaj sie z druzyna i oczyszczaj mape sektorami.", code: "return ctx.enemiesAlive <= 0;" };
 }
 
 function normalizeStoryGoal(goal = {}) {
@@ -1744,6 +1815,7 @@ function normalizeStoryGoal(goal = {}) {
     type: goal.type || fallback.type,
     target: Math.max(1, Number(goal.target || fallback.target)),
     text: goal.text || fallback.text,
+    hint: goal.hint || "",
     code: goal.code || "",
   };
 }
@@ -1918,14 +1990,22 @@ function ensureNormalBootMenu() {
 }
 
 function applyStudioTestMeta(meta) {
-  if (!meta.defaultWeapon || meta.defaultWeapon === "side-default") return;
-  const weapon = weapons.find((item) => item.name === meta.defaultWeapon);
-  if (!weapon) return;
-  weapon.owned = true;
-  weapon.ammo = weapon.magSize;
-  weapon.currentReserve = weapon.reserve;
-  player.weaponId = weapon.id;
-  showMessage(`Studio weapon: ${weapon.name}`);
+  const studioRule = meta.gameMode === "defuse" ? "classic" : meta.gameMode;
+  if (gameRulePresets[studioRule]) {
+    applyGameRulePreset(studioRule);
+    resetRoundPositions();
+    spawnBots();
+  }
+  if (meta.defaultWeapon && meta.defaultWeapon !== "side-default") {
+    const weapon = weapons.find((item) => item.name === meta.defaultWeapon);
+    if (weapon) {
+      weapon.owned = true;
+      weapon.ammo = weapon.magSize;
+      weapon.currentReserve = weapon.reserve;
+      player.weaponId = weapon.id;
+      showMessage(`Studio weapon: ${weapon.name}`);
+    }
+  }
 }
 
 function restoreUserContent(config) {
@@ -2038,6 +2118,8 @@ const consoleCvars = {
   bot_quota: ["botQuota", "number", 0, 19],
   bot_difficulty: ["botDifficulty", "difficulty"],
   bot_stop: ["botStop", "bool"],
+  mp_aim_mode: ["aimMode", "aimMode"],
+  game_mode: ["gameRules", "gameRules"],
 };
 
 const consoleCommands = [
@@ -2070,6 +2152,8 @@ function setConsoleCvar(command, value) {
   if (type === "bool") serverSettings[key] = consoleBool(String(value).toLowerCase());
   else if (type === "number") serverSettings[key] = clamp(Number(value), min, max);
   else if (type === "difficulty") serverSettings[key] = ["easy", "normal", "hard"].includes(value) ? value : "normal";
+  else if (type === "aimMode") serverSettings[key] = ["none", "zoom", "sights"].includes(value) ? value : "sights";
+  else if (type === "gameRules") serverSettings[key] = gameRulePresets[value] ? value : "classic";
   else serverSettings[key] = String(value).slice(0, 64);
   settings.difficulty = serverSettings.botDifficulty;
   if (key === "freezeTime") state.freezeTime = serverSettings.freezeTime;
@@ -2079,6 +2163,7 @@ function setConsoleCvar(command, value) {
     settings.matchSize = clamp(serverSettings.botQuota, 1, 10);
     hud.matchSize.value = String(settings.matchSize);
   }
+  if (key === "gameRules") applyGameRulePreset(serverSettings.gameRules);
   syncServerControls();
   saveConfig();
   saveServerConfigRemote();
@@ -2222,7 +2307,21 @@ function activeWeapon() {
 
 function canHoldAim(weapon = activeWeapon()) {
   if (!isPerspectiveMode() || !player.alive || isBombSelected() || isGrenadeSelected() || weapon.melee || weapon.burstCapable) return false;
-  return weapon.name === "AWP" || settings.adsEnabled;
+  return serverSettings.aimMode !== "none";
+}
+
+function showStoryHint() {
+  if (state.gameMode !== "story") return showMessage(settings.language === "en" ? "Hints are available in Story mode" : "Podpowiedzi sa dostepne w trybie fabularnym");
+  const goal = activeStoryGoal();
+  const generated = {
+    eliminate: "Sprawdz minimape, trzymaj oslony i eliminuj wrogow po jednym.",
+    kills: "Szukaj bezpiecznych pojedynkow i kontroluj amunicje.",
+    plant: "Wez bombe, wybierz bombsite i przytrzymaj E po wybraniu C4.",
+    defuse: "Oczysc bombsite, podejdz do C4 i trzymaj E. Defuse kit skraca czas.",
+    win: "Graj na czas i cel rundy; nie musisz szukac ostatniego fraga.",
+  };
+  showMessage(goal.hint || generated[goal.type] || goal.text);
+  return true;
 }
 
 function isAimActive() {
@@ -2230,11 +2329,16 @@ function isAimActive() {
 }
 
 function isAwpScoped() {
-  return isAimActive() && activeWeapon().name === "AWP";
+  return isAimActive() && serverSettings.aimMode === "sights" && activeWeapon().name === "AWP";
+}
+
+function isIronSights() {
+  return isAimActive() && serverSettings.aimMode === "sights" && activeWeapon().name !== "AWP";
 }
 
 function aimZoom() {
   if (isAwpScoped()) return 2.65;
+  if (isIronSights()) return 1.32;
   if (isAimActive()) return 1.42;
   return 1;
 }
@@ -2326,6 +2430,8 @@ function difficultyScale() {
 }
 
 function botRoundBudget(team) {
+  if (isRespawnMode()) return 16000;
+  if (state.ruleMode === "retake") return 5200;
   if (state.round <= 1) return 800;
   const base = 800 + Math.min(4200, (state.round - 1) * 850);
   const scoreBoost = Math.max(0, state.score[team] || 0) * 250;
@@ -2336,7 +2442,7 @@ function chooseAffordableWeapon(team, budget) {
   const defaultName = defaultWeaponName(team);
   const affordable = weapons
     .filter((weapon) => !weapon.melee && weapon.category !== "Melee" && sideAllows(weapon, team) && weapon.price <= budget)
-    .filter((weapon) => state.round > 1 || weapon.category === "Pistol")
+    .filter((weapon) => state.round > 1 || isRespawnMode() || state.ruleMode === "retake" || weapon.category === "Pistol")
     .sort((a, b) => b.price - a.price);
   if (!affordable.length) return weapons.find((weapon) => weapon.name === defaultName);
   const premium = affordable.filter((weapon) => weapon.price >= Math.min(budget, state.round <= 1 ? 650 : 1800));
@@ -2976,7 +3082,35 @@ function spawnEditorPickups() {
   }
 }
 
+function equipRuleWeapon(name) {
+  const weapon = weapons.find((item) => item.name === name);
+  if (!weapon) return;
+  weapon.owned = true;
+  weapon.ammo = weapon.magSize;
+  weapon.currentReserve = weapon.reserve;
+  weapon.cooldown = 0;
+  weapon.reloading = 0;
+  player.weaponId = weapon.id;
+}
+
+function applyRuleRoundLoadout() {
+  if (state.ruleMode === "retake") {
+    resetLoadout();
+    player.armor = 100;
+    player.helmet = true;
+    player.defuseKit = state.team === "CT";
+    player.grenades = state.team === "CT" ? { "Flashbang": 1, "Smoke Grenade": 1 } : { "Flashbang": 1, "HE Grenade": 1 };
+    equipRuleWeapon(state.team === "T" ? "AK-47" : "M4A4");
+  } else if (isRespawnMode() && state.round === 1) {
+    player.money = 16000;
+    player.armor = 100;
+    player.helmet = true;
+    equipRuleWeapon(state.team === "T" ? "AK-47" : "M4A4");
+  }
+}
+
 function resetRoundPositions() {
+  const rules = activeGameRules();
   const fallback = findSafePoint(state.team === "T" ? state.map.tSpawn : state.map.ctSpawn);
   const spawn = editorUnitSpawn(state.team, 0, fallback).point;
   player.x = spawn.x;
@@ -3001,17 +3135,30 @@ function resetRoundPositions() {
   state.activeSpecial = "";
   state.grenadePrime = null;
   leaveSpectator();
-  state.roundTime = serverSettings.roundTime;
-  state.freezeTime = serverSettings.freezeTime;
-  state.buyTime = serverSettings.buyTime;
+  state.roundTime = rules.roundTime ?? serverSettings.roundTime;
+  state.freezeTime = rules.freezeTime ?? serverSettings.freezeTime;
+  state.buyTime = rules.buyTime ?? serverSettings.buyTime;
   state.phase = "freeze";
   state.winner = "";
   state.bomb.timer = 40;
   state.bomb.defuse = 0;
   state.triggerPoll = 0;
   state.triggerStates = {};
+  applyRuleRoundLoadout();
   spawnEditorPickups();
-  if (state.team === "T") {
+  if (!rules.bomb) {
+    state.bomb.status = "none";
+    state.bomb.carrier = "";
+  } else if (rules.planted) {
+    const siteKey = Math.random() < 0.5 ? "A" : "B";
+    const site = state.map.sites[siteKey];
+    state.bomb.status = "planted";
+    state.bomb.carrier = "";
+    state.bomb.x = site.x;
+    state.bomb.y = site.y;
+    state.bomb.site = siteKey;
+    state.bomb.timer = 30;
+  } else if (state.team === "T") {
     state.bomb.status = "carried";
     state.bomb.carrier = "player";
   } else {
@@ -3142,6 +3289,8 @@ function balanceTeams() {
 
 function newMatch() {
   state.gameMode = hud.menuMode.value;
+  const rules = applyGameRulePreset(hud.gameRules.value);
+  serverSettings.gameRules = state.ruleMode;
   ensurePlayerId();
   state.lobbyOwnerId = settings.playerId;
   networkSync.ownerId = settings.playerId;
@@ -3173,6 +3322,7 @@ function newMatch() {
   state.round = 1;
   state.half = 1;
   state.score = { T: 0, CT: 0 };
+  state.fragScore = { player: 0, enemy: 0 };
   camera.pitch = 0;
   setGraphicsMode(hud.menuGraphics.value);
   player.money = serverSettings.startMoney;
@@ -3193,7 +3343,7 @@ function newMatch() {
   renderShop();
   renderMissions();
   renderStoryObjective();
-  showMessage(`${state.gameMode.toUpperCase()} / ${teamName(state.team)} / ${state.map.name} / dowodca ${settings.nick}`);
+  showMessage(`${state.gameMode.toUpperCase()} / ${rules.label} / ${teamName(state.team)} / ${state.map.name} / dowodca ${settings.nick}`);
 }
 
 function swapSidesIfNeeded() {
@@ -3222,7 +3372,7 @@ function endRound(winner, reason) {
   showMessage(`${winner} wygrywa: ${reason}`);
   setTimeout(() => {
     state.round += 1;
-    if (state.round > 32) {
+    if (state.round > activeGameRules().maxRounds) {
       hud.menu.classList.remove("hidden");
       state.running = false;
       showMessage("Mecz zakonczony");
@@ -3306,6 +3456,14 @@ function updateRoundRules(dt) {
   if (state.phase !== "live") return;
   state.roundTime -= dt;
   state.buyTime = Math.max(0, state.buyTime - dt);
+  if (isRespawnMode()) {
+    const limit = activeGameRules().fragLimit || 30;
+    if (state.roundTime <= 0 || state.fragScore.player >= limit || state.fragScore.enemy >= limit) {
+      const winner = state.fragScore.player >= state.fragScore.enemy ? state.team : state.enemyTeam;
+      endRound(winner, `deathmatch ${state.fragScore.player}:${state.fragScore.enemy}`);
+    }
+    return;
+  }
   checkStoryObjective();
   if (state.phase === "ended") return;
   if (state.bomb.status === "planted") {
@@ -3593,7 +3751,7 @@ function explodeGrenade(grenade) {
     for (const bot of bots) {
       if (bot.hp > 0 && dist(grenade.x, grenade.y, bot.x, bot.y) < 120) {
         damageActor(bot, grenade.type === "he" ? 60 : 35);
-        if (bot.hp <= 0) dropActorLoadoutOnDeath(bot);
+        awardPlayerHit(bot);
       }
     }
   }
@@ -3608,9 +3766,14 @@ function awardPlayerHit(bot) {
   player.hits += 1;
   advanceMission("hits", 1);
   if (bot.hp <= 0) {
-    dropActorLoadoutOnDeath(bot);
+    if (isRespawnMode()) {
+      bot.respawnTimer = 2.2;
+      bot.deathCounted = true;
+    }
+    else dropActorLoadoutOnDeath(bot);
     player.kills += 1;
     player.roundKills += 1;
+    if (isRespawnMode()) state.fragScore.player += 1;
     player.money += 300;
     advanceMission("kills", 1);
     advanceMission("category", 1, activeWeapon().category);
@@ -3674,7 +3837,7 @@ function shoot(owner, angle, weapon, hostile = false) {
   const pelletCount = weapon.pellets || 1;
   for (let burst = 0; burst < burstShots; burst += 1) {
     for (let i = 0; i < pelletCount; i += 1) {
-      const aimFactor = !hostile && owner === player && isAimActive() ? (isAwpScoped() ? 0.16 : 0.52) : 1;
+      const aimFactor = !hostile && owner === player && (isAwpScoped() || isIronSights()) ? (isAwpScoped() ? 0.16 : 0.52) : 1;
       const spread = hostile ? 0.11 * difficultyScale() : (weapon.spread + weapon.recoil * Math.min(1.5, owner.speedFactor || 0)) * aimFactor;
       const burstOffset = (burst - (burstShots - 1) / 2) * 0.018;
       const a = angle + (Math.random() - 0.5) * spread + burstOffset;
@@ -3710,7 +3873,7 @@ function updatePlayer(dt) {
   const len = Math.hypot(forward, strafe) || 1;
   const walking = keys.has("ShiftLeft") || keys.has("ShiftRight") || state.phase === "freeze";
   let speed = player.speed * (walking ? 0.58 : 1);
-  if (isAimActive()) speed *= 0.72;
+  if (isAwpScoped() || isIronSights()) speed *= 0.72;
   if (isPerspectiveMode()) {
     const wantsJump = actionDown("dash");
     if (wantsJump && !player.jumpLatch && player.jumpHeight <= 0 && state.phase === "live") {
@@ -3874,6 +4037,10 @@ function enterSpectator() {
   player.eyeHeight = 58;
   const target = currentSpectatorTarget();
   if (!target) {
+    if (isRespawnMode()) {
+      showMessage("Odrodzenie za chwile...");
+      return;
+    }
     endRound(state.enemyTeam, "twoja druzyna wyeliminowana");
     return;
   }
@@ -3930,6 +4097,7 @@ function updateSpectator() {
   if (player.alive || !state.spectator.active || state.overlayOpen || state.phase === "ended") return;
   const target = currentSpectatorTarget();
   if (!target) {
+    if (isRespawnMode()) return;
     endRound(state.enemyTeam, "twoja druzyna wyeliminowana");
     return;
   }
@@ -3951,9 +4119,49 @@ function damagePlayer(amount) {
   if (player.hp <= 0) {
     player.hp = 0;
     player.alive = false;
-    dropPlayerLoadoutOnDeath();
+    if (isRespawnMode()) {
+      player.respawnTimer = 2.5;
+      state.fragScore.enemy += 1;
+    } else dropPlayerLoadoutOnDeath();
     emitAudioEvent("death", { x: player.x, y: player.y });
     enterSpectator();
+  }
+}
+
+function respawnActor(actor, team) {
+  const spawn = findSafePoint(team === "T" ? state.map.tSpawn : state.map.ctSpawn);
+  actor.x = clamp(spawn.x + (Math.random() - 0.5) * 120, actor.r, state.map.w - actor.r);
+  actor.y = clamp(spawn.y + (Math.random() - 0.5) * 120, actor.r, state.map.h - actor.r);
+  actor.hp = 100;
+  actor.armor = Math.max(0, Number(actor.armor || 0));
+  actor.flashed = 0;
+  actor.fire = 450 + Math.random() * 500;
+  actor.respawnTimer = 0;
+  actor.openingMove = 0.8;
+  actor.deathCounted = false;
+}
+
+function updateRespawns(dt) {
+  if (!isRespawnMode() || state.phase !== "live") return;
+  if (!player.alive) {
+    player.respawnTimer = Math.max(0, Number(player.respawnTimer || 0) - dt);
+    if (player.respawnTimer <= 0) {
+      respawnActor(player, state.team);
+      player.alive = true;
+      player.invuln = 1.2;
+      player.hp = 100;
+      player.jumpHeight = 0;
+      player.verticalVelocity = 0;
+      state.activeSpecial = "";
+      mouse.rightDown = false;
+      leaveSpectator();
+      showMessage("Odrodzenie");
+    }
+  }
+  for (const actor of [...bots, ...allies]) {
+    if (actor.hp > 0) continue;
+    actor.respawnTimer = Math.max(0, Number(actor.respawnTimer || 2.2) - dt);
+    if (actor.respawnTimer <= 0) respawnActor(actor, actor.team);
   }
 }
 
@@ -3980,7 +4188,13 @@ function updateBullets(dt) {
       for (const ally of allies) {
         if (ally.hp > 0 && dist(b.x, b.y, ally.x, ally.y) < ally.r) {
           damageActor(ally, b.damage);
-          if (ally.hp <= 0) dropActorLoadoutOnDeath(ally);
+          if (ally.hp <= 0) {
+            if (isRespawnMode() && !ally.deathCounted) {
+              ally.respawnTimer = 2.2;
+              ally.deathCounted = true;
+              state.fragScore.enemy += 1;
+            } else if (!isRespawnMode()) dropActorLoadoutOnDeath(ally);
+          }
           emitAudioEvent(ally.hp <= 0 ? "death" : "hit", { x: ally.x, y: ally.y }, false);
           remove = true;
           break;
@@ -4042,7 +4256,13 @@ function updateGrenades(dt) {
       for (const bot of bots) {
         if (bot.hp > 0 && dist(effects[i].x, effects[i].y, bot.x, bot.y) < effects[i].r) {
           damageActor(bot, 16 * dt);
-          if (bot.hp <= 0) dropActorLoadoutOnDeath(bot);
+          if (bot.hp <= 0) {
+            if (isRespawnMode() && !bot.deathCounted) {
+              bot.respawnTimer = 2.2;
+              bot.deathCounted = true;
+              state.fragScore.player += 1;
+            } else if (!isRespawnMode()) dropActorLoadoutOnDeath(bot);
+          }
         }
       }
     }
@@ -4688,9 +4908,10 @@ function render3d() {
   draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
   draw3dWeapon(w, h);
   if (isAwpScoped()) drawAwpScope(w, h);
+  else if (isIronSights()) drawPotatoIronSights(w, h);
   drawFpsStatusStrip(w, h);
   drawMinimap();
-  if (!isAwpScoped()) drawCrosshair();
+  if (!isAwpScoped() && !isIronSights()) drawCrosshair();
 }
 
 function drawAwpScope(w, h) {
@@ -4718,6 +4939,33 @@ function drawAwpScope(w, h) {
   ctx.strokeStyle = "rgba(200,210,194,0.46)";
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawPotatoIronSights(w, h) {
+  const cx = w / 2;
+  const cy = h / 2;
+  const weapon = activeWeapon();
+  const pistol = weapon.category === "Pistol";
+  ctx.save();
+  ctx.strokeStyle = "rgba(12,14,12,0.96)";
+  ctx.fillStyle = "rgba(18,20,17,0.96)";
+  ctx.lineWidth = Math.max(3, w / 420);
+  if (pistol) {
+    ctx.fillRect(cx - 30, cy + 20, 10, 26);
+    ctx.fillRect(cx + 20, cy + 20, 10, 26);
+    ctx.fillRect(cx - 4, cy + 7, 8, 30);
+  } else {
+    ctx.beginPath();
+    ctx.arc(cx, cy + 32, 30, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.stroke();
+    ctx.fillRect(cx - 5, cy + 5, 10, 34);
+    ctx.beginPath();
+    ctx.moveTo(cx - 15, cy + 34); ctx.lineTo(cx, cy + 12); ctx.lineTo(cx + 15, cy + 34);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(215,189,98,0.8)";
+  ctx.fillRect(cx - 2, cy + 9, 4, 8);
+  ctx.restore();
 }
 
 function draw3dTerrain(w, h, horizon = h / 2) {
@@ -5013,7 +5261,7 @@ function draw3dWeapon(w, h) {
   }
   const weapon = activeWeapon();
   const model = weaponViewModel(weapon);
-  const aiming = isAimActive();
+  const aiming = isIronSights();
   const scale = clamp(w / 1280, 0.78, 1.15);
   const sway = Math.sin(performance.now() / 140) * player.speedFactor * (aiming ? 2.5 : 10);
   const recoilDrop = camera.shake * 1.8;
@@ -5066,17 +5314,17 @@ function updateHud() {
   const grenade = selectedGrenade();
   const spectated = state.spectator.active ? currentSpectatorTarget() : null;
   const living = state.spectator.active ? livingTeamBots() : [];
-  hud.mode.textContent = state.gameMode.toUpperCase();
+  hud.mode.textContent = `${state.gameMode.toUpperCase()} / ${activeGameRules().label.toUpperCase()}`;
   hud.team.textContent = spectated ? `SPECTATE ${spectated.name} ${living.length ? state.spectator.index + 1 : 0}/${living.length}${spectated.source === "LAN" ? "" : " / E TAKEOVER"}` : `TEAM ${state.team}${isLobbyCommander() ? " / CMD" : ""}`;
   hud.health.textContent = spectated ? `OBS HP ${Math.ceil(spectated.hp)}` : `HP ${Math.ceil(player.hp)}`;
   hud.armor.textContent = `${tr("armor")} ${Math.ceil(player.armor)}${player.helmet ? " +H" : ""}${player.defuseKit ? " KIT" : ""}${player.zeus ? " ZEUS" : ""}`;
   hud.money.textContent = `$${player.money}`;
   hud.round.textContent = `R ${state.round}/32`;
-  hud.score.textContent = `T ${state.score.T} : ${state.score.CT} CT`;
+  hud.score.textContent = isRespawnMode() ? `FRAGS ${state.fragScore.player} : ${state.fragScore.enemy}` : `T ${state.score.T} : ${state.score.CT} CT`;
   const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
   hud.timer.textContent = `${Math.floor(time / 60)}:${String(Math.max(0, Math.ceil(time % 60))).padStart(2, "0")}`;
   hud.bomb.textContent = state.bomb.status === "planted" ? `${tr("bomb")} ${state.bomb.site} ${Math.ceil(state.bomb.timer)}s` : playerHasBomb() ? `${tr("bomb")} ${isBombSelected() ? "READY" : tr("you")}` : state.bomb.status === "dropped" ? `${tr("bomb")} DROP` : `${tr("bomb")} --`;
-  hud.weaponName.textContent = isBombSelected() ? "C4 Bomb" : grenade ? grenade.name : weapon.burstCapable ? `${weapon.name} ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}` : `${weapon.name}${isAwpScoped() ? " / SCOPE" : isAimActive() ? " / ADS" : ""}`;
+  hud.weaponName.textContent = isBombSelected() ? "C4 Bomb" : grenade ? grenade.name : weapon.burstCapable ? `${weapon.name} ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}` : `${weapon.name}${isAwpScoped() ? " / SCOPE" : isIronSights() ? " / SIGHTS" : isAimActive() ? " / ZOOM" : ""}`;
   hud.ammo.textContent = isBombSelected() ? "HOLD E" : grenade ? `${player.grenades[grenade.name] || 0} / ${state.grenadePrime ? "RELEASE LMB" : "HOLD LMB"}` : weapon.melee ? "MELEE" : weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
 }
 
@@ -5166,6 +5414,7 @@ function tick(now) {
   if (state.running && !state.paused) {
     syncLanHeartbeat();
     updateRoundRules(dt);
+    updateRespawns(dt);
     updatePlayer(dt);
     updateAllies(dt);
     updateBots(dt);
@@ -5298,6 +5547,7 @@ window.addEventListener("keydown", (event) => {
   if (event.code === bindings.dash && isPerspectiveMode() && state.grenadePrime) state.grenadePrime.jumpThrowQueued = true;
   if (event.code === "Escape") closePanels();
   if (event.code === "Tab" && showStoryObjective()) return;
+  if (event.code === bindings.hint) { showStoryHint(); return; }
   if (event.code === bindings.shop) togglePanel(hud.shopPanel);
   if (event.code === bindings.settings) togglePanel(hud.settingsPanel);
   if (event.code === bindings.missions) togglePanel(hud.missionsPanel);
@@ -5633,9 +5883,12 @@ hud.matchSize.addEventListener("change", () => {
   settings.matchSize = Number(hud.matchSize.value);
   hud.botCount.value = String(settings.matchSize * 2);
 });
+hud.gameRules.addEventListener("change", () => {
+  applyGameRulePreset(hud.gameRules.value, false);
+  saveConfig();
+});
 hud.fillMode.addEventListener("change", () => { settings.fillMode = hud.fillMode.value; });
 hud.showMinimap.addEventListener("change", () => { settings.showMinimap = hud.showMinimap.checked; });
-hud.adsEnabled.addEventListener("change", () => { settings.adsEnabled = hud.adsEnabled.checked; saveConfig(); });
 hud.autoReload.addEventListener("change", () => { settings.autoReload = hud.autoReload.checked; });
 hud.rerollMissions.addEventListener("click", () => {
   if (player.money < 300) return showMessage("Za malo kasy");

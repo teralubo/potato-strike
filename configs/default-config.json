@@ -31,9 +31,9 @@
     "perfLimit": "balanced",
     "matchSize": 5,
     "fillMode": "bots",
+    "gameRules": "classic",
     "controlMode": "keyboard",
     "showMinimap": true,
-    "adsEnabled": true,
     "autoReload": true,
     "fastBindsEnabled": true,
     "fastBinds": []
@@ -55,6 +55,8 @@
     "botStop": false,
     "gravity": 720,
     "friendlyFire": false,
+    "aimMode": "sights",
+    "gameRules": "classic",
     "map": "dustyard",
     "matchSize": 5,
     "fillMode": "bots"
@@ -77,7 +79,8 @@
     "dash": "Space",
     "crouch": "ControlLeft",
     "pause": "KeyP",
-    "console": "Backquote"
+    "console": "Backquote",
+    "hint": "KeyJ"
   },
   "userMaps": [],
   "storyMissions": [],

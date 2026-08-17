@@ -46,6 +46,7 @@ const ui = {
   storyGoalType: $("story-goal-type"),
   storyGoalTarget: $("story-goal-target"),
   storyGoalText: $("story-goal-text"),
+  storyGoalHint: $("story-goal-hint"),
   storyGoalCode: $("story-goal-code"),
   terrainWidth: $("terrain-width"),
   terrainHeight: $("terrain-height"),
@@ -312,7 +313,7 @@ function clamp(value, min, max) {
 }
 
 function defaultStoryGoal() {
-  return { type: "eliminate", target: 1, text: "Wyeliminuj wszystkich wrogow", code: "return ctx.enemiesAlive <= 0;" };
+  return { type: "eliminate", target: 1, text: "Wyeliminuj wszystkich wrogow", hint: "Trzymaj sie z druzyna i oczyszczaj mape sektorami.", code: "return ctx.enemiesAlive <= 0;" };
 }
 
 function normalizeStoryGoal(goal = {}) {
@@ -323,6 +324,7 @@ function normalizeStoryGoal(goal = {}) {
     type: goal.type || fallback.type,
     target: Math.max(1, Number(goal.target || fallback.target)),
     text: goal.text || fallback.text,
+    hint: goal.hint || fallback.hint,
     code: goal.code || "",
   };
 }
@@ -1612,6 +1614,7 @@ function renderUi() {
   ui.storyGoalType.value = storyGoal.type;
   ui.storyGoalTarget.value = String(storyGoal.target);
   ui.storyGoalText.value = storyGoal.text;
+  ui.storyGoalHint.value = storyGoal.hint;
   ui.storyGoalCode.value = storyGoal.code;
   syncAdvancedFields();
   renderLayers();
@@ -1926,6 +1929,7 @@ function saveMap() {
       type: ui.storyGoalType.value,
       target: Number(ui.storyGoalTarget.value || 1),
       text: ui.storyGoalText.value,
+      hint: ui.storyGoalHint.value,
       code: ui.storyGoalCode.value,
     }),
     license: "GNU GPL 3.0",
@@ -2390,7 +2394,7 @@ ui.testGraphics.addEventListener("change", () => {
 });
 ui.matchSize.addEventListener("change", () => { map.meta = { ...(map.meta || {}), matchSize: Number(ui.matchSize.value) }; });
 ui.defaultWeapon.addEventListener("change", () => { map.meta = { ...(map.meta || {}), defaultWeapon: ui.defaultWeapon.value }; });
-["storyGoalType", "storyGoalTarget", "storyGoalText", "storyGoalCode"].forEach((key) => {
+["storyGoalType", "storyGoalTarget", "storyGoalText", "storyGoalHint", "storyGoalCode"].forEach((key) => {
   ui[key].addEventListener("input", () => {
     map.meta = {
       ...(map.meta || {}),
@@ -2398,6 +2402,7 @@ ui.defaultWeapon.addEventListener("change", () => { map.meta = { ...(map.meta ||
         type: ui.storyGoalType.value,
         target: Number(ui.storyGoalTarget.value || 1),
         text: ui.storyGoalText.value,
+        hint: ui.storyGoalHint.value,
         code: ui.storyGoalCode.value,
       }),
     };

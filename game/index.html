@@ -230,10 +230,6 @@
           Minimap
         </label>
         <label class="check">
-          <input id="ads-enabled" type="checkbox" checked>
-          Przytrzymaj PPM: ADS w 3D
-        </label>
-        <label class="check">
           <input id="auto-reload" type="checkbox" checked>
           Auto reload przy pustym magazynku
         </label>
@@ -530,6 +526,14 @@
           <input id="server-cheats" type="checkbox">
           sv_cheats (debug/modding)
         </label>
+        <label>
+          Zachowanie PPM w 3D
+          <select id="server-aim-mode">
+            <option value="sights" selected>Przyrzady celownicze / scope</option>
+            <option value="zoom">Tylko przyblizenie + klasyczny celownik</option>
+            <option value="none">Brak akcji</option>
+          </select>
+        </label>
       </div>
       <div class="menu-actions left">
         <button id="server-apply">Zastosuj na serwerze</button>
@@ -598,6 +602,18 @@
               <option value="story">Tryb fabularny</option>
               <option value="lan">LAN</option>
               <option value="online">Online HTML</option>
+            </select>
+          </label>
+          <label>
+            Tryb gry
+            <select id="game-rules">
+              <option value="classic" selected>Classic / wlasny rozmiar</option>
+              <option value="competitive">Competitive 5v5</option>
+              <option value="wingman">Wingman 2v2</option>
+              <option value="retake">Retake</option>
+              <option value="deathmatch">Deathmatch</option>
+              <option value="casual">Casual 10v10</option>
+              <option value="training">Training 1v1</option>
             </select>
           </label>
           <label>
