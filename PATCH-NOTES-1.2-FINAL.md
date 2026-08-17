@@ -8,8 +8,16 @@ Potato Strike 1.2 FINAL closes the Sandbox Studio line with finished FPS movemen
 - The commander can toggle enemy minimap visibility, set the hostname/player limit, enable debug cheats, and import/export a complete JSON or Valve-style `.cfg` server configuration.
 - The owner console now supports command batches and a safe CS/GoldSrc-style set including `status`, `cvarlist`, `exec`, `writecfg`, `map`, bot commands, round cvars, binds and cheat-gated debugging commands.
 - Bots receive an opening movement order as soon as freeze time ends. Taking over a teammate bot transfers its weapon, ammunition, armor, helmet, kit, Zeus and grenades immediately.
-- AWP has a held RMB scope in 3D. Other non-burst weapons support optional held RMB ADS with adjusted FOV, sensitivity, movement speed and spread; Glock keeps RMB burst switching.
+- The commander chooses one authoritative RMB policy: no action, zoom with the classic crosshair, or Potato sights inspired by direct weapon-sight views. The sights policy gives AWP its scope and aligns simple iron sights for other guns; Glock keeps RMB burst switching.
 - Server rules, minimap ownership and inventory behavior are shared by the 2D and 3D game paths.
+
+## Match modes and story hints
+
+- Added functional presets for Classic/custom size, Competitive 5v5, Wingman 2v2, Retake, Deathmatch, Casual 10v10 and Training 1v1.
+- Wingman, Competitive, Casual and Training enforce their team sizes and round limits. Classic keeps the existing manual 1v1-10v10 selector.
+- Retake starts with a planted bomb, short timer and side-appropriate rifle, armor, utility and CT defuse kit.
+- Deathmatch and Training disable the bomb, provide a rifle loadout, track frags and respawn players and bots without dropping the active loadout.
+- Story mode has a configurable `J` hint bind. Studio missions can save a custom hint; older missions receive a contextual hint based on their objective type.
 
 ## Fast Bind and frame pacing
 

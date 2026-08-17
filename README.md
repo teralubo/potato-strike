@@ -27,7 +27,9 @@ Wersja `1.2 FINAL` rozwija Potato Strike w lekka platforme sandbox:
 - Ustawienia zawieraja nielimitowane, zapisywane w profilu `Fast Bind`, np. `F` do zakupu calego zestawu: broni, kamizelki i granatu. Kazdy wpis mozna wlaczyc, wylaczyc lub usunac, a pelny stan jest eksportowany z configiem. Skroty respektuja pieniadze, buy time i ograniczenia stron.
 - Domyslny V-Sync laczy odswiezanie z ekranem i presetem wydajnosci; nadal mozna wybrac reczny limit 30/60/120 lub maksymalna szybkosc przegladarki.
 - Dowodca pokoju LAN zarzadza server configiem, widocznoscia enemy na minimapie i konsola w stylu CS/GoldSrc. Config serwera mozna zapisac, wgrac jako JSON lub `.cfg` i wykonac przez `exec`.
-- W 3D AWP ma scope przytrzymywany PPM, a inne bronie opcjonalny ADS. Glock zachowuje przelaczanie semi/burst.
+- Dowodca wybiera zachowanie PPM w 3D: brak akcji, samo przyblizenie z klasycznym celownikiem albo potato-przyrzady celownicze ze scope AWP. Glock zachowuje przelaczanie semi/burst.
+- Menu oferuje funkcjonalne presety Classic, Competitive 5v5, Wingman 2v2, Retake, Deathmatch, Casual 10v10 i Training 1v1. Retake startuje z podlozona bomba, a Deathmatch/Training maja odrodzenia i wynik fragowy.
+- W trybie fabularnym bind `J` pokazuje podpowiedz. Studio pozwala zapisac wlasna podpowiedz razem z celem misji.
 - Biblioteka 3D Studio jest dostarczana lokalnie w `game/vendor/three.min.js`; edytor nie wymaga CDN ani internetu.
 - Szczegoly wydania sa w `PATCH-NOTES-1.2-FINAL.md`.
 

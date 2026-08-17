@@ -110,8 +110,14 @@
         <label>
           Tryb gry
           <select id="game-mode">
-            <option value="defuse">Defuse</option>
+            <option value="classic">Classic</option>
+            <option value="defuse">Defuse (legacy)</option>
+            <option value="competitive">Competitive 5v5</option>
+            <option value="wingman">Wingman 2v2</option>
+            <option value="retake">Retake</option>
             <option value="deathmatch">Deathmatch</option>
+            <option value="casual">Casual 10v10</option>
+            <option value="training">Training 1v1</option>
             <option value="story">Story</option>
             <option value="sandbox" selected>Sandbox</option>
           </select>
@@ -165,6 +171,10 @@
         <label>
           Tekst celu pod TAB
           <input id="story-goal-text" value="Wyeliminuj wszystkich wrogow">
+        </label>
+        <label>
+          Podpowiedz pod bindem J
+          <input id="story-goal-hint" value="Trzymaj sie z druzyna i oczyszczaj mape sektorami.">
         </label>
         <label>
           Kod zakonczenia zadania

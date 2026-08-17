@@ -11,7 +11,9 @@ Sandbox Studio and 3D readability update.
 - Added LAN room ownership, authoritative server-config writes, enemy-minimap control and JSON/CFG import/export.
 - Expanded the owner console with CS/GoldSrc-style cvars, config execution, map/bot controls, bind inspection and `sv_cheats`-gated debugging.
 - Added immediate live-round bot movement and complete weapon/equipment transfer when taking over a teammate bot.
-- Added held AWP scope and optional held ADS for other 3D weapons, including FOV, sensitivity, speed and accuracy changes plus mobile AIM control.
+- Added commander-controlled RMB policies: disabled, zoom with classic crosshair, or Potato weapon sights with AWP scope and mobile AIM control.
+- Added functional Classic, Competitive 5v5, Wingman, Retake, Deathmatch, Casual and Training presets with enforced team sizes, timers, loadouts, respawns and frag scoring where applicable.
+- Added configurable Story hint bind `J` and custom mission hints in Studio.
 - Replaced the fixed isometric Studio preview with a direct, persistent WebGL scene editor and a software fallback.
 - Added separate 2D mission-plan and 3D scene workflows, including object/group/trigger/waypoint/sync/marker modes, transform tools, layers, history and multi-selection.
 - Added local Three.js vendor build so Studio 3D works offline without a CDN.
