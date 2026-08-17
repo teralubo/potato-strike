@@ -344,6 +344,16 @@ button:disabled {
   letter-spacing: 0;
 }
 
+.mod-category-title {
+  grid-column: 1 / -1;
+  padding: 7px 0 4px;
+  border-bottom: 1px solid rgba(242, 240, 223, 0.2);
+  color: #d7bd62;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .shop-status {
   display: flex;
   justify-content: space-between;
@@ -1100,7 +1110,7 @@ button:disabled {
         <button class="close-panel" data-panel="mods-panel">Zamknij</button>
       </div>
       <div id="mod-manager-list" class="mission-list"></div>
-      <p class="panel-note">Mody sa zapisane w profilu gracza. Mozesz je wlaczac, wylaczac, ustawiac priorytet i eksportowac razem z configiem profilu.</p>
+      <p class="panel-note">Foldery w `mods` sa kategoriami. Mody sa zapisane w profilu gracza: mozesz je wlaczac, wylaczac, usuwac, dodawac ponownie i ustawiac priorytet.</p>
     </div>
     <div id="mobile-controls" class="hidden" aria-label="Sterowanie mobilne">
       <div class="mobile-stick">
@@ -1117,7 +1127,7 @@ button:disabled {
         <button data-touch-action="crouch" title="Kucanie 3D">DUCK</button>
         <button data-touch-action="use">E</button>
         <button data-touch-action="reload">R</button>
-        <button data-touch-action="grenade">G</button>
+        <button data-touch-action="grenade" title="Wybierz granat">GRN</button>
       </div>
     </div>
     <div id="menu">
@@ -1447,6 +1457,20 @@ const grenadeCatalog = [
   { name: "Decoy", key: "decoy", side: "BOTH", price: 50, color: "#8ab2d4" },
 ];
 
+const bundledDefaultMods = [
+  {
+    id: "default.fps_info",
+    name: "fps_info",
+    category: "default",
+    version: "1.0.0",
+    description: "Maly licznik FPS w lewym gornym rogu.",
+    builtin: "fps_info",
+    enabled: false,
+    priority: 20,
+    bundled: true,
+  },
+];
+
 const equipmentCatalog = [
   { name: "Kevlar Vest", side: "BOTH", price: 650, key: "armor", value: 100, color: "#9aa48e" },
   { name: "Kevlar + Helmet", side: "BOTH", price: 1000, key: "helmet", value: 100, color: "#b8c3d6" },
@@ -1588,6 +1612,7 @@ const state = {
   winner: "",
   bomb: { status: "carried", carrier: "player", x: 0, y: 0, site: "", timer: 40, defuse: 0 },
   activeSpecial: "",
+  grenadePrime: null,
   storyMission: null,
   storyComplete: false,
   campaignIndex: 0,
@@ -1688,7 +1713,7 @@ const actionLabels = {
   binds: "Bindy",
   teams: "Druzyny",
   network: "LAN / online",
-  grenade: "Granat",
+  grenade: "Wybierz granat",
   drop: "Wyrzuc bron",
   dash: "Skok 3D / dash 2D",
   crouch: "Kucanie 3D",
@@ -1722,7 +1747,7 @@ const i18n = {
     modsTitle: "Mody",
     profileTitle: "profil gracza",
     menuLead: "CS-like dla slabych komputerow: misje, boty, bomba, sklep stron, 2D albo lekkie 3D. Pod I sa bindy, ktore mozna zobaczyc i zmienic.",
-    controlsHelp: "WASD ruch / mysz / Spacja skok 3D lub dash 2D / Ctrl kucanie 3D / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H granat / R reload / B sklep / PPM tryb Glocka / O ustawienia / M misje / I bindy / 1-9 bron / po dead strzalki lub klik zmieniaja teammate",
+    controlsHelp: "WASD ruch / mysz / Spacja skok 3D lub dash 2D / Ctrl kucanie 3D / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H wybierz granat / LPM przytrzymaj i pusc aby rzucic / R reload / B sklep / PPM tryb Glocka / O ustawienia / M misje / I bindy / 1-0 ekwipunek / po dead strzalki lub klik zmieniaja teammate",
     languageLabel: "Jezyk / Language",
     graphicsLabel: "Tryb grafiki",
     qualityLabel: "Jakosc",
@@ -1753,7 +1778,7 @@ const i18n = {
     equip: "Wyposaz",
     buy: "Kup",
     grenade: "Granat",
-    throwKey: "H - rzut",
+    throwKey: "ekwipunek 1-0 / LPM",
     you: "TY",
     pressKey: "Nacisnij klawisz...",
     missionsPill: "MISJE",
@@ -1796,7 +1821,7 @@ const i18n = {
     modsTitle: "Mods",
     profileTitle: "player profile",
     menuLead: "CS-like for weak computers: missions, bots, bomb mode, side shop, 2D or light 3D. Press I to view and change binds.",
-    controlsHelp: "WASD movement / mouse / Space jump in 3D or dash in 2D / Ctrl crouch in 3D / E use-plant-defuse-pickup / G drop weapon / H grenade / R reload / B shop / RMB Glock mode / O settings / M missions / I binds / 1-9 weapon / after death arrows or click change teammate",
+    controlsHelp: "WASD movement / mouse / Space jump in 3D or dash in 2D / Ctrl crouch in 3D / E use-plant-defuse-pickup / G drop weapon / H select grenade / hold and release LMB to throw / R reload / B shop / RMB Glock mode / O settings / M missions / I binds / 1-0 inventory / after death arrows or click change teammate",
     languageLabel: "Language / Jezyk",
     graphicsLabel: "Graphics mode",
     qualityLabel: "Quality",
@@ -1826,9 +1851,9 @@ const i18n = {
     owned: "Owned",
     equip: "Equip",
     buy: "Buy",
-    grenade: "Grenade",
+    grenade: "Select grenade",
     drop: "Drop weapon",
-    throwKey: "G - throw",
+    throwKey: "inventory 1-0 / LMB",
     you: "YOU",
     pressKey: "Press a key...",
     missionsPill: "MISSIONS",
@@ -1876,6 +1901,10 @@ const actionLabelI18n = {
 
 function tr(key) {
   return (i18n[settings.language] && i18n[settings.language][key]) || i18n.pl[key] || key;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 }
 
 function bindLabel(action) {
@@ -1943,11 +1972,13 @@ const droppedWeapons = [];
 const effects = [];
 const customTextures = [];
 const loadedMods = [];
+const removedDefaultModIds = [];
 const keys = new Set();
 const touchActions = new Set();
 const mouse = { x: 0, y: 0, down: false, clicked: false };
 const camera = { x: 0, y: 0, shake: 0, pitch: 0 };
 const mobileLook = { pointerId: null, x: 0, y: 0 };
+const runtimeStats = { fps: 0, frames: 0, sampleStarted: performance.now() };
 let last = performance.now();
 let waitingForBind = "";
 const editor = { active: false, selectedMission: "", selectedObject: null };
@@ -2382,6 +2413,7 @@ function serializeProfile() {
     storyMissions: savedStoryMissions(),
     customTextures,
     mods: loadedMods,
+    removedDefaultMods: removedDefaultModIds,
   };
 }
 
@@ -2490,6 +2522,7 @@ function applyProfile(profile, preserveIncomingId = true) {
   if (preserveIncomingId) settings.playerId = profile.playerId || settings.playerId;
   ensurePlayerId();
   restoreUserContent(profile);
+  installBundledDefaultMods();
   syncProfileFields();
   saveConfig();
   renderBinds();
@@ -2505,6 +2538,8 @@ function createPlayerProfile(nick) {
   writeStoryMissions([]);
   customTextures.splice(0, customTextures.length);
   loadedMods.splice(0, loadedMods.length);
+  removedDefaultModIds.splice(0, removedDefaultModIds.length);
+  installBundledDefaultMods();
   syncProfileFields();
   saveConfig();
   renderSavedMissions();
@@ -2756,7 +2791,8 @@ function restoreUserContent(config) {
   }
   if (config.storyMissions) writeStoryMissions(config.storyMissions);
   customTextures.splice(0, customTextures.length, ...(config.customTextures || []));
-  loadedMods.splice(0, loadedMods.length, ...(config.mods || []));
+  removedDefaultModIds.splice(0, removedDefaultModIds.length, ...(config.removedDefaultMods || []));
+  loadedMods.splice(0, loadedMods.length, ...(config.mods || []).map(normalizeMod));
   renderAssetList();
 }
 
@@ -2915,17 +2951,47 @@ function isBombSelected() {
   return state.activeSpecial === "bomb" && playerHasBomb();
 }
 
+function selectedGrenadeName() {
+  return state.activeSpecial.startsWith("grenade:") ? state.activeSpecial.slice("grenade:".length) : "";
+}
+
+function selectedGrenade() {
+  const name = selectedGrenadeName();
+  if (!name || (player.grenades[name] || 0) <= 0) return null;
+  return grenadeCatalog.find((grenade) => grenade.name === name) || null;
+}
+
+function isGrenadeSelected() {
+  return Boolean(selectedGrenade());
+}
+
+function weaponInventoryRank(weapon) {
+  if (weapon.melee || weapon.category === "Melee") return 3;
+  if (weapon.category === "Pistol") return 2;
+  return 1;
+}
+
 function carriedItems() {
-  const items = ownedWeapons().map((weapon) => ({ type: "weapon", weapon, label: weapon.name }));
+  const items = ownedWeapons()
+    .sort((a, b) => weaponInventoryRank(a) - weaponInventoryRank(b) || a.id - b.id)
+    .map((weapon) => ({ type: "weapon", weapon, label: weapon.name }));
+  for (const grenade of grenadeCatalog) {
+    const count = player.grenades[grenade.name] || 0;
+    if (count > 0) items.push({ type: "grenade", grenade, label: `${grenade.name} x${count}` });
+  }
   if (playerHasBomb()) items.push({ type: "bomb", label: "C4 Bomb" });
   return items;
 }
 
 function selectInventoryItem(item) {
   if (!item) return;
+  state.grenadePrime = null;
   if (item.type === "bomb") {
     state.activeSpecial = "bomb";
     showMessage("C4 Bomb");
+  } else if (item.type === "grenade") {
+    state.activeSpecial = `grenade:${item.grenade.name}`;
+    showMessage(`${item.grenade.name} x${player.grenades[item.grenade.name] || 0}`);
   } else {
     state.activeSpecial = "";
     player.weaponId = item.weapon.id;
@@ -2933,6 +2999,14 @@ function selectInventoryItem(item) {
   }
   emitAudioEvent("ui", { x: player.x, y: player.y }, false);
   updateHud();
+}
+
+function selectNextGrenade() {
+  const items = carriedItems().filter((item) => item.type === "grenade");
+  if (!items.length) return showMessage("Brak granatow");
+  const active = selectedGrenadeName();
+  const index = items.findIndex((item) => item.grenade.name === active);
+  selectInventoryItem(items[(index + 1 + items.length) % items.length]);
 }
 
 function defaultWeaponId(team) {
@@ -3320,33 +3394,112 @@ function renderAssetList() {
   }
 }
 
+function normalizeMod(mod, fallbackCategory = "custom") {
+  const source = mod && typeof mod === "object" ? mod : {};
+  return {
+    id: String(source.id || `mod-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`),
+    name: String(source.name || source.id || "unnamed"),
+    category: String(source.category || fallbackCategory || "custom"),
+    enabled: source.enabled !== false,
+    priority: Number(source.priority ?? 100),
+    ...source,
+  };
+}
+
+function installBundledDefaultMods() {
+  let changed = false;
+  for (const bundled of bundledDefaultMods) {
+    if (removedDefaultModIds.includes(bundled.id) || loadedMods.some((mod) => mod.id === bundled.id)) continue;
+    loadedMods.push(normalizeMod(bundled, "default"));
+    changed = true;
+  }
+  return changed;
+}
+
+async function loadNativeMods() {
+  if (!window.potatoNative?.listMods) return;
+  const diskMods = await window.potatoNative.listMods();
+  if (!Array.isArray(diskMods)) return;
+  for (const entry of diskMods) {
+    const diskMod = normalizeMod(entry, entry.category || "custom");
+    if (removedDefaultModIds.includes(diskMod.id)) continue;
+    const existing = loadedMods.find((mod) => mod.id === diskMod.id);
+    if (existing) {
+      const enabled = existing.enabled;
+      const priority = existing.priority;
+      Object.assign(existing, diskMod, { enabled, priority });
+    } else {
+      loadedMods.push(diskMod);
+    }
+  }
+  renderAssetList();
+  renderModManager();
+  saveConfig();
+}
+
 function sortedMods() {
-  return [...loadedMods].sort((a, b) => Number(a.priority ?? 100) - Number(b.priority ?? 100));
+  return [...loadedMods].sort((a, b) => {
+    const categoryA = String(a.category || "custom");
+    const categoryB = String(b.category || "custom");
+    if (categoryA === "default" && categoryB !== "default") return -1;
+    if (categoryB === "default" && categoryA !== "default") return 1;
+    return categoryA.localeCompare(categoryB) || Number(a.priority ?? 100) - Number(b.priority ?? 100);
+  });
+}
+
+function enabledMod(builtin) {
+  return sortedMods().find((mod) => mod.enabled !== false && mod.builtin === builtin) || null;
 }
 
 function renderModManager() {
   if (!hud.modManagerList) return;
   hud.modManagerList.innerHTML = "";
   const mods = sortedMods();
-  if (!mods.length) {
+  const removedBundled = bundledDefaultMods.filter((mod) => removedDefaultModIds.includes(mod.id));
+  if (!mods.length && !removedBundled.length) {
     const empty = document.createElement("div");
     empty.className = "mission-item";
     empty.textContent = "Brak modow w profilu. Wgraj mod w edytorze lub przez import modpacka.";
     hud.modManagerList.appendChild(empty);
     return;
   }
+  const categories = new Map();
   for (const mod of mods) {
-    const item = document.createElement("div");
-    item.className = "mission-item";
-    item.innerHTML = `
-      <div class="mission-title"><span>${mod.name || mod.id || "unnamed"}</span><span class="tag">${mod.enabled === false ? "OFF" : "ON"}</span></div>
-      <div class="settings-grid">
-        <label class="check"><input data-mod-enabled="${mod.id}" type="checkbox" ${mod.enabled === false ? "" : "checked"}> Wlaczony</label>
-        <label>Priorytet <input data-mod-priority="${mod.id}" type="number" value="${mod.priority ?? 100}"></label>
-      </div>
-      <div class="menu-actions left"><button data-mod-remove="${mod.id}" class="secondary">Usun</button></div>
-    `;
-    hud.modManagerList.appendChild(item);
+    const category = String(mod.category || "custom");
+    if (!categories.has(category)) categories.set(category, []);
+    categories.get(category).push(mod);
+  }
+  for (const [category, categoryMods] of categories) {
+    const heading = document.createElement("div");
+    heading.className = "mod-category-title";
+    heading.textContent = category;
+    hud.modManagerList.appendChild(heading);
+    for (const mod of categoryMods) {
+      const item = document.createElement("div");
+      item.className = "mission-item";
+      item.innerHTML = `
+        <div class="mission-title"><span>${escapeHtml(mod.name || mod.id || "unnamed")}</span><span class="tag">${mod.enabled === false ? "OFF" : "ON"}</span></div>
+        <div class="muted">${escapeHtml(mod.description || `Kategoria: ${category}`)}</div>
+        <div class="settings-grid">
+          <label class="check"><input data-mod-enabled="${escapeHtml(mod.id)}" type="checkbox" ${mod.enabled === false ? "" : "checked"}> Wlaczony</label>
+          <label>Priorytet <input data-mod-priority="${escapeHtml(mod.id)}" type="number" value="${Number(mod.priority ?? 100)}"></label>
+        </div>
+        <div class="menu-actions left"><button data-mod-remove="${escapeHtml(mod.id)}" class="secondary">Usun z profilu</button></div>
+      `;
+      hud.modManagerList.appendChild(item);
+    }
+  }
+  if (removedBundled.length) {
+    const heading = document.createElement("div");
+    heading.className = "mod-category-title";
+    heading.textContent = "default / usuniete";
+    hud.modManagerList.appendChild(heading);
+    for (const mod of removedBundled) {
+      const item = document.createElement("div");
+      item.className = "mission-item";
+      item.innerHTML = `<div class="mission-title"><span>${escapeHtml(mod.name)}</span><span class="tag">DOSTEPNY</span></div><div class="menu-actions left"><button data-mod-restore="${escapeHtml(mod.id)}">Dodaj ponownie</button></div>`;
+      hud.modManagerList.appendChild(item);
+    }
   }
   hud.modManagerList.querySelectorAll("[data-mod-enabled]").forEach((input) => {
     input.addEventListener("change", () => {
@@ -3368,7 +3521,23 @@ function renderModManager() {
   hud.modManagerList.querySelectorAll("[data-mod-remove]").forEach((button) => {
     button.addEventListener("click", () => {
       const index = loadedMods.findIndex((item) => item.id === button.dataset.modRemove);
-      if (index >= 0) loadedMods.splice(index, 1);
+      if (index >= 0) {
+        const [removed] = loadedMods.splice(index, 1);
+        if (removed.bundled || bundledDefaultMods.some((mod) => mod.id === removed.id)) {
+          if (!removedDefaultModIds.includes(removed.id)) removedDefaultModIds.push(removed.id);
+        }
+      }
+      saveConfig();
+      renderAssetList();
+      renderModManager();
+    });
+  });
+  hud.modManagerList.querySelectorAll("[data-mod-restore]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.dataset.modRestore;
+      const index = removedDefaultModIds.indexOf(id);
+      if (index >= 0) removedDefaultModIds.splice(index, 1);
+      installBundledDefaultMods();
       saveConfig();
       renderAssetList();
       renderModManager();
@@ -3421,7 +3590,12 @@ async function importMod() {
       showMessage("Script mod ma blad");
     }
   }
-  loadedMods.push({ id: mod.id || `mod-${Date.now().toString(36)}`, enabled: mod.enabled !== false, priority: Number(mod.priority ?? 100), ...mod });
+  const normalized = normalizeMod(mod, mod.category || "custom");
+  const existingIndex = loadedMods.findIndex((item) => item.id === normalized.id);
+  if (existingIndex >= 0) loadedMods.splice(existingIndex, 1, normalized);
+  else loadedMods.push(normalized);
+  const removedIndex = removedDefaultModIds.indexOf(normalized.id);
+  if (removedIndex >= 0) removedDefaultModIds.splice(removedIndex, 1);
   safeApplyMod(mod);
   if (window.potatoNative?.saveMod) await window.potatoNative.saveMod(mod.name || mod.id || "mod", mod);
   renderAssetList();
@@ -3524,6 +3698,7 @@ function resetRoundPositions() {
   effects.length = 0;
   player.useLatch = false;
   state.activeSpecial = "";
+  state.grenadePrime = null;
   leaveSpectator();
   state.roundTime = 115;
   state.freezeTime = 5;
@@ -3867,7 +4042,9 @@ function buyItem(type, id) {
     const grenade = grenadeCatalog[id];
     if (!grenade || !sideAllows(grenade)) return;
     const count = player.grenades[grenade.name] || 0;
-    if (count >= 2) return showMessage("Limit granatow");
+    const totalGrenades = Object.values(player.grenades).reduce((sum, amount) => sum + Number(amount || 0), 0);
+    const typeLimit = grenade.key === "flash" ? 2 : 1;
+    if (totalGrenades >= 4 || count >= typeLimit) return showMessage("Limit granatow");
     if (player.money < grenade.price) return showMessage("Za malo kasy");
     player.money -= grenade.price;
     player.grenades[grenade.name] = count + 1;
@@ -4002,6 +4179,7 @@ function dropOwnedWeaponCategory(category, exceptId = -1) {
 function dropActiveWeapon() {
   if (!state.running || state.overlayOpen || !player.alive) return;
   if (isBombSelected()) return showMessage("Bomby nie wyrzucasz jak broni");
+  if (isGrenadeSelected()) return showMessage("Granat wybierz ponownie albo rzuc LPM");
   dropWeapon(activeWeapon());
 }
 
@@ -4051,23 +4229,51 @@ function pickupDroppedBomb() {
   return true;
 }
 
-function throwGrenade() {
-  const entry = Object.entries(player.grenades).find(([, count]) => count > 0);
-  if (!entry) return showMessage("Brak granatow");
-  const [name] = entry;
-  const catalog = grenadeCatalog.find((g) => g.name === name);
+function beginGrenadeAim() {
+  const catalog = selectedGrenade();
+  if (!catalog || state.phase !== "live" || state.overlayOpen) return false;
+  if (!state.grenadePrime) {
+    state.grenadePrime = { name: catalog.name, startedAt: performance.now(), jumpThrowQueued: false };
+    showMessage(`${catalog.name}: pusc LPM aby rzucic`);
+  }
+  return true;
+}
+
+function throwGrenade(jumpThrow = false) {
+  const name = state.grenadePrime?.name || selectedGrenadeName();
+  const catalog = grenadeCatalog.find((grenade) => grenade.name === name);
+  if (!catalog || (player.grenades[name] || 0) <= 0) {
+    state.grenadePrime = null;
+    return false;
+  }
+  const launchAngle = player.angle;
+  const horizontalSpeed = jumpThrow ? 650 : 570;
   player.grenades[name] -= 1;
   grenades.push({
-    x: player.x,
-    y: player.y,
-    vx: Math.cos(player.angle) * 520,
-    vy: Math.sin(player.angle) * 520,
-    timer: catalog.key === "flash" ? 0.7 : 1.2,
+    x: player.x + Math.cos(launchAngle) * (player.r + 8),
+    y: player.y + Math.sin(launchAngle) * (player.r + 8),
+    z: player.eyeHeight + player.jumpHeight,
+    vx: Math.cos(launchAngle) * horizontalSpeed,
+    vy: Math.sin(launchAngle) * horizontalSpeed,
+    vz: jumpThrow ? 300 : 190,
+    timer: 1.5,
     type: catalog.key,
     color: catalog.color,
+    jumpThrow,
   });
+  state.grenadePrime = null;
+  if ((player.grenades[name] || 0) <= 0) state.activeSpecial = "";
   emitAudioEvent("grenadeThrow", { x: player.x, y: player.y, type: catalog.key });
+  advanceMission("grenade", 1);
+  showMessage(jumpThrow ? `${catalog.name}: JUMP THROW` : `${catalog.name}: rzut`);
   renderShop();
+  updateHud();
+  return true;
+}
+
+function releaseGrenadeAim() {
+  if (!state.grenadePrime) return false;
+  return throwGrenade(isPerspectiveMode() && player.jumpHeight > 0);
 }
 
 function explodeGrenade(grenade) {
@@ -4176,7 +4382,7 @@ function shoot(owner, angle, weapon, hostile = false) {
 }
 
 function reload() {
-  if (isBombSelected()) return;
+  if (isBombSelected() || isGrenadeSelected()) return;
   const weapon = activeWeapon();
   if (weapon.melee) return;
   if (weapon.reloading > 0 || weapon.ammo === weapon.magSize || weapon.currentReserve <= 0) return;
@@ -4212,6 +4418,7 @@ function updatePlayer(dt) {
     player.eyeHeight += (targetEyeHeight - player.eyeHeight) * clamp(dt * 14, 0, 1);
     if (player.crouched) speed *= 0.54;
     player.dash = 0;
+    if (state.grenadePrime?.jumpThrowQueued && player.jumpHeight > 0) throwGrenade(true);
   } else {
     player.jumpHeight = 0;
     player.verticalVelocity = 0;
@@ -4246,7 +4453,7 @@ function updatePlayer(dt) {
       emitAudioEvent("reloadDone", { x: player.x, y: player.y, weapon }, false);
     }
   }
-  if (!isBombSelected() && mouse.down && (weapon.automatic || mouse.clicked)) shoot(player, player.angle, weapon);
+  if (!isBombSelected() && !isGrenadeSelected() && mouse.down && (weapon.automatic || mouse.clicked)) shoot(player, player.angle, weapon);
   mouse.clicked = false;
   player.invuln = Math.max(0, player.invuln - dt);
 }
@@ -4341,6 +4548,7 @@ function enterSpectator() {
   state.spectator.takeoverLatch = true;
   mouse.down = false;
   mouse.clicked = false;
+  state.grenadePrime = null;
   player.jumpHeight = 0;
   player.verticalVelocity = 0;
   player.crouched = false;
@@ -4462,13 +4670,27 @@ function updateBullets(dt) {
 function updateGrenades(dt) {
   for (let i = grenades.length - 1; i >= 0; i -= 1) {
     const g = grenades[i];
+    const previousX = g.x;
+    const previousY = g.y;
     g.x += g.vx * dt;
     g.y += g.vy * dt;
-    g.vx *= 0.965;
-    g.vy *= 0.965;
+    g.z = Math.max(0, Number(g.z || 0) + Number(g.vz || 0) * dt);
+    g.vz = Number(g.vz || 0) - 620 * dt;
+    const drag = Math.pow(0.965, dt * 60);
+    g.vx *= drag;
+    g.vy *= drag;
     if (pointInObstacle(g.x, g.y)) {
+      g.x = previousX;
+      g.y = previousY;
       g.vx *= -0.35;
       g.vy *= -0.35;
+    }
+    if (g.z <= 0 && g.vz < 0) {
+      g.z = 0;
+      g.vz *= -0.34;
+      g.vx *= 0.72;
+      g.vy *= 0.72;
+      if (Math.abs(g.vz) < 24) g.vz = 0;
     }
     g.timer -= dt;
     if (g.timer <= 0) {
@@ -5177,6 +5399,21 @@ function drawFpsStatusStrip(w, h) {
   ctx.fillText("3D FPS", 67, h - 26);
 }
 
+function drawEnabledModOverlays() {
+  if (!enabledMod("fps_info") || !state.running) return;
+  const label = `${runtimeStats.fps || 0} FPS`;
+  ctx.save();
+  ctx.font = "700 11px Arial";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  const width = Math.ceil(ctx.measureText(label).width) + 12;
+  ctx.fillStyle = "rgba(10,12,10,0.68)";
+  ctx.fillRect(10, 58, width, 20);
+  ctx.fillStyle = "#f2f0df";
+  ctx.fillText(label, 16, 63);
+  ctx.restore();
+}
+
 function projectWorldToFps(wx, wy, fov, depth, colW, horizon, verticalOffset = 0, occlusionPad = 70) {
   const d = dist(player.x, player.y, wx, wy);
   let rel = angleTo(player.x, player.y, wx, wy) - player.angle;
@@ -5217,7 +5454,7 @@ function draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon) {
     ctx.globalAlpha = 1;
   }
   for (const g of grenades) {
-    const p = projectWorldToFps(g.x, g.y, fov, depth, colW, horizon, -12, 55);
+    const p = projectWorldToFps(g.x, g.y, fov, depth, colW, horizon, -12 - Number(g.z || 0) * 3.2, 55);
     if (!p) continue;
     const size = clamp((h * 14) / Math.max(1, p.d), 5, 18);
     ctx.fillStyle = g.color;
@@ -5367,6 +5604,27 @@ function drawWeaponMuzzleFlash(x, y, scale) {
 }
 
 function draw3dWeapon(w, h) {
+  const grenade = selectedGrenade();
+  if (grenade) {
+    const scale = clamp(w / 1280, 0.78, 1.15);
+    const x = w / 2 + 80 * scale;
+    const y = h - 122 * scale + camera.shake * 1.2;
+    drawWeaponHands(x, y, scale);
+    ctx.fillStyle = grenade.color;
+    ctx.beginPath();
+    ctx.ellipse(x + 54 * scale, y + 34 * scale, 30 * scale, 42 * scale, -0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#171a16";
+    ctx.lineWidth = 4 * scale;
+    ctx.stroke();
+    drawWeaponPart(x + 38 * scale, y - 4 * scale, 34 * scale, 18 * scale, "#444a42");
+    ctx.strokeStyle = state.grenadePrime ? "#e8d46a" : "#b9bcae";
+    ctx.lineWidth = 5 * scale;
+    ctx.beginPath();
+    ctx.arc(x + 76 * scale, y + 2 * scale, 14 * scale, 0, Math.PI * 2);
+    ctx.stroke();
+    return;
+  }
   if (isBombSelected()) {
     const scale = clamp(w / 1280, 0.78, 1.15);
     const x = w / 2 + 84 * scale;
@@ -5432,6 +5690,7 @@ function draw3dWeapon(w, h) {
 
 function updateHud() {
   const weapon = activeWeapon();
+  const grenade = selectedGrenade();
   const spectated = state.spectator.active ? currentSpectatorTarget() : null;
   const living = state.spectator.active ? livingTeamBots() : [];
   hud.mode.textContent = state.gameMode.toUpperCase();
@@ -5444,8 +5703,8 @@ function updateHud() {
   const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
   hud.timer.textContent = `${Math.floor(time / 60)}:${String(Math.max(0, Math.ceil(time % 60))).padStart(2, "0")}`;
   hud.bomb.textContent = state.bomb.status === "planted" ? `${tr("bomb")} ${state.bomb.site} ${Math.ceil(state.bomb.timer)}s` : playerHasBomb() ? `${tr("bomb")} ${isBombSelected() ? "READY" : tr("you")}` : state.bomb.status === "dropped" ? `${tr("bomb")} DROP` : `${tr("bomb")} --`;
-  hud.weaponName.textContent = isBombSelected() ? "C4 Bomb" : weapon.burstCapable ? `${weapon.name} ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}` : weapon.name;
-  hud.ammo.textContent = isBombSelected() ? "HOLD E" : weapon.melee ? "MELEE" : weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
+  hud.weaponName.textContent = isBombSelected() ? "C4 Bomb" : grenade ? grenade.name : weapon.burstCapable ? `${weapon.name} ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}` : weapon.name;
+  hud.ammo.textContent = isBombSelected() ? "HOLD E" : grenade ? `${player.grenades[grenade.name] || 0} / ${state.grenadePrime ? "RELEASE LMB" : "HOLD LMB"}` : weapon.melee ? "MELEE" : weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
 }
 
 function playerInsideEditorTrigger(trigger) {
@@ -5520,6 +5779,13 @@ function tick(now) {
   }
   const dt = Math.min(0.033, (now - last) / 1000 || 0);
   last = now;
+  runtimeStats.frames += 1;
+  const fpsElapsed = now - runtimeStats.sampleStarted;
+  if (fpsElapsed >= 500) {
+    runtimeStats.fps = Math.round((runtimeStats.frames * 1000) / fpsElapsed);
+    runtimeStats.frames = 0;
+    runtimeStats.sampleStarted = now;
+  }
   if (state.running && !state.paused) {
     updateRoundRules(dt);
     updatePlayer(dt);
@@ -5532,6 +5798,7 @@ function tick(now) {
     pollServerAudioEvents();
     try {
       renderGameView();
+      drawEnabledModOverlays();
     } catch (error) {
       console.error(error);
       showMessage("Blad renderu - przelaczam na 2D");
@@ -5582,19 +5849,24 @@ function closePanels() {
 }
 
 function equipHotkey(n) {
-  selectInventoryItem(carriedItems()[n - 1]);
+  const slot = n === 0 ? 10 : n;
+  selectInventoryItem(carriedItems()[slot - 1]);
 }
 
 function cycleWeapon(direction = 1) {
   const items = carriedItems();
   if (items.length < 2) return;
-  const current = items.findIndex((item) => item.type === "bomb" ? isBombSelected() : (!isBombSelected() && item.weapon.id === player.weaponId));
+  const current = items.findIndex((item) => {
+    if (item.type === "bomb") return isBombSelected();
+    if (item.type === "grenade") return item.grenade.name === selectedGrenadeName();
+    return !isBombSelected() && !isGrenadeSelected() && item.weapon.id === player.weaponId;
+  });
   const index = current >= 0 ? current : 0;
   selectInventoryItem(items[(index + direction + items.length) % items.length]);
 }
 
 function toggleWeaponMode() {
-  if (isBombSelected()) return false;
+  if (isBombSelected() || isGrenadeSelected()) return false;
   const weapon = activeWeapon();
   if (!weapon.burstCapable) return false;
   weapon.fireMode = weapon.fireMode === "burst" ? "semi" : "burst";
@@ -5627,6 +5899,7 @@ window.addEventListener("keydown", (event) => {
   }
   if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.crouch, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev, "Tab"].includes(event.code)) event.preventDefault();
   keys.add(event.code);
+  if (event.code === bindings.dash && isPerspectiveMode() && state.grenadePrime) state.grenadePrime.jumpThrowQueued = true;
   if (event.code === "Escape") closePanels();
   if (event.code === "Tab" && showStoryObjective()) return;
   if (event.code === bindings.shop) togglePanel(hud.shopPanel);
@@ -5645,7 +5918,7 @@ window.addEventListener("keydown", (event) => {
   }
   if (event.code === bindings.reload) reload();
   if (event.code === bindings.drop) dropActiveWeapon();
-  if (event.code === bindings.grenade) { throwGrenade(); advanceMission("grenade", 1); }
+  if (event.code === bindings.grenade) selectNextGrenade();
   if (event.code.startsWith("Digit")) equipHotkey(Number(event.code.slice(5)));
 });
 window.addEventListener("keyup", (event) => keys.delete(event.code));
@@ -5705,6 +5978,11 @@ canvas.addEventListener("mousedown", async (event) => {
     event.preventDefault();
     return;
   }
+  if (isGrenadeSelected()) {
+    beginGrenadeAim();
+    event.preventDefault();
+    return;
+  }
   mouse.down = true;
   mouse.clicked = true;
   try { await canvas.requestPointerLock(); } catch { /* optional */ }
@@ -5717,7 +5995,10 @@ canvas.addEventListener("wheel", (event) => {
   event.preventDefault();
   cycleWeapon(event.deltaY > 0 ? 1 : -1);
 }, { passive: false });
-window.addEventListener("mouseup", () => { mouse.down = false; });
+window.addEventListener("mouseup", (event) => {
+  mouse.down = false;
+  if (event.button === 0) releaseGrenadeAim();
+});
 
 document.querySelectorAll(".close-panel").forEach((button) => button.addEventListener("click", closePanels));
 hud.openSettings.addEventListener("click", () => togglePanel(hud.settingsPanel));
@@ -5923,20 +6204,25 @@ document.querySelectorAll("[data-touch-action]").forEach((button) => {
   const down = (event) => {
     event.preventDefault();
     if (action === "fire") {
-      mouse.down = true;
-      mouse.clicked = true;
+      if (!beginGrenadeAim()) {
+        mouse.down = true;
+        mouse.clicked = true;
+      }
     } else if (action === "reload") {
       reload();
     } else if (action === "grenade") {
-      throwGrenade();
-      advanceMission("grenade", 1);
+      selectNextGrenade();
     } else {
+      if (action === "dash" && isPerspectiveMode() && state.grenadePrime) state.grenadePrime.jumpThrowQueued = true;
       touchActions.add(action);
     }
   };
   const up = (event) => {
     event.preventDefault();
-    if (action === "fire") mouse.down = false;
+    if (action === "fire") {
+      mouse.down = false;
+      releaseGrenadeAim();
+    }
     touchActions.delete(action);
   };
   button.addEventListener("pointerdown", down);
@@ -5949,6 +6235,8 @@ try {
   window.potatoNative?.log?.("game:boot", "Starting game renderer boot");
   makeWeapons();
   loadConfig();
+  if (installBundledDefaultMods()) saveConfig();
+  loadNativeMods().catch((error) => window.potatoNative?.log?.("mods", "Native mod scan failed", error?.stack || error?.message || String(error)));
   loadUserMapsFromStorage();
   resize();
   renderMissions();

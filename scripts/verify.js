@@ -48,14 +48,14 @@ const defaultConfig = JSON.parse(fs.readFileSync("configs/default-config.json", 
 const gameIdCount = verifyDomIds(gameJs, gameHtml, "Game");
 const editorIdCount = verifyDomIds(editorJs, editorHtml, "Studio");
 
-if (packageJson.version !== "1.2.0-beta") fail(`Unexpected package version: ${packageJson.version}`);
+if (packageJson.version !== "1.2.0") fail(`Unexpected package version: ${packageJson.version}`);
 if (packageLock.version !== packageJson.version || packageLock.packages?.[""]?.version !== packageJson.version) {
   fail("package-lock.json version does not match package.json");
 }
 
 for (const script of [
   "start", "start:safe", "start:editor", "serve", "verify", "build:editor-vendor", "build:single",
-  "package:offline", "package:compat", "phone:sync", "build:win", "build:win:compat", "build:linux", "build:linux:compat",
+  "package:offline", "package:compat", "package:beta-final", "phone:sync", "build:win", "build:win:compat", "build:linux", "build:linux:compat",
 ]) {
   if (!packageJson.scripts?.[script]) fail(`package.json is missing script: ${script}`);
 }
@@ -69,10 +69,11 @@ requireFiles([
   "main.js", "preload.js", "server.js", "game/index.html", "game/styles.css", "game/game.js",
   "game/editor.html", "game/editor.css", "game/editor.js", "game/vendor/three.min.js", "game/vendor/THREE-LICENSE.txt",
   "DEV-tools/three-vendor-entry.js", "DEV-tools/README.md", "DEV-tools/mod-template.json",
-  "scripts/package-offline.js", "scripts/build-single-html.js", "scripts/clean-editor-vendor.js", "scripts/sync-phone-assets.js", "scripts/package-compat.js",
+  "scripts/package-offline.js", "scripts/build-single-html.js", "scripts/clean-editor-vendor.js", "scripts/sync-phone-assets.js", "scripts/package-compat.js", "scripts/package-beta-final.js",
   "PotatoStrike.html", "PotatoStrike.bat", "PotatoStrike-Window.bat", "PotatoStrike-Studio.bat",
-  "README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md", "PATCH-NOTES-1.2-BETA.md", "SANDBOX-EXAMPLES-1.2-BETA.md",
+  "README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md", "PATCH-NOTES-1.2-BETA.md", "PATCH-NOTES-1.2-FINAL.md", "SANDBOX-EXAMPLES-1.2-BETA.md",
   "mods/README.md", "mods/examples/README.md", "mods/examples/1.2-beta/README.md",
+  "mods/default/fps_info/mod.json", "mods/default/fps_info/README.md",
   "mods/examples/1.2-beta/aim-lab-bunker.json", "mods/examples/1.2-beta/extraction-sweep.json", "mods/examples/1.2-beta/micro-royale.json",
   ".github/workflows/potato-strike-1-2-beta.yml", ".github/workflows/pages.yml",
   "phone/README.md", "phone/android/README.md", "phone/android/settings.gradle", "phone/android/build.gradle",
@@ -111,8 +112,12 @@ for (const file of [
   }
 }
 
-for (const key of ["type", "configId", "userMaps", "storyMissions", "customTextures", "mods", "settings", "bindings", "nick", "playerId"]) {
+for (const key of ["type", "configId", "userMaps", "storyMissions", "customTextures", "mods", "removedDefaultMods", "settings", "bindings", "nick", "playerId"]) {
   if (!(key in defaultConfig)) fail(`default config missing ${key}`);
+}
+const defaultFpsMod = JSON.parse(fs.readFileSync("mods/default/fps_info/mod.json", "utf8"));
+if (defaultFpsMod.id !== "default.fps_info" || defaultFpsMod.category !== "default" || defaultFpsMod.enabled !== false || defaultFpsMod.builtin !== "fps_info") {
+  fail("default fps_info mod manifest is invalid");
 }
 
 const singleHtml = fs.readFileSync("PotatoStrike.html", "utf8");
@@ -122,7 +127,7 @@ if (!singleHtml.includes("<style>") || !singleHtml.includes("<script>") || singl
 
 requireSnippets(mainJs, [
   "config:save", "playersDir", "profile.json", "assets.json", "crashReporter", "showCrashRecoveryWindow",
-  "POTATO_SAFE_OFFLINE", "PotatoStrike.html", "log:renderer",
+  "POTATO_SAFE_OFFLINE", "PotatoStrike.html", "log:renderer", "listModManifests", 'entry.name.toLowerCase() !== "mod.json"',
 ], "offline runtime feature");
 requireSnippets(preloadJs, ["saveConfig", "sendRendererLog", "log:renderer"], "preload bridge feature");
 
@@ -133,6 +138,8 @@ requireSnippets(gameJs, [
   "takeoverBot", "renderModManager", "sortedMods", "createPlayerProfile", "openStandaloneEditor",
   "normalizeGraphicsMode", "renderGameView", "camera.pitch", "cycleWeapon", "drawCustomCrosshair",
   "jumpHeight", "verticalVelocity", 'crouch: "ControlLeft"', "mobileLook",
+  "bundledDefaultMods", "installBundledDefaultMods", "loadNativeMods", "drawEnabledModOverlays",
+  "selectedGrenade", "beginGrenadeAim", "releaseGrenadeAim", "jumpThrowQueued", "totalGrenades",
   "obstacleLocalPoint", "pointInMapObstacle", "autoTextureForHit", "drawPotatoWallColumn",
   "const objectHeight = clamp(Number(wall.z || 96)", "const elevation = clamp(Number(wall.elevation || 0)",
   "editorUnitsForSide", "editorWaypointsForUnit", "spawnEditorPickups", "updateEditorTriggers",
@@ -165,25 +172,28 @@ requireSnippets(editorCss, ["#studio-viewport-3d", ".studio-viewport-toolbar", "
 
 const workflow = fs.readFileSync(".github/workflows/potato-strike-1-2-beta.yml", "utf8");
 requireSnippets(workflow, [
-  "Potato Strike 1.2 BETA Compatibility Builds", "workflow_dispatch", "tags:", '"v*"', "concurrency:",
-  "build:win:compat", "build:linux:compat", "PotatoStrike-1.2-BETA.apk",
-  "PotatoStrikeMini-1.2-BETA-official.fap", "PotatoStrikeMini-1.2-BETA-momentum.fap",
-  "PotatoStrikeMini-1.2-BETA-unleashed.fap", "PotatoStrike-1.2-BETA.zip", "potato-strike-1.2-beta-folder",
+  "Potato Strike 1.2 FINAL Compatibility Builds", "workflow_dispatch", "tags:", '"v*"', "concurrency:",
+  "build:win:compat", "build:linux:compat", "PotatoStrike-1.2-FINAL.apk",
+  "PotatoStrikeMini-1.2-FINAL-official.fap", "PotatoStrikeMini-1.2-FINAL-momentum.fap",
+  "PotatoStrikeMini-1.2-FINAL-unleashed.fap", "PotatoStrike-1.2-FINAL.zip", "potato-strike-1.2-final-folder",
+  "PotatoStrike-1.2-BETA-FINAL.zip", "potato-strike-1.2-beta-final-compressed",
 ], "1.2 compatibility workflow feature");
 
 const pagesWorkflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
 requireSnippets(pagesWorkflow, [
   "paths:", "PotatoStrike.html", "test -f PotatoStrike.html", "cp PotatoStrike.html _site/index.html",
-  "PATCH-NOTES-1.2-BETA.md", "touch _site/.nojekyll", "pages-info.html", "not the repository README",
+  "PATCH-NOTES-1.2-FINAL.md", "touch _site/.nojekyll", "pages-info.html", "not the repository README",
 ], "GitHub Pages feature");
 for (const forbidden of ["npm ci", "npm run build:single", "actions/setup-node"]) {
   if (pagesWorkflow.includes(forbidden)) fail(`Pages workflow must stay cheap and exclude: ${forbidden}`);
 }
 
 const packageScript = fs.readFileSync("scripts/package-compat.js", "utf8");
-requireSnippets(packageScript, ["PotatoStrike-1.2-BETA", "PATCH-NOTES-1.2-BETA.md", "PotatoStrike-1.2-BETA.apk"], "release packager feature");
+requireSnippets(packageScript, ["PotatoStrike-1.2-FINAL", "PATCH-NOTES-1.2-FINAL.md", "PotatoStrike-1.2-FINAL.apk"], "release packager feature");
+const betaPackageScript = fs.readFileSync("scripts/package-beta-final.js", "utf8");
+requireSnippets(betaPackageScript, ["PotatoStrike-1.2-BETA-FINAL", "CompressionLevel Optimal", "mods", "game"], "compressed beta packager feature");
 
 console.log(`Game DOM IDs OK: ${gameIdCount}`);
 console.log(`Studio DOM IDs OK: ${editorIdCount}`);
 console.log(`Studio 3D vendor OK: ${(vendorSize / 1024).toFixed(1)} KiB`);
-console.log("Potato Strike 1.2 BETA runtime, sandbox, packages and workflows OK");
+console.log("Potato Strike 1.2 FINAL runtime, sandbox, packages and workflows OK");

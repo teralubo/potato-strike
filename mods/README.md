@@ -1,5 +1,21 @@
 # Potato Strike Mods
 
+## Folder categories
+
+Each first-level folder inside `mods/` is a category shown in the in-game mod manager. Put every mod in its own folder with a `mod.json` manifest:
+
+```text
+mods/
+  default/
+    fps_info/
+      mod.json
+  my-category/
+    my-mod/
+      mod.json
+```
+
+The included `default/fps_info` mod is disabled by default. It can be enabled, disabled, prioritized, removed from a profile and restored from the mod manager. Changing `enabled` in its manifest controls the initial state for a new profile; an existing profile keeps its own GUI choice.
+
 Drop JSON mod files here for the offline/Electron version.
 
 Supported JSON fields:

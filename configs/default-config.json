@@ -58,5 +58,18 @@
   "userMaps": [],
   "storyMissions": [],
   "customTextures": [],
-  "mods": []
+  "mods": [
+    {
+      "id": "default.fps_info",
+      "name": "fps_info",
+      "category": "default",
+      "version": "1.0.0",
+      "description": "Shows a small FPS counter in the upper-left corner during gameplay.",
+      "builtin": "fps_info",
+      "enabled": false,
+      "priority": 20,
+      "bundled": true
+    }
+  ],
+  "removedDefaultMods": []
 }
