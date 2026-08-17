@@ -489,6 +489,34 @@
         <button id="pause-menu" class="secondary">Menu glowne</button>
       </div>
     </div>
+    <div class="panel hidden" id="lan-lobby-panel" aria-label="Poczekalnia LAN">
+      <div class="panel-head">
+        <div>
+          <div class="muted" id="lan-lobby-kicker">serwer lokalny</div>
+          <h2 id="lan-lobby-title">Poczekalnia LAN</h2>
+        </div>
+        <button id="lan-lobby-leave" class="secondary">Opusc lobby</button>
+      </div>
+      <div class="lobby-summary">
+        <div><span id="lan-lobby-room-label">Pokoj</span><strong id="lan-lobby-room">--</strong></div>
+        <div><span id="lan-lobby-status-label">Status</span><strong id="lan-lobby-status">--</strong></div>
+        <div><span id="lan-lobby-owner-label">Dowodca</span><strong id="lan-lobby-owner">--</strong></div>
+      </div>
+      <div id="lan-lobby-players" class="lan-player-list"></div>
+      <div class="settings-grid">
+        <label>
+          Przekaz dowodzenie
+          <select id="lan-transfer-target"></select>
+        </label>
+      </div>
+      <div class="menu-actions left">
+        <button id="lan-lobby-start">Rozpocznij mecz</button>
+        <button id="lan-lobby-transfer" class="secondary">Przekaz dowodce</button>
+        <button id="lan-lobby-settings" class="secondary">Ustawienia serwera</button>
+        <button id="lan-lobby-refresh" class="secondary">Odswiez</button>
+      </div>
+      <p class="panel-note" id="lan-lobby-note">Dowodca ustawia serwer i rozpoczyna mecz, gdy gracze sa gotowi.</p>
+    </div>
     <div class="panel hidden" id="network-panel" aria-label="Gra sieciowa">
       <div class="panel-head">
         <div>
@@ -681,9 +709,18 @@
               <option value="3d">3D FPS</option>
             </select>
           </label>
+          <label>
+            Celowanie PPM (BOTY)
+            <select id="menu-aim-mode">
+              <option value="sights" selected>Przyrzady celownicze / scope</option>
+              <option value="zoom">Tylko przyblizenie + klasyczny celownik</option>
+              <option value="none">Brak akcji</option>
+            </select>
+          </label>
         </div>
         <div class="menu-actions">
           <button id="start">Graj</button>
+          <button id="create-lan" class="secondary">Utworz serwer LAN</button>
           <button id="quick-editor">EDYTOR</button>
           <button id="open-profile" class="secondary">Profil</button>
           <button id="open-mods" class="secondary">Mody</button>

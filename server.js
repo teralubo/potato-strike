@@ -15,6 +15,7 @@ const rooms = new Map();
 const audioEvents = new Map();
 const roomOwners = new Map();
 const roomConfigs = new Map();
+const roomLobbyState = new Map();
 
 function readJson(req, callback) {
   let body = "";
@@ -38,8 +39,49 @@ function activeRoomPlayers(room) {
   return players;
 }
 
+function cleanRoom(value) {
+  return String(value || "potato-lan").slice(0, 80);
+}
+
+function cleanPlayer(payload = {}) {
+  return {
+    playerId: String(payload.playerId || payload.name || "Potato").slice(0, 80),
+    name: String(payload.name || "Potato").slice(0, 40),
+    team: payload.team === "CT" ? "CT" : "T",
+    time: Date.now(),
+  };
+}
+
+function upsertRoomPlayer(room, payload) {
+  const player = cleanPlayer(payload);
+  const next = activeRoomPlayers(room).filter((entry) => entry.playerId !== player.playerId);
+  next.push(player);
+  rooms.set(room, next);
+  if (!roomOwners.get(room)) roomOwners.set(room, player.playerId);
+  return player;
+}
+
+function lobbySnapshot(room) {
+  const players = activeRoomPlayers(room);
+  const lobby = roomLobbyState.get(room) || { status: "waiting", startedAt: 0 };
+  return {
+    room,
+    players,
+    ownerId: roomOwners.get(room) || "",
+    config: roomConfigs.get(room) || null,
+    status: lobby.status || "waiting",
+    startedAt: Number(lobby.startedAt) || 0,
+  };
+}
+
 function send(res, status, body, type = "text/plain; charset=utf-8") {
-  res.writeHead(status, { "content-type": type, "cache-control": "no-store" });
+  res.writeHead(status, {
+    "content-type": type,
+    "cache-control": "no-store",
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET,POST,OPTIONS",
+    "access-control-allow-headers": "content-type",
+  });
   res.end(body);
 }
 
@@ -56,20 +98,62 @@ function serveFile(req, res) {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  if (req.method === "OPTIONS") return send(res, 204, "");
   if (url.pathname === "/api/rooms" && req.method === "GET") {
     return send(res, 200, JSON.stringify([...rooms.entries()]), "application/json; charset=utf-8");
   }
   if (url.pathname === "/api/heartbeat" && req.method === "POST") {
     readJson(req, (error, payload) => {
       if (error) return send(res, 400, "Bad heartbeat");
-      const room = payload.room || "potato-lan";
-      const playerId = String(payload.playerId || payload.name || "Potato").slice(0, 80);
-      const list = activeRoomPlayers(room);
-      const next = list.filter((player) => player.playerId !== playerId);
-      next.push({ playerId, name: payload.name || "Potato", team: payload.team || "T", time: Date.now() });
-      rooms.set(room, next);
-      if (!roomOwners.get(room)) roomOwners.set(room, playerId);
-      send(res, 200, JSON.stringify({ room, players: next, ownerId: roomOwners.get(room), config: roomConfigs.get(room) || null }), "application/json; charset=utf-8");
+      const room = cleanRoom(payload.room);
+      upsertRoomPlayer(room, payload);
+      send(res, 200, JSON.stringify(lobbySnapshot(room)), "application/json; charset=utf-8");
+    });
+    return;
+  }
+  if (url.pathname === "/api/lobby" && req.method === "GET") {
+    const room = cleanRoom(url.searchParams.get("room"));
+    return send(res, 200, JSON.stringify(lobbySnapshot(room)), "application/json; charset=utf-8");
+  }
+  if (url.pathname === "/api/lobby" && req.method === "POST") {
+    readJson(req, (error, payload) => {
+      if (error) return send(res, 400, "Bad lobby request");
+      const room = cleanRoom(payload.room);
+      const action = String(payload.action || "join");
+      const player = cleanPlayer(payload);
+      const active = activeRoomPlayers(room);
+      const ownerId = roomOwners.get(room) || "";
+      if (!["create", "join", "leave", "transfer", "start"].includes(action)) return send(res, 400, "Unknown lobby action");
+      if (action === "create" && ownerId && ownerId !== player.playerId && active.length) {
+        return send(res, 409, "LAN room is already owned");
+      }
+      if (action === "leave") {
+        rooms.set(room, active.filter((entry) => entry.playerId !== player.playerId));
+        if (ownerId === player.playerId) roomOwners.set(room, rooms.get(room)[0]?.playerId || "");
+        if (!rooms.get(room).length) {
+          roomOwners.delete(room);
+          roomConfigs.delete(room);
+          roomLobbyState.delete(room);
+        }
+        return send(res, 200, JSON.stringify(lobbySnapshot(room)), "application/json; charset=utf-8");
+      }
+      if (action === "transfer" && ownerId !== player.playerId) return send(res, 403, "Only lobby owner can transfer command");
+      if (action === "start" && ownerId !== player.playerId) return send(res, 403, "Only lobby owner can start match");
+      upsertRoomPlayer(room, payload);
+      if (action === "create") {
+        roomOwners.set(room, player.playerId);
+        roomLobbyState.set(room, { status: "waiting", startedAt: 0 });
+      }
+      if (action === "transfer") {
+        const targetId = String(payload.targetId || "").slice(0, 80);
+        if (!activeRoomPlayers(room).some((entry) => entry.playerId === targetId)) return send(res, 404, "Target player is not in lobby");
+        roomOwners.set(room, targetId);
+      }
+      if (action === "start") {
+        if (payload.config && typeof payload.config === "object") roomConfigs.set(room, payload.config);
+        roomLobbyState.set(room, { status: "started", startedAt: Date.now() });
+      }
+      return send(res, 200, JSON.stringify(lobbySnapshot(room)), "application/json; charset=utf-8");
     });
     return;
   }

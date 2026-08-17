@@ -27,7 +27,9 @@ Wersja `1.2 FINAL` rozwija Potato Strike w lekka platforme sandbox:
 - Ustawienia zawieraja nielimitowane, zapisywane w profilu `Fast Bind`, np. `F` do zakupu calego zestawu: broni, kamizelki i granatu. Kazdy wpis mozna wlaczyc, wylaczyc lub usunac, a pelny stan jest eksportowany z configiem. Skroty respektuja pieniadze, buy time i ograniczenia stron.
 - Domyslny V-Sync laczy odswiezanie z ekranem i presetem wydajnosci; nadal mozna wybrac reczny limit 30/60/120 lub maksymalna szybkosc przegladarki.
 - Dowodca pokoju LAN zarzadza server configiem, widocznoscia enemy na minimapie i konsola w stylu CS/GoldSrc. Config serwera mozna zapisac, wgrac jako JSON lub `.cfg` i wykonac przez `exec`.
+- Osobny przycisk `Utworz serwer LAN` otwiera poczekalnie. Host widzi aktywnych graczy, moze przekazac dowodzenie, wejsc do ustawien serwera i uruchomic mecz dla wszystkich oczekujacych klientow.
 - Dowodca wybiera zachowanie PPM w 3D: brak akcji, samo przyblizenie z klasycznym celownikiem albo potato-przyrzady celownicze ze scope AWP. Glock zachowuje przelaczanie semi/burst.
+- Mecze BOT maja ten sam wybor PPM bezposrednio w menu, a kampania uruchamia sie z gotowymi przyrzadami celowniczymi.
 - Menu oferuje funkcjonalne presety Classic, Competitive 5v5, Wingman 2v2, Retake, Deathmatch, Casual 10v10 i Training 1v1. Retake startuje z podlozona bomba, a Deathmatch/Training maja odrodzenia i wynik fragowy.
 - W trybie fabularnym bind `J` pokazuje podpowiedz. Studio pozwala zapisac wlasna podpowiedz razem z celem misji.
 - Biblioteka 3D Studio jest dostarczana lokalnie w `game/vendor/three.min.js`; edytor nie wymaga CDN ani internetu.
@@ -153,8 +155,8 @@ Configi startowe sa w folderze `configs/`, a export configu zawiera tez mapy i m
 
 ## Status online/LAN
 
-Offline z botami jest grywalny. Online/LAN maja menu konfiguracyjne i fallback do botow.
-`server.js` ma lekki lokalny serwer, heartbeat pokoi LAN, wybor dowodcy i autoryzowany server config. Prawdziwa synchronizacja meczu gracz kontra gracz nadal wymaga podpiecia klienta do pelnego stanu serwera.
+Offline z botami jest grywalny. LAN ma poczekalnie, roster, przekazywanie dowodcy, wspolny start i uzupelnianie meczu botami.
+`server.js` ma lekki lokalny serwer, heartbeat pokoi LAN, stan poczekalni, wybor dowodcy i autoryzowany server config. Prawdziwa synchronizacja pozycji i strzelania gracz kontra gracz nadal wymaga podpiecia klienta do pelnego stanu serwera.
 
 ## README MADE BY AI
 ## MESSAGE FROM TERALUBO: play

@@ -221,6 +221,51 @@ body {
   background: #ebcf6d;
 }
 
+.lobby-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.lobby-summary > div,
+.lan-player-row {
+  border: 1px solid rgba(242, 240, 223, 0.16);
+  border-radius: 6px;
+  background: rgba(242, 240, 223, 0.05);
+  padding: 10px;
+}
+
+.lobby-summary span,
+.lobby-summary strong {
+  display: block;
+}
+
+.lobby-summary span {
+  color: #aeb3a4;
+  font-size: 12px;
+}
+
+.lan-player-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lan-player-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 620px) {
+  .lobby-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
 .hidden {
   display: none !important;
 }

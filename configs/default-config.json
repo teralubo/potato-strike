@@ -32,6 +32,7 @@
     "matchSize": 5,
     "fillMode": "bots",
     "gameRules": "classic",
+    "botAimMode": "sights",
     "controlMode": "keyboard",
     "showMinimap": true,
     "autoReload": true,

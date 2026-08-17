@@ -118,6 +118,7 @@ for (const key of ["type", "configId", "userMaps", "storyMissions", "customTextu
 if (defaultConfig.settings.hzLimit !== "vsync" || defaultConfig.settings.fastBindsEnabled !== true || !Array.isArray(defaultConfig.settings.fastBinds)) {
   fail("default config must enable V-Sync and contain Fast Binds");
 }
+if (defaultConfig.settings.botAimMode !== "sights") fail("default BOT RMB aiming mode must use sights");
 if (defaultConfig.settings.gameRules !== "classic" || defaultConfig.serverConfig.aimMode !== "sights" || defaultConfig.serverConfig.enemyMinimap !== false || defaultConfig.serverConfig.svCheats !== false) {
   fail("default game rules, aiming or safe server settings are invalid");
 }
@@ -154,17 +155,23 @@ requireSnippets(gameJs, [
   "serverConfigSnapshot", "syncLanHeartbeat", "mp_show_enemy_minimap", "writecfg", "cvarlist", "requireCheats",
   "openingMove", "botStop", "isAwpScoped", "drawAwpScope", "aimZoom", "mouse.rightDown",
   "gameRulePresets", "applyGameRulePreset", "updateRespawns", "isIronSights", "drawPotatoIronSights", "showStoryHint",
+  "openLanLobby", "lanLobbyRequest", "renderLanLobby", "startLanLobbyMatch", "launchLanLobbyMatch", "botAimMode",
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
   'id="fast-bind-key"', 'id="fast-bind-action"', 'id="fast-bind-add"', 'id="fast-bind-enabled"',
   'id="fast-bind-clear"', 'id="fast-bind-count"', 'id="fast-bind-list"',
   'id="game-rules"', 'id="server-aim-mode"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
+  'id="create-lan"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="menu-aim-mode"',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
 
 const serverJs = fs.readFileSync("server.js", "utf8");
-requireSnippets(serverJs, ["roomOwners", "roomConfigs", 'url.pathname === "/api/server-config"', "Only lobby owner can update server config"], "LAN server ownership feature");
+requireSnippets(serverJs, [
+  "roomOwners", "roomConfigs", "roomLobbyState", 'url.pathname === "/api/server-config"', 'url.pathname === "/api/lobby"',
+  '"access-control-allow-origin": "*"', 'req.method === "OPTIONS"',
+  "Only lobby owner can update server config", "Only lobby owner can transfer command", "Only lobby owner can start match",
+], "LAN server ownership feature");
 
 for (const obsolete of ["(h * 760) / d", "settings.quality === \"high\" ? 520 : 360"]) {
   if (gameJs.includes(obsolete)) fail(`Obsolete 3D renderer code is still present: ${obsolete}`);
