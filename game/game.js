@@ -23,6 +23,7 @@ const hud = {
   health: $("health"),
   armor: $("armor"),
   money: $("money"),
+  buyZone: $("buy-zone-pill"),
   round: $("round"),
   score: $("score"),
   timer: $("timer"),
@@ -159,6 +160,12 @@ const hud = {
   configFile: $("config-file"),
   sensitivity: $("sensitivity"),
   pitchSensitivity: $("pitch-sensitivity"),
+  zoomSensitivity: $("zoom-sensitivity"),
+  fieldOfView: $("field-of-view"),
+  rawMouseInput: $("raw-mouse-input"),
+  mouseAcceleration: $("mouse-acceleration"),
+  mouseAccelerationAmount: $("mouse-acceleration-amount"),
+  viewBob: $("view-bob"),
   invertY: $("invert-y"),
   screenShake: $("screen-shake"),
   soundEnabled: $("sound-enabled"),
@@ -440,6 +447,12 @@ const settings = {
   playerId: "",
   sensitivity: 1,
   pitchSensitivity: 1,
+  zoomSensitivity: 0.68,
+  fieldOfView: 90,
+  rawMouseInput: true,
+  mouseAcceleration: false,
+  mouseAccelerationAmount: 0.25,
+  viewBob: 0.65,
   invertY: false,
   screenShake: 0.8,
   soundEnabled: true,
@@ -661,10 +674,18 @@ const i18n = {
     crosshairPaintLabel: "Mini-paint celownika",
     crosshairCustomLabel: "Uzyj narysowanego celownika",
     crosshairReset: "Reset: punkt",
+    sensitivityLabel: "Czuleosc myszy",
+    pitchSensitivityLabel: "Kamera gora/dol",
+    zoomSensitivityLabel: "Czuleosc ADS / lunety",
+    fieldOfViewLabel: "Pole widzenia 3D",
+    rawMouseLabel: "Raw mouse input",
+    mouseAccelerationLabel: "Akceleracja myszy",
+    mouseAccelerationAmountLabel: "Sila akceleracji",
+    viewBobLabel: "Ruch modelu broni",
+    invertYLabel: "Odwroc mysz Y",
     nickLabel: "Nick gracza",
     configIdLabel: "ID configu",
     playerIdLabel: "ID gracza",
-    sensitivityLabel: "Czuleosc myszy",
     shakeLabel: "Screen shake",
     soundLabel: "Dzwieki gry",
     volumeLabel: "Glosnosc",
@@ -774,10 +795,18 @@ const i18n = {
     crosshairPaintLabel: "Crosshair mini-paint",
     crosshairCustomLabel: "Use painted crosshair",
     crosshairReset: "Reset: dot",
+    sensitivityLabel: "Mouse sensitivity",
+    pitchSensitivityLabel: "Vertical sensitivity",
+    zoomSensitivityLabel: "ADS / scope sensitivity",
+    fieldOfViewLabel: "3D field of view",
+    rawMouseLabel: "Raw mouse input",
+    mouseAccelerationLabel: "Mouse acceleration",
+    mouseAccelerationAmountLabel: "Acceleration amount",
+    viewBobLabel: "Weapon view movement",
+    invertYLabel: "Invert mouse Y",
     nickLabel: "Player nick",
     configIdLabel: "Config ID",
     playerIdLabel: "Player ID",
-    sensitivityLabel: "Mouse sensitivity",
     shakeLabel: "Screen shake",
     soundLabel: "Game sounds",
     volumeLabel: "Volume",
@@ -869,7 +898,9 @@ function isPerspectiveMode() {
 const MAX_CAMERA_PITCH = Math.PI * 0.3889;
 
 function updatePerspectiveLook(deltaX, deltaY, sensitivityScale = 1) {
-  const sensitivity = settings.sensitivity * sensitivityScale;
+  const speed = Math.hypot(deltaX, deltaY);
+  const acceleration = settings.mouseAcceleration ? 1 + Math.min(1.5, speed / 40) * settings.mouseAccelerationAmount : 1;
+  const sensitivity = settings.sensitivity * sensitivityScale * acceleration;
   player.angle += deltaX * 0.0032 * sensitivity;
   const pitchDirection = settings.invertY ? -1 : 1;
   camera.pitch = clamp(
@@ -879,6 +910,16 @@ function updatePerspectiveLook(deltaX, deltaY, sensitivityScale = 1) {
   );
   mouse.x = window.innerWidth / 2;
   mouse.y = window.innerHeight / 2;
+}
+
+async function requestGamePointerLock() {
+  if (document.pointerLockElement === canvas) return;
+  try {
+    if (settings.rawMouseInput) await canvas.requestPointerLock({ unadjustedMovement: true });
+    else await canvas.requestPointerLock();
+  } catch {
+    try { await canvas.requestPointerLock(); } catch { /* Pointer lock remains optional. */ }
+  }
 }
 
 function renderGameView() {
@@ -1089,13 +1130,21 @@ function applyLanguage() {
   setLabel("crosshair-gap", tr("crosshairGapLabel"));
   setLabel("crosshair-thickness", tr("crosshairThicknessLabel"));
   setLabel("crosshair-outline", tr("crosshairOutlineLabel"));
+  setLabel("sensitivity", tr("sensitivityLabel"));
+  setLabel("pitch-sensitivity", tr("pitchSensitivityLabel"));
+  setLabel("zoom-sensitivity", tr("zoomSensitivityLabel"));
+  setLabel("field-of-view", tr("fieldOfViewLabel"));
+  setLabel("raw-mouse-input", tr("rawMouseLabel"));
+  setLabel("mouse-acceleration", tr("mouseAccelerationLabel"));
+  setLabel("mouse-acceleration-amount", tr("mouseAccelerationAmountLabel"));
+  setLabel("view-bob", tr("viewBobLabel"));
+  setLabel("invert-y", tr("invertYLabel"));
   setLabel("crosshair-paint-color", tr("crosshairPaintLabel"));
   setLabel("crosshair-custom-enabled", tr("crosshairCustomLabel"));
   setText("#crosshair-reset", tr("crosshairReset"));
   setLabel("config-nick", tr("nickLabel"));
   setLabel("config-id", tr("configIdLabel"));
   setLabel("config-player-id", tr("playerIdLabel"));
-  setLabel("sensitivity", tr("sensitivityLabel"));
   setLabel("screen-shake", tr("shakeLabel"));
   setLabel("master-volume", tr("volumeLabel"));
   setLabel("footstep-volume", tr("footstepsLabel"));
@@ -1621,6 +1670,12 @@ function syncProfileFields() {
   hud.crosshairPaintColor.value = settings.crosshairPaintColor || settings.crosshairColor;
   hud.sensitivity.value = String(settings.sensitivity);
   hud.pitchSensitivity.value = String(settings.pitchSensitivity);
+  hud.zoomSensitivity.value = String(settings.zoomSensitivity);
+  hud.fieldOfView.value = String(settings.fieldOfView);
+  hud.rawMouseInput.checked = settings.rawMouseInput !== false;
+  hud.mouseAcceleration.checked = Boolean(settings.mouseAcceleration);
+  hud.mouseAccelerationAmount.value = String(settings.mouseAccelerationAmount);
+  hud.viewBob.value = String(settings.viewBob);
   hud.invertY.checked = settings.invertY;
   hud.soundEnabled.checked = settings.soundEnabled;
   hud.masterVolume.value = String(settings.masterVolume);
@@ -2879,6 +2934,16 @@ function inSite(siteKey, x = player.x, y = player.y) {
   return site && dist(x, y, site.x, site.y) <= site.r;
 }
 
+function buyZoneForTeam(team = state.team) {
+  return state.map.buyZones?.[team] || { ...(team === "T" ? state.map.tSpawn : state.map.ctSpawn), r: 220 };
+}
+
+function inBuyZone(team = state.team, x = player.x, y = player.y) {
+  if (isRespawnMode()) return true;
+  const zone = buyZoneForTeam(team);
+  return Boolean(zone) && dist(x, y, zone.x, zone.y) <= zone.r;
+}
+
 function currentSite(x = player.x, y = player.y) {
   if (inSite("A", x, y)) return "A";
   if (inSite("B", x, y)) return "B";
@@ -2899,6 +2964,11 @@ function normalizeMap(rawMap, fallback = maps.custom) {
   });
   map.tSpawn = point(source.tSpawn, fallback.tSpawn || { x: 180, y: map.h - 180 });
   map.ctSpawn = point(source.ctSpawn, fallback.ctSpawn || { x: map.w - 180, y: 180 });
+  const buyZone = (value, spawn) => ({ ...point(value, spawn), r: clamp(Number(value?.r) || 220, 96, 520) });
+  map.buyZones = {
+    T: buyZone(source.buyZones?.T, map.tSpawn),
+    CT: buyZone(source.buyZones?.CT, map.ctSpawn),
+  };
   map.sites = {
     A: { ...point(source.sites?.A, fallback.sites?.A || { x: map.w * 0.72, y: map.h * 0.72 }), r: clamp(Number(source.sites?.A?.r) || 115, 48, 260) },
     B: { ...point(source.sites?.B, fallback.sites?.B || { x: map.w * 0.3, y: map.h * 0.28 }), r: clamp(Number(source.sites?.B?.r) || 110, 48, 260) },
@@ -3047,8 +3117,10 @@ function editMapAt(event) {
     state.map.sites.B = { x: p.x, y: p.y, r: 110 };
   } else if (tool === "tSpawn") {
     state.map.tSpawn = { x: p.x, y: p.y };
+    state.map.buyZones.T = { x: p.x, y: p.y, r: state.map.buyZones.T?.r || 220 };
   } else if (tool === "ctSpawn") {
     state.map.ctSpawn = { x: p.x, y: p.y };
+    state.map.buyZones.CT = { x: p.x, y: p.y, r: state.map.buyZones.CT?.r || 220 };
   } else if (tool === "delete") {
     state.map.obstacles = state.map.obstacles.filter((o) => !rectCircleHit(o, p.x, p.y, 12));
     editor.selectedObject = null;
@@ -3769,6 +3841,7 @@ function useKey(dt) {
 
 function updateRoundRules(dt) {
   if (state.phase === "freeze") {
+    state.buyTime = Math.max(0, state.buyTime - dt);
     state.freezeTime -= dt;
     if (state.freezeTime <= 0) {
       state.phase = "live";
@@ -3863,11 +3936,13 @@ function buyItem(type, id) {
 }
 
 function canBuyNow() {
-  return state.phase === "freeze" || (state.phase === "live" && state.buyTime > 0);
+  return (state.phase === "freeze" || state.phase === "live") && state.buyTime > 0 && inBuyZone();
 }
 
 function buyBlockMessage() {
-  return "Czas kupowania minal";
+  if (!inBuyZone()) return settings.language === "en" ? "Return to your buy zone" : "Wroc do swojej strefy kupowania";
+  if (state.buyTime <= 0) return settings.language === "en" ? "Buy time has ended" : "Czas kupowania minal";
+  return settings.language === "en" ? "Buying unavailable" : "Kupowanie niedostepne";
 }
 
 function weaponDropData(weapon, x = player.x, y = player.y) {
@@ -4697,7 +4772,7 @@ function renderShop() {
   const buyingOpen = canBuyNow();
   const status = document.createElement("div");
   status.className = `shop-status${buyingOpen ? "" : " closed"}`;
-  status.innerHTML = `<strong>$${player.money}</strong><span>${buyingOpen ? `Buy time ${state.phase === "freeze" ? Math.ceil(state.freezeTime) : Math.ceil(state.buyTime)}s` : buyBlockMessage()}</span>`;
+  status.innerHTML = `<strong>$${player.money}</strong><span>${buyingOpen ? `Buy time ${Math.ceil(state.buyTime)}s / ${settings.language === "en" ? "buy zone" : "strefa kupowania"}` : buyBlockMessage()}</span>`;
   hud.shopList.appendChild(status);
   const sectionOrder = ["Pistol", "SMG", "Rifle", "Sniper", "Heavy"];
   for (const category of sectionOrder) {
@@ -4757,6 +4832,7 @@ function renderShop() {
 function drawMap2d() {
   ctx.fillStyle = "#293629";
   ctx.fillRect(-camera.x, -camera.y, state.map.w, state.map.h);
+  drawBuyZones2d();
   if (settings.quality !== "low") {
     ctx.strokeStyle = "#2e3a2d";
     for (let x = 0; x < state.map.w; x += 80) {
@@ -5189,7 +5265,7 @@ function render3d() {
   ctx.fillRect(0, 0, w, horizon);
   draw3dTerrain(w, h, horizon);
   const zoom = aimZoom();
-  const fov = (Math.PI / 2.9) / zoom;
+  const fov = ((clamp(Number(settings.fieldOfView) || 90, 70, 110) * Math.PI) / 180) / zoom;
   const cols = settings.quality === "low" ? 160 : settings.quality === "high" ? 480 : 320;
   const colW = w / cols;
   const depth = [];
@@ -5231,6 +5307,7 @@ function render3d() {
   }
   draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon);
   draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
+  draw3dBuyZoneMarker(w, h, fov, depth, colW, horizon);
   draw3dWeapon(w, h);
   if (isAwpScoped()) drawAwpScope(w, h);
   else if (isIronSights()) drawPotatoIronSights(w, h);
@@ -5518,6 +5595,67 @@ function weaponViewModel(weapon) {
   };
 }
 
+function draw3dBuyZoneMarker(w, h, fov, depth, colW, horizon) {
+  const zone = buyZoneForTeam();
+  if (inBuyZone()) {
+    ctx.save();
+    ctx.strokeStyle = state.team === "T" ? "rgba(215,189,98,0.68)" : "rgba(108,165,198,0.68)";
+    ctx.fillStyle = state.team === "T" ? "rgba(215,189,98,0.055)" : "rgba(108,165,198,0.055)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([12, 9]);
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h * 0.82, w * 0.34, h * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#f2f0df";
+    ctx.font = "800 12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(`${state.team} BUY ZONE`, w / 2, h * 0.69);
+    ctx.restore();
+    return;
+  }
+  const p = projectWorldToFps(zone.x, zone.y, fov, depth, colW, horizon, -30, zone.r);
+  if (!p || dist(player.x, player.y, zone.x, zone.y) > zone.r * 2.4) return;
+  const radius = clamp((h * zone.r * 0.42) / Math.max(1, p.d), 18, 180);
+  ctx.save();
+  ctx.strokeStyle = state.team === "T" ? "rgba(215,189,98,0.82)" : "rgba(108,165,198,0.82)";
+  ctx.fillStyle = state.team === "T" ? "rgba(215,189,98,0.09)" : "rgba(108,165,198,0.09)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([10, 7]);
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y, radius, radius * 0.28, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#f2f0df";
+  ctx.font = "800 12px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(`${state.team} BUY ZONE`, p.x, p.y - 12);
+  ctx.restore();
+}
+
+function drawBuyZones2d() {
+  for (const team of ["T", "CT"]) {
+    const zone = buyZoneForTeam(team);
+    ctx.save();
+    ctx.fillStyle = team === "T" ? "rgba(215,189,98,0.10)" : "rgba(108,165,198,0.10)";
+    ctx.strokeStyle = team === "T" ? "rgba(215,189,98,0.72)" : "rgba(108,165,198,0.72)";
+    ctx.lineWidth = team === state.team ? 4 : 2;
+    ctx.setLineDash([12, 8]);
+    ctx.beginPath();
+    ctx.arc(zone.x - camera.x, zone.y - camera.y, zone.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#f2f0df";
+    ctx.font = "800 13px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(`${team} BUY`, zone.x - camera.x, zone.y - camera.y + 5);
+    ctx.restore();
+  }
+}
+
 const freedoomWeaponTextureSources = Object.freeze({
   pistol: "assets/weapons/freedoom/pistol.png",
   shotgun: "assets/weapons/freedoom/shotgun.png",
@@ -5640,7 +5778,7 @@ function draw3dWeapon(w, h) {
   const model = weaponViewModel(weapon);
   const aiming = isIronSights();
   const scale = clamp(w / 1280, 0.78, 1.15);
-  const sway = Math.sin(performance.now() / 140) * player.speedFactor * (aiming ? 2.5 : 10);
+  const sway = Math.sin(performance.now() / 140) * player.speedFactor * (aiming ? 2.5 : 10) * settings.viewBob;
   const recoilDrop = camera.shake * 1.8;
   if (model.knife) {
     const x = w / 2 + 86 * scale + sway;
@@ -5697,6 +5835,9 @@ function updateHud() {
   hud.health.textContent = spectated ? `OBS HP ${Math.ceil(spectated.hp)}` : `HP ${Math.ceil(player.hp)}`;
   hud.armor.textContent = `${tr("armor")} ${Math.ceil(player.armor)}${player.helmet ? " +H" : ""}${player.defuseKit ? " KIT" : ""}${player.zeus ? " ZEUS" : ""}`;
   hud.money.textContent = `$${player.money}`;
+  const buyingOpen = canBuyNow();
+  hud.buyZone.classList.toggle("hidden", !buyingOpen);
+  hud.buyZone.textContent = `${settings.language === "en" ? "BUY ZONE" : "STREFA KUPNA"} ${Math.ceil(state.buyTime)}s`;
   hud.round.textContent = `R ${state.round}/32`;
   hud.score.textContent = isRespawnMode() ? `FRAGS ${state.fragScore.player} : ${state.fragScore.enemy}` : `T ${state.score.T} : ${state.score.CT} CT`;
   const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
@@ -5952,7 +6093,7 @@ window.addEventListener("keyup", (event) => keys.delete(event.code));
 canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
     if (isPerspectiveMode()) {
-      const aimSensitivity = isAwpScoped() ? 0.42 : isAimActive() ? 0.68 : 1;
+      const aimSensitivity = isAwpScoped() ? settings.zoomSensitivity * 0.62 : isAimActive() ? settings.zoomSensitivity : 1;
       updatePerspectiveLook(event.movementX, event.movementY, aimSensitivity);
     } else {
       mouse.x = clamp(mouse.x + event.movementX, 0, window.innerWidth);
@@ -5998,7 +6139,7 @@ canvas.addEventListener("mousedown", async (event) => {
   if (event.button === 2) {
     if (canHoldAim()) {
       mouse.rightDown = true;
-      try { await canvas.requestPointerLock(); } catch { /* optional */ }
+      await requestGamePointerLock();
     } else toggleWeaponMode();
     event.preventDefault();
     return;
@@ -6010,7 +6151,7 @@ canvas.addEventListener("mousedown", async (event) => {
   }
   mouse.down = true;
   mouse.clicked = true;
-  try { await canvas.requestPointerLock(); } catch { /* optional */ }
+  await requestGamePointerLock();
 });
 canvas.addEventListener("contextmenu", (event) => {
   if ((state.running && !state.overlayOpen) || (state.spectator.active && !player.alive)) event.preventDefault();
@@ -6149,7 +6290,7 @@ hud.start.addEventListener("click", async () => {
       hud.networkStatus.textContent = `${state.gameMode.toUpperCase()} jest przygotowany w menu. Aktualny build gra lokalnie z botami, dopoki nie zostanie podpiety serwer.`;
       showMessage(`${state.gameMode.toUpperCase()}: fallback do botow`);
     }
-    try { await canvas.requestPointerLock(); } catch { /* optional */ }
+    await requestGamePointerLock();
   } catch (error) {
     showFatalError(error, "startu gry");
   }
@@ -6299,8 +6440,14 @@ hud.profileFile.addEventListener("change", async () => {
   applyProfile(JSON.parse(await file.text()), true);
   showMessage("Profil zaimportowany");
 });
-hud.sensitivity.addEventListener("input", () => { settings.sensitivity = Number(hud.sensitivity.value); });
+hud.sensitivity.addEventListener("input", () => { settings.sensitivity = clamp(Number(hud.sensitivity.value) || 1, 0.1, 8); saveConfig(); });
 hud.pitchSensitivity.addEventListener("input", () => { settings.pitchSensitivity = Number(hud.pitchSensitivity.value); saveConfig(); });
+hud.zoomSensitivity.addEventListener("input", () => { settings.zoomSensitivity = Number(hud.zoomSensitivity.value); saveConfig(); });
+hud.fieldOfView.addEventListener("input", () => { settings.fieldOfView = Number(hud.fieldOfView.value); saveConfig(); });
+hud.rawMouseInput.addEventListener("change", () => { settings.rawMouseInput = hud.rawMouseInput.checked; saveConfig(); });
+hud.mouseAcceleration.addEventListener("change", () => { settings.mouseAcceleration = hud.mouseAcceleration.checked; saveConfig(); });
+hud.mouseAccelerationAmount.addEventListener("input", () => { settings.mouseAccelerationAmount = Number(hud.mouseAccelerationAmount.value); saveConfig(); });
+hud.viewBob.addEventListener("input", () => { settings.viewBob = Number(hud.viewBob.value); saveConfig(); });
 hud.invertY.addEventListener("change", () => { settings.invertY = hud.invertY.checked; saveConfig(); });
 hud.screenShake.addEventListener("input", () => { settings.screenShake = Number(hud.screenShake.value); });
 hud.soundEnabled.addEventListener("change", () => { settings.soundEnabled = hud.soundEnabled.checked; if (settings.soundEnabled) ensureAudio(); saveConfig(); });

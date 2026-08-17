@@ -8,6 +8,13 @@ This beta updates only the lightweight 3D weapon presentation. The 2D renderer a
 - Vertical look has a stable range of about 70 degrees and respects pitch sensitivity, aim sensitivity and inverted Y settings.
 - Walls, terrain, players, dropped equipment and mission markers share the same vertical projection around the fixed center aim point.
 
+## CS-style buying and controls
+
+- Added team-specific T and CT buy zones around map spawns in 2D and 3D; buying and Fast Bind purchases require the player to remain in their own zone.
+- Buy time now counts from round start, includes freeze time and reports whether time or location blocks a purchase.
+- Custom and generated maps receive buy zones automatically, while moving a spawn in the editor also moves its buy zone.
+- Added precise mouse sensitivity, ADS/scope sensitivity, raw input, optional acceleration, 3D FOV and weapon-view movement settings.
+
 ## 3D weapon textures
 
 - Added low-resolution first-person weapon sprites exported from FreEDoom 0.13.0.

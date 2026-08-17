@@ -784,6 +784,7 @@ button:disabled {
         <div class="pill" id="health">HP 100</div>
         <div class="pill" id="armor">ARMOR 0</div>
         <div class="pill" id="money">$800</div>
+        <div class="pill hidden" id="buy-zone-pill">BUY ZONE</div>
         <div class="pill" id="round">R 1/32</div>
         <div class="pill" id="score">T 0 : 0 CT</div>
         <div class="pill" id="timer">1:55</div>
@@ -949,11 +950,35 @@ button:disabled {
         </label>
         <label>
           Czuleosc myszy
-          <input id="sensitivity" type="range" min="0.4" max="2.4" step="0.1" value="1">
+          <input id="sensitivity" type="number" min="0.1" max="8" step="0.05" value="1">
         </label>
         <label>
           Kamera gora/dol
           <input id="pitch-sensitivity" type="range" min="0.35" max="2.4" step="0.05" value="1">
+        </label>
+        <label>
+          Czuleosc ADS / lunety
+          <input id="zoom-sensitivity" type="range" min="0.2" max="1.5" step="0.01" value="0.68">
+        </label>
+        <label>
+          Pole widzenia 3D
+          <input id="field-of-view" type="range" min="70" max="110" step="1" value="90">
+        </label>
+        <label class="check">
+          <input id="raw-mouse-input" type="checkbox" checked>
+          Raw mouse input
+        </label>
+        <label class="check">
+          <input id="mouse-acceleration" type="checkbox">
+          Akceleracja myszy
+        </label>
+        <label>
+          Sila akceleracji
+          <input id="mouse-acceleration-amount" type="range" min="0" max="1" step="0.05" value="0.25">
+        </label>
+        <label>
+          Ruch modelu broni
+          <input id="view-bob" type="range" min="0" max="1" step="0.05" value="0.65">
         </label>
         <label class="check">
           <input id="invert-y" type="checkbox">
@@ -1529,6 +1554,7 @@ const hud = {
   health: $("health"),
   armor: $("armor"),
   money: $("money"),
+  buyZone: $("buy-zone-pill"),
   round: $("round"),
   score: $("score"),
   timer: $("timer"),
@@ -1665,6 +1691,12 @@ const hud = {
   configFile: $("config-file"),
   sensitivity: $("sensitivity"),
   pitchSensitivity: $("pitch-sensitivity"),
+  zoomSensitivity: $("zoom-sensitivity"),
+  fieldOfView: $("field-of-view"),
+  rawMouseInput: $("raw-mouse-input"),
+  mouseAcceleration: $("mouse-acceleration"),
+  mouseAccelerationAmount: $("mouse-acceleration-amount"),
+  viewBob: $("view-bob"),
   invertY: $("invert-y"),
   screenShake: $("screen-shake"),
   soundEnabled: $("sound-enabled"),
@@ -1946,6 +1978,12 @@ const settings = {
   playerId: "",
   sensitivity: 1,
   pitchSensitivity: 1,
+  zoomSensitivity: 0.68,
+  fieldOfView: 90,
+  rawMouseInput: true,
+  mouseAcceleration: false,
+  mouseAccelerationAmount: 0.25,
+  viewBob: 0.65,
   invertY: false,
   screenShake: 0.8,
   soundEnabled: true,
@@ -2167,10 +2205,18 @@ const i18n = {
     crosshairPaintLabel: "Mini-paint celownika",
     crosshairCustomLabel: "Uzyj narysowanego celownika",
     crosshairReset: "Reset: punkt",
+    sensitivityLabel: "Czuleosc myszy",
+    pitchSensitivityLabel: "Kamera gora/dol",
+    zoomSensitivityLabel: "Czuleosc ADS / lunety",
+    fieldOfViewLabel: "Pole widzenia 3D",
+    rawMouseLabel: "Raw mouse input",
+    mouseAccelerationLabel: "Akceleracja myszy",
+    mouseAccelerationAmountLabel: "Sila akceleracji",
+    viewBobLabel: "Ruch modelu broni",
+    invertYLabel: "Odwroc mysz Y",
     nickLabel: "Nick gracza",
     configIdLabel: "ID configu",
     playerIdLabel: "ID gracza",
-    sensitivityLabel: "Czuleosc myszy",
     shakeLabel: "Screen shake",
     soundLabel: "Dzwieki gry",
     volumeLabel: "Glosnosc",
@@ -2280,10 +2326,18 @@ const i18n = {
     crosshairPaintLabel: "Crosshair mini-paint",
     crosshairCustomLabel: "Use painted crosshair",
     crosshairReset: "Reset: dot",
+    sensitivityLabel: "Mouse sensitivity",
+    pitchSensitivityLabel: "Vertical sensitivity",
+    zoomSensitivityLabel: "ADS / scope sensitivity",
+    fieldOfViewLabel: "3D field of view",
+    rawMouseLabel: "Raw mouse input",
+    mouseAccelerationLabel: "Mouse acceleration",
+    mouseAccelerationAmountLabel: "Acceleration amount",
+    viewBobLabel: "Weapon view movement",
+    invertYLabel: "Invert mouse Y",
     nickLabel: "Player nick",
     configIdLabel: "Config ID",
     playerIdLabel: "Player ID",
-    sensitivityLabel: "Mouse sensitivity",
     shakeLabel: "Screen shake",
     soundLabel: "Game sounds",
     volumeLabel: "Volume",
@@ -2375,7 +2429,9 @@ function isPerspectiveMode() {
 const MAX_CAMERA_PITCH = Math.PI * 0.3889;
 
 function updatePerspectiveLook(deltaX, deltaY, sensitivityScale = 1) {
-  const sensitivity = settings.sensitivity * sensitivityScale;
+  const speed = Math.hypot(deltaX, deltaY);
+  const acceleration = settings.mouseAcceleration ? 1 + Math.min(1.5, speed / 40) * settings.mouseAccelerationAmount : 1;
+  const sensitivity = settings.sensitivity * sensitivityScale * acceleration;
   player.angle += deltaX * 0.0032 * sensitivity;
   const pitchDirection = settings.invertY ? -1 : 1;
   camera.pitch = clamp(
@@ -2385,6 +2441,16 @@ function updatePerspectiveLook(deltaX, deltaY, sensitivityScale = 1) {
   );
   mouse.x = window.innerWidth / 2;
   mouse.y = window.innerHeight / 2;
+}
+
+async function requestGamePointerLock() {
+  if (document.pointerLockElement === canvas) return;
+  try {
+    if (settings.rawMouseInput) await canvas.requestPointerLock({ unadjustedMovement: true });
+    else await canvas.requestPointerLock();
+  } catch {
+    try { await canvas.requestPointerLock(); } catch { /* Pointer lock remains optional. */ }
+  }
 }
 
 function renderGameView() {
@@ -2595,13 +2661,21 @@ function applyLanguage() {
   setLabel("crosshair-gap", tr("crosshairGapLabel"));
   setLabel("crosshair-thickness", tr("crosshairThicknessLabel"));
   setLabel("crosshair-outline", tr("crosshairOutlineLabel"));
+  setLabel("sensitivity", tr("sensitivityLabel"));
+  setLabel("pitch-sensitivity", tr("pitchSensitivityLabel"));
+  setLabel("zoom-sensitivity", tr("zoomSensitivityLabel"));
+  setLabel("field-of-view", tr("fieldOfViewLabel"));
+  setLabel("raw-mouse-input", tr("rawMouseLabel"));
+  setLabel("mouse-acceleration", tr("mouseAccelerationLabel"));
+  setLabel("mouse-acceleration-amount", tr("mouseAccelerationAmountLabel"));
+  setLabel("view-bob", tr("viewBobLabel"));
+  setLabel("invert-y", tr("invertYLabel"));
   setLabel("crosshair-paint-color", tr("crosshairPaintLabel"));
   setLabel("crosshair-custom-enabled", tr("crosshairCustomLabel"));
   setText("#crosshair-reset", tr("crosshairReset"));
   setLabel("config-nick", tr("nickLabel"));
   setLabel("config-id", tr("configIdLabel"));
   setLabel("config-player-id", tr("playerIdLabel"));
-  setLabel("sensitivity", tr("sensitivityLabel"));
   setLabel("screen-shake", tr("shakeLabel"));
   setLabel("master-volume", tr("volumeLabel"));
   setLabel("footstep-volume", tr("footstepsLabel"));
@@ -3127,6 +3201,12 @@ function syncProfileFields() {
   hud.crosshairPaintColor.value = settings.crosshairPaintColor || settings.crosshairColor;
   hud.sensitivity.value = String(settings.sensitivity);
   hud.pitchSensitivity.value = String(settings.pitchSensitivity);
+  hud.zoomSensitivity.value = String(settings.zoomSensitivity);
+  hud.fieldOfView.value = String(settings.fieldOfView);
+  hud.rawMouseInput.checked = settings.rawMouseInput !== false;
+  hud.mouseAcceleration.checked = Boolean(settings.mouseAcceleration);
+  hud.mouseAccelerationAmount.value = String(settings.mouseAccelerationAmount);
+  hud.viewBob.value = String(settings.viewBob);
   hud.invertY.checked = settings.invertY;
   hud.soundEnabled.checked = settings.soundEnabled;
   hud.masterVolume.value = String(settings.masterVolume);
@@ -4385,6 +4465,16 @@ function inSite(siteKey, x = player.x, y = player.y) {
   return site && dist(x, y, site.x, site.y) <= site.r;
 }
 
+function buyZoneForTeam(team = state.team) {
+  return state.map.buyZones?.[team] || { ...(team === "T" ? state.map.tSpawn : state.map.ctSpawn), r: 220 };
+}
+
+function inBuyZone(team = state.team, x = player.x, y = player.y) {
+  if (isRespawnMode()) return true;
+  const zone = buyZoneForTeam(team);
+  return Boolean(zone) && dist(x, y, zone.x, zone.y) <= zone.r;
+}
+
 function currentSite(x = player.x, y = player.y) {
   if (inSite("A", x, y)) return "A";
   if (inSite("B", x, y)) return "B";
@@ -4405,6 +4495,11 @@ function normalizeMap(rawMap, fallback = maps.custom) {
   });
   map.tSpawn = point(source.tSpawn, fallback.tSpawn || { x: 180, y: map.h - 180 });
   map.ctSpawn = point(source.ctSpawn, fallback.ctSpawn || { x: map.w - 180, y: 180 });
+  const buyZone = (value, spawn) => ({ ...point(value, spawn), r: clamp(Number(value?.r) || 220, 96, 520) });
+  map.buyZones = {
+    T: buyZone(source.buyZones?.T, map.tSpawn),
+    CT: buyZone(source.buyZones?.CT, map.ctSpawn),
+  };
   map.sites = {
     A: { ...point(source.sites?.A, fallback.sites?.A || { x: map.w * 0.72, y: map.h * 0.72 }), r: clamp(Number(source.sites?.A?.r) || 115, 48, 260) },
     B: { ...point(source.sites?.B, fallback.sites?.B || { x: map.w * 0.3, y: map.h * 0.28 }), r: clamp(Number(source.sites?.B?.r) || 110, 48, 260) },
@@ -4553,8 +4648,10 @@ function editMapAt(event) {
     state.map.sites.B = { x: p.x, y: p.y, r: 110 };
   } else if (tool === "tSpawn") {
     state.map.tSpawn = { x: p.x, y: p.y };
+    state.map.buyZones.T = { x: p.x, y: p.y, r: state.map.buyZones.T?.r || 220 };
   } else if (tool === "ctSpawn") {
     state.map.ctSpawn = { x: p.x, y: p.y };
+    state.map.buyZones.CT = { x: p.x, y: p.y, r: state.map.buyZones.CT?.r || 220 };
   } else if (tool === "delete") {
     state.map.obstacles = state.map.obstacles.filter((o) => !rectCircleHit(o, p.x, p.y, 12));
     editor.selectedObject = null;
@@ -5275,6 +5372,7 @@ function useKey(dt) {
 
 function updateRoundRules(dt) {
   if (state.phase === "freeze") {
+    state.buyTime = Math.max(0, state.buyTime - dt);
     state.freezeTime -= dt;
     if (state.freezeTime <= 0) {
       state.phase = "live";
@@ -5369,11 +5467,13 @@ function buyItem(type, id) {
 }
 
 function canBuyNow() {
-  return state.phase === "freeze" || (state.phase === "live" && state.buyTime > 0);
+  return (state.phase === "freeze" || state.phase === "live") && state.buyTime > 0 && inBuyZone();
 }
 
 function buyBlockMessage() {
-  return "Czas kupowania minal";
+  if (!inBuyZone()) return settings.language === "en" ? "Return to your buy zone" : "Wroc do swojej strefy kupowania";
+  if (state.buyTime <= 0) return settings.language === "en" ? "Buy time has ended" : "Czas kupowania minal";
+  return settings.language === "en" ? "Buying unavailable" : "Kupowanie niedostepne";
 }
 
 function weaponDropData(weapon, x = player.x, y = player.y) {
@@ -6203,7 +6303,7 @@ function renderShop() {
   const buyingOpen = canBuyNow();
   const status = document.createElement("div");
   status.className = `shop-status${buyingOpen ? "" : " closed"}`;
-  status.innerHTML = `<strong>${player.money}</strong><span>${buyingOpen ? `Buy time ${state.phase === "freeze" ? Math.ceil(state.freezeTime) : Math.ceil(state.buyTime)}s` : buyBlockMessage()}</span>`;
+  status.innerHTML = `<strong>${player.money}</strong><span>${buyingOpen ? `Buy time ${Math.ceil(state.buyTime)}s / ${settings.language === "en" ? "buy zone" : "strefa kupowania"}` : buyBlockMessage()}</span>`;
   hud.shopList.appendChild(status);
   const sectionOrder = ["Pistol", "SMG", "Rifle", "Sniper", "Heavy"];
   for (const category of sectionOrder) {
@@ -6263,6 +6363,7 @@ function renderShop() {
 function drawMap2d() {
   ctx.fillStyle = "#293629";
   ctx.fillRect(-camera.x, -camera.y, state.map.w, state.map.h);
+  drawBuyZones2d();
   if (settings.quality !== "low") {
     ctx.strokeStyle = "#2e3a2d";
     for (let x = 0; x < state.map.w; x += 80) {
@@ -6695,7 +6796,7 @@ function render3d() {
   ctx.fillRect(0, 0, w, horizon);
   draw3dTerrain(w, h, horizon);
   const zoom = aimZoom();
-  const fov = (Math.PI / 2.9) / zoom;
+  const fov = ((clamp(Number(settings.fieldOfView) || 90, 70, 110) * Math.PI) / 180) / zoom;
   const cols = settings.quality === "low" ? 160 : settings.quality === "high" ? 480 : 320;
   const colW = w / cols;
   const depth = [];
@@ -6737,6 +6838,7 @@ function render3d() {
   }
   draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon);
   draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
+  draw3dBuyZoneMarker(w, h, fov, depth, colW, horizon);
   draw3dWeapon(w, h);
   if (isAwpScoped()) drawAwpScope(w, h);
   else if (isIronSights()) drawPotatoIronSights(w, h);
@@ -7024,6 +7126,67 @@ function weaponViewModel(weapon) {
   };
 }
 
+function draw3dBuyZoneMarker(w, h, fov, depth, colW, horizon) {
+  const zone = buyZoneForTeam();
+  if (inBuyZone()) {
+    ctx.save();
+    ctx.strokeStyle = state.team === "T" ? "rgba(215,189,98,0.68)" : "rgba(108,165,198,0.68)";
+    ctx.fillStyle = state.team === "T" ? "rgba(215,189,98,0.055)" : "rgba(108,165,198,0.055)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([12, 9]);
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h * 0.82, w * 0.34, h * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#f2f0df";
+    ctx.font = "800 12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(`${state.team} BUY ZONE`, w / 2, h * 0.69);
+    ctx.restore();
+    return;
+  }
+  const p = projectWorldToFps(zone.x, zone.y, fov, depth, colW, horizon, -30, zone.r);
+  if (!p || dist(player.x, player.y, zone.x, zone.y) > zone.r * 2.4) return;
+  const radius = clamp((h * zone.r * 0.42) / Math.max(1, p.d), 18, 180);
+  ctx.save();
+  ctx.strokeStyle = state.team === "T" ? "rgba(215,189,98,0.82)" : "rgba(108,165,198,0.82)";
+  ctx.fillStyle = state.team === "T" ? "rgba(215,189,98,0.09)" : "rgba(108,165,198,0.09)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([10, 7]);
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y, radius, radius * 0.28, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#f2f0df";
+  ctx.font = "800 12px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(`${state.team} BUY ZONE`, p.x, p.y - 12);
+  ctx.restore();
+}
+
+function drawBuyZones2d() {
+  for (const team of ["T", "CT"]) {
+    const zone = buyZoneForTeam(team);
+    ctx.save();
+    ctx.fillStyle = team === "T" ? "rgba(215,189,98,0.10)" : "rgba(108,165,198,0.10)";
+    ctx.strokeStyle = team === "T" ? "rgba(215,189,98,0.72)" : "rgba(108,165,198,0.72)";
+    ctx.lineWidth = team === state.team ? 4 : 2;
+    ctx.setLineDash([12, 8]);
+    ctx.beginPath();
+    ctx.arc(zone.x - camera.x, zone.y - camera.y, zone.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#f2f0df";
+    ctx.font = "800 13px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(`${team} BUY`, zone.x - camera.x, zone.y - camera.y + 5);
+    ctx.restore();
+  }
+}
+
 const freedoomWeaponTextureSources = Object.freeze({
   pistol: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFIAAABcCAYAAAD9JuLrAAAKL0lEQVR42u2crXbjVhSFzQYEDAgYYDDAIMDAwCAgICDAICBgQEDAgMCAgIKAgoCAgoCCwgEDCgv7AH2AgsLCwj6GurbG293ZOUe6/kmkiey1zpJsxbb0eZ+fe+5VRqOePK6urirYaP/Y7nE/GlWwPYktH+PxuILtSWz4uLy8rM7Pz2uIR0dH1Ww2q7d7MmvGxYuLi+rs7Kw6Pj6u7eTkpIa5V+caEK+vryvCXCwWNVCokzBhe1IND4C7u7urbm9vVyABEAag2PI1QN0TCx4ABTiPj4+1IhUiDXETRhffKzNR4sPDw8qtYQ4Rx2Dch8vvY+byARUCJLbIylDk169fa8M+szfcHc8BG/vM5nuYApFqJESAovJwHAaFAhoMxwiRP8DBwcFwYQIIACI+3tzcrNR2Oh3XoxlAomsDGl7DMewjPr57967e4vlkMhkmSACAEgGRQAER6mPtCKMKAZWv4b2AyyIdWxw/PDysBunWhAiXhmkRDjgsxAmRNSTB0QATnwVVDi5eAhoTCJQZwXIDKBrgYUvXpjIH5+J0ZwBVUHDPJmMTg+rTsThdfTCqBDzWjFQXsjJAIPsiiXAbGY7RvQGNkAlzMCABEG6NiwYAAMFrcG1Aikzh4j2Mi4DG16nOQYFE1gUAXDRiHGpG1oPqwk3Gsgd/T+B8PgiQTA5UF7OzJxJsacziGgvxnOAAlqocjCIZxwixLVsTTrZP6HTzwSiSFwxlsnbUetFtMRpVH95/G8Vk+zS6+SBAMuuyXaajl8jOlsDqkU6yr1l8UCBx0d7AZTe8hreEC8Pr7Fdqt5zHOJTEPlx8MK7N2AiIhMmmLbs9atolV8A0HmNRPxhFsnhmSwxDRHR/2LjNTIHD2ADm6IijncEoEoqBCzK5QFEACXUCKuz+/n61r8ZeJfuVnBBj1mbhjnbb+fE3e/NZm7Ug451m37aSSEsjKnHp0tVsfLCC+On0Y709nX2o3qQi6YIKU/uLkWlxriC1qQFFfvzwDeTns8nK3iRMqocFdcmQ0Ls/fI2uDCWyqQG3BrybxdHKCPPNgSQUbYfpfpNpUqGxcQGgVKOCfJMwVV1MEjq29nG2vs5jHMU4TBjiIsDdXUyfGV7H8e+rOTH7P+Az6E8n71fjYcZIKqwtRmqcZOHtijyeHNbKA7T7T7Pqp8v5E/uuYLL0YKCnW8EQ8JFVCUCnD0qytAKN1IjvVYg/fz5+YngNx3oPE6CowihGwaBUdW8q0jtB3rwoAUk1KsQv1ychSPxtb2ECkioxMoDWBq4qMur+RDAjkPhufD5AKUQaQdLFe5t8EJ+yjOkgoVx1b8bIrJXmMH2iDOGCEKlGh6iK1FiJUNRLkOrWzJY8eSqhvoAlTJ0NjJoS3mZTkFQ2Pi9y6e8WJF2b6qB55tTRhro4l6lkXSAuIGBRD8P3OsQ2t9a6Eu/v1xTCcoxLJfLE9aJ4kQz4vBAY3dtjpa+2YHxkueMu7RAVpKsRP3zvho4ASbeOLiwrQwATF0SgkeGzuY8LZ41aAhGWqZEge6NKXChOKCo/MlOF+IXx4rSc0iSm4cI/t1SNDC20Xrl1CUgP/n6RVIwmLI+z2edGEPk9mRoZ13tRUwKkJhofmkUX7OpUi5JU24+TgdQw4iA1RPQCpNeQbQpykBnQthCRAXSQrkYFqXG98wLda8isaVAaO9v+pg1gVCHQfV2Nes7Y4vXO3JoZVYvxzD1LQJVYCURXYwZSu+mdZXCAJEx1b6oyg7kt0DaITUkmAknInYHEHAlBasJxmE1AN4FaAlHdugmklkOdgcSyEcBk3ec1n8NsA6pg18nUUdJqcmuCpBEims+dgmRR7k1dbfU70BKo6yo1qk0zNeqWcR7X0lnWxpdTlSwpMpgR1F2B9Fo0UqMOMX2Y2PVQsXKQ0bDOW2u7hukQM7cmSJoOE7sEWU+Bwr3rJXbB+Pi1YDYNNx2kGwXQ5Zh7BdIVGdVoGdBtYfrQUtUYNUS0KUKX5nHE+s5AEmZ9ctNxMcxNlBmZvlfnsDM1Rq06JpxegGQ9WQpzFyAdXuTS2jLLep481jnI+m7VBpBZzFwXppdPvpJCXVpBtjWM+byr8ufJAqZtValAS104gxmpUoFl1lkdqbe3KUjGnUyZ2XStKzNTW9u0b1PWdqAcULCM6wVIV6Wunm0ri7RrxCkIglCATe/X96hFIB1mp6MaAlSQLIV8sqoUqDZgXcXZcFPdvESRmlx6oUbCc1upcpkts2aBw/Rj7vJe3rSZKjLL4J3GxjaQT1Q5jUcU2qFWFepEWlQXehWQubKD0x+xL9l61fkhtEZVTsdh3UZg0WRUFvOyEkq30Q+TDQ17AZOKZHxRoNrIiGo3gtSLVIhUVVOWb0pEmToz1+4UZObW7t5eZmjs5MVovIziZzRublqd4cmuqePTuSIz16YavdB1kA7RM7qqTpuvUSEdKT8ruKO/73J4+AymG9r2MIcYxUrGR3fPCIxO/6rrajhwd6ZLK8w+DRFHDg8nA3jcwubTwxAkh5GqTL9oj6leU3L+5vcfFtUfP55Xf95f1Fs8/+32rDYc9zVG0Y/TefZ2gABHgLQIpEJkLPNCWeEpONivN6c1KIWopkDxt1yZpsksCgOdqpKQCBNACJTmy/PcxVWFClGXwThAhfjXw6cnFsGM7m6IXL6zlRZaK6oS1b090WQxSle36cJVqtGVqCD/frxaWQQzWlxFmJxF7ESRgKQxj6AAjipz984CvSrRh4dNICOIGUy6eBPMThRJkHV8Q/KYP6/T2kCqEn21xrYgCTOKl00wXx2kli+ECdPaMcrsmUtztUbUo9wUZAnMJ3c6vPYkGFQGeBcnk3DFQgYzUiNHQVFHaBcgYVkm7xymgtQsrOUQXZ81I7YK09XYBJJZG+bJpgRklskJUxvKrwbzmUsvv5TxkJ1xqtVXyrpi1a29C85WmsdJL38I7J9frteCqXc/RDBfNGYSDFXJLK1DN0DkCWGftphPVjAdpA8TN0k4ALkOzCz5vApMLbhrmPPxClxJxxow66Hg0tV1mBj1HT1OqnsTZhNIf600k784TMZAQCy5mdMbtapMrtKIQPoK4CZVRiC5H4FsSz4Ok8l05wvw1RWzOepsAp/uzpipq34j945AetLxOJlZb2B6YsjWjOvztlViDrLJvTNVRnHyRWDOdwDTi2ZfGVFyy5yeFGOlJ5xS93ZVloLcFuZWC/ddiV6W6PpunAhPJip6eVJazGeq9Pls/mjaTtsEZBNMzeZeGm11m7IvtldXJkDCY0NVG6vZyZS4d7Scpcm91wHZBjMr2t3VN4KY3d6r5Uh2ItmdqgpSZxibVLkL9/YySWGWDCdVDFtDVCXqsE1PpujeaWnDZUlHw8mu3HsbmA40hah3KUT/gCPqVuvcSVtT1UG6e2cwt3Xvf7/c7ARm5Oo7g8iT0BOJYo0mHAdZq3K+GchSVb4ETF7T/xDn5RC93a+mJ5GBdEW+FZj/AZFYns5lKCeNAAAAAElFTkSuQmCC",
   shotgun: "data:image/png;base64,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",
@@ -7146,7 +7309,7 @@ function draw3dWeapon(w, h) {
   const model = weaponViewModel(weapon);
   const aiming = isIronSights();
   const scale = clamp(w / 1280, 0.78, 1.15);
-  const sway = Math.sin(performance.now() / 140) * player.speedFactor * (aiming ? 2.5 : 10);
+  const sway = Math.sin(performance.now() / 140) * player.speedFactor * (aiming ? 2.5 : 10) * settings.viewBob;
   const recoilDrop = camera.shake * 1.8;
   if (model.knife) {
     const x = w / 2 + 86 * scale + sway;
@@ -7203,6 +7366,9 @@ function updateHud() {
   hud.health.textContent = spectated ? `OBS HP ${Math.ceil(spectated.hp)}` : `HP ${Math.ceil(player.hp)}`;
   hud.armor.textContent = `${tr("armor")} ${Math.ceil(player.armor)}${player.helmet ? " +H" : ""}${player.defuseKit ? " KIT" : ""}${player.zeus ? " ZEUS" : ""}`;
   hud.money.textContent = `${player.money}`;
+  const buyingOpen = canBuyNow();
+  hud.buyZone.classList.toggle("hidden", !buyingOpen);
+  hud.buyZone.textContent = `${settings.language === "en" ? "BUY ZONE" : "STREFA KUPNA"} ${Math.ceil(state.buyTime)}s`;
   hud.round.textContent = `R ${state.round}/32`;
   hud.score.textContent = isRespawnMode() ? `FRAGS ${state.fragScore.player} : ${state.fragScore.enemy}` : `T ${state.score.T} : ${state.score.CT} CT`;
   const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
@@ -7458,7 +7624,7 @@ window.addEventListener("keyup", (event) => keys.delete(event.code));
 canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
     if (isPerspectiveMode()) {
-      const aimSensitivity = isAwpScoped() ? 0.42 : isAimActive() ? 0.68 : 1;
+      const aimSensitivity = isAwpScoped() ? settings.zoomSensitivity * 0.62 : isAimActive() ? settings.zoomSensitivity : 1;
       updatePerspectiveLook(event.movementX, event.movementY, aimSensitivity);
     } else {
       mouse.x = clamp(mouse.x + event.movementX, 0, window.innerWidth);
@@ -7504,7 +7670,7 @@ canvas.addEventListener("mousedown", async (event) => {
   if (event.button === 2) {
     if (canHoldAim()) {
       mouse.rightDown = true;
-      try { await canvas.requestPointerLock(); } catch { /* optional */ }
+      await requestGamePointerLock();
     } else toggleWeaponMode();
     event.preventDefault();
     return;
@@ -7516,7 +7682,7 @@ canvas.addEventListener("mousedown", async (event) => {
   }
   mouse.down = true;
   mouse.clicked = true;
-  try { await canvas.requestPointerLock(); } catch { /* optional */ }
+  await requestGamePointerLock();
 });
 canvas.addEventListener("contextmenu", (event) => {
   if ((state.running && !state.overlayOpen) || (state.spectator.active && !player.alive)) event.preventDefault();
@@ -7655,7 +7821,7 @@ hud.start.addEventListener("click", async () => {
       hud.networkStatus.textContent = `${state.gameMode.toUpperCase()} jest przygotowany w menu. Aktualny build gra lokalnie z botami, dopoki nie zostanie podpiety serwer.`;
       showMessage(`${state.gameMode.toUpperCase()}: fallback do botow`);
     }
-    try { await canvas.requestPointerLock(); } catch { /* optional */ }
+    await requestGamePointerLock();
   } catch (error) {
     showFatalError(error, "startu gry");
   }
@@ -7805,8 +7971,14 @@ hud.profileFile.addEventListener("change", async () => {
   applyProfile(JSON.parse(await file.text()), true);
   showMessage("Profil zaimportowany");
 });
-hud.sensitivity.addEventListener("input", () => { settings.sensitivity = Number(hud.sensitivity.value); });
+hud.sensitivity.addEventListener("input", () => { settings.sensitivity = clamp(Number(hud.sensitivity.value) || 1, 0.1, 8); saveConfig(); });
 hud.pitchSensitivity.addEventListener("input", () => { settings.pitchSensitivity = Number(hud.pitchSensitivity.value); saveConfig(); });
+hud.zoomSensitivity.addEventListener("input", () => { settings.zoomSensitivity = Number(hud.zoomSensitivity.value); saveConfig(); });
+hud.fieldOfView.addEventListener("input", () => { settings.fieldOfView = Number(hud.fieldOfView.value); saveConfig(); });
+hud.rawMouseInput.addEventListener("change", () => { settings.rawMouseInput = hud.rawMouseInput.checked; saveConfig(); });
+hud.mouseAcceleration.addEventListener("change", () => { settings.mouseAcceleration = hud.mouseAcceleration.checked; saveConfig(); });
+hud.mouseAccelerationAmount.addEventListener("input", () => { settings.mouseAccelerationAmount = Number(hud.mouseAccelerationAmount.value); saveConfig(); });
+hud.viewBob.addEventListener("input", () => { settings.viewBob = Number(hud.viewBob.value); saveConfig(); });
 hud.invertY.addEventListener("change", () => { settings.invertY = hud.invertY.checked; saveConfig(); });
 hud.screenShake.addEventListener("input", () => { settings.screenShake = Number(hud.screenShake.value); });
 hud.soundEnabled.addEventListener("change", () => { settings.soundEnabled = hud.soundEnabled.checked; if (settings.soundEnabled) ensureAudio(); saveConfig(); });

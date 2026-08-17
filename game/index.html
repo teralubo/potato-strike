@@ -16,6 +16,7 @@
         <div class="pill" id="health">HP 100</div>
         <div class="pill" id="armor">ARMOR 0</div>
         <div class="pill" id="money">$800</div>
+        <div class="pill hidden" id="buy-zone-pill">BUY ZONE</div>
         <div class="pill" id="round">R 1/32</div>
         <div class="pill" id="score">T 0 : 0 CT</div>
         <div class="pill" id="timer">1:55</div>
@@ -181,11 +182,35 @@
         </label>
         <label>
           Czuleosc myszy
-          <input id="sensitivity" type="range" min="0.4" max="2.4" step="0.1" value="1">
+          <input id="sensitivity" type="number" min="0.1" max="8" step="0.05" value="1">
         </label>
         <label>
           Kamera gora/dol
           <input id="pitch-sensitivity" type="range" min="0.35" max="2.4" step="0.05" value="1">
+        </label>
+        <label>
+          Czuleosc ADS / lunety
+          <input id="zoom-sensitivity" type="range" min="0.2" max="1.5" step="0.01" value="0.68">
+        </label>
+        <label>
+          Pole widzenia 3D
+          <input id="field-of-view" type="range" min="70" max="110" step="1" value="90">
+        </label>
+        <label class="check">
+          <input id="raw-mouse-input" type="checkbox" checked>
+          Raw mouse input
+        </label>
+        <label class="check">
+          <input id="mouse-acceleration" type="checkbox">
+          Akceleracja myszy
+        </label>
+        <label>
+          Sila akceleracji
+          <input id="mouse-acceleration-amount" type="range" min="0" max="1" step="0.05" value="0.25">
+        </label>
+        <label>
+          Ruch modelu broni
+          <input id="view-bob" type="range" min="0" max="1" step="0.05" value="0.65">
         </label>
         <label class="check">
           <input id="invert-y" type="checkbox">

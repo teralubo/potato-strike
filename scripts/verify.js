@@ -163,7 +163,7 @@ requireSnippets(gameJs, [
   "makeBotLoadout", "botRoundBudget", "chooseAffordableWeapon", "equipmentCatalog", "dropActiveWeapon",
   "pickupDroppedWeapon", "dropPlayerLoadoutOnDeath", "knifeWeaponId", "toggleWeaponMode", "enterSpectator",
   "takeoverBot", "renderModManager", "sortedMods", "createPlayerProfile", "openStandaloneEditor",
-  "normalizeGraphicsMode", "renderGameView", "camera.pitch", "updatePerspectiveLook", "MAX_CAMERA_PITCH", "cycleWeapon", "drawCustomCrosshair",
+  "normalizeGraphicsMode", "renderGameView", "camera.pitch", "updatePerspectiveLook", "requestGamePointerLock", "MAX_CAMERA_PITCH", "cycleWeapon", "drawCustomCrosshair",
   "jumpHeight", "verticalVelocity", 'crouch: "ControlLeft"', "mobileLook",
   "bundledDefaultMods", "installBundledDefaultMods", "loadNativeMods", "drawEnabledModOverlays",
   "selectedGrenade", "beginGrenadeAim", "releaseGrenadeAim", "jumpThrowQueued", "totalGrenades",
@@ -178,6 +178,7 @@ requireSnippets(gameJs, [
   "openLanLobby", "lanLobbyRequest", "renderLanLobby", "startLanLobbyMatch", "launchLanLobbyMatch", "botAimMode",
   "freedoomWeaponTextureSources", "freedoomWeaponTexture", "freedoomWeaponTextureKey", "drawFreedoomWeaponTexture", "migrateCrosshairSettings", "crosshairEnabled",
   "drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming)", "if (!isAimActive()) drawCrosshair();", "customEnabled: settings.crosshairCustomEnabled",
+  "buyZoneForTeam", "inBuyZone", "drawBuyZones2d", "draw3dBuyZoneMarker", "zoomSensitivity", "rawMouseInput", "fieldOfView",
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
