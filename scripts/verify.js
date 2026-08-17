@@ -176,7 +176,7 @@ requireSnippets(gameJs, [
   "openingMove", "botStop", "isAwpScoped", "drawAwpScope", "aimZoom", "mouse.rightDown",
   "gameRulePresets", "applyGameRulePreset", "updateRespawns", "isIronSights", "drawPotatoIronSights", "showStoryHint",
   "openLanLobby", "lanLobbyRequest", "renderLanLobby", "startLanLobbyMatch", "launchLanLobbyMatch", "botAimMode",
-  "freedoomWeaponTextureSources", "freedoomWeaponTexture", "freedoomWeaponTextureKey", "drawFreedoomWeaponTexture", "migrateCrosshairSettings", "crosshairEnabled",
+  "freedoomWeaponTextureSources", "freedoomWeaponTexture", "freedoomWeaponTextureKey", "freedoomWeaponProfiles", "freedoomWeaponVariant", "drawWeaponVariantDetail", "drawFreedoomWeaponTexture", "migrateCrosshairSettings", "crosshairEnabled",
   "drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming)", "if (!isAimActive()) drawCrosshair();", "customEnabled: settings.crosshairCustomEnabled",
   "buyZoneForTeam", "inBuyZone", "drawBuyZones2d", "draw3dBuyZoneMarker", "zoomSensitivity", "rawMouseInput", "fieldOfView",
 ], "game/runtime feature");

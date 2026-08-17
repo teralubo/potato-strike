@@ -18,6 +18,8 @@ This beta updates only the lightweight 3D weapon presentation. The 2D renderer a
 ## 3D weapon textures
 
 - Added low-resolution first-person weapon sprites exported from FreEDoom 0.13.0.
+- Every CS-style weapon now receives a cached lightweight variant with its own material color, scale and silhouette detail instead of sharing one category texture.
+- Suppressors, scopes, long barrels, magazines, drums and dual-pistol layouts make important weapons readable at a glance while retaining FreEDoom pixels as the legal source.
 - FreEDoom viewmodels now remain visible while holding RMB/ADS; the sprite is raised toward the sight line instead of switching to the untextured body.
 - Pistols, shotguns, SMGs, rifles, sniper rifles and heavy weapons receive category-appropriate textured viewmodels.
 - ADS, iron sights and AWP scope retain the existing readable procedural model.

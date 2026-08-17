@@ -5666,6 +5666,7 @@ const freedoomWeaponTextureSources = Object.freeze({
   bfg: "assets/weapons/freedoom/bfg.png",
 });
 const freedoomWeaponTextures = new Map();
+const freedoomWeaponVariants = new Map();
 function freedoomWeaponTexture(name) {
   if (!name) return null;
   if (freedoomWeaponTextures.has(name)) return freedoomWeaponTextures.get(name);
@@ -5678,23 +5679,128 @@ function freedoomWeaponTexture(name) {
   return image;
 }
 
+const freedoomWeaponProfiles = Object.freeze({
+  "Glock-18": { key: "pistol", accent: "#c8a96a" },
+  "USP-S": { key: "pistol", accent: "#7693a2", detail: "suppressor", scale: 0.96 },
+  P2000: { key: "pistol", accent: "#6f9fa8", detail: "compact" },
+  P250: { key: "pistol", accent: "#8f9b91", scale: 1.03 },
+  "Five-SeveN": { key: "pistol", accent: "#688ba6", detail: "long-barrel" },
+  "Tec-9": { key: "pistol", accent: "#b97648", detail: "magazine", scale: 1.08 },
+  "CZ75-Auto": { key: "chaingun", accent: "#85877e", detail: "compact", scale: 0.76 },
+  "Dual Berettas": { key: "pistol", accent: "#b89558", detail: "dual", scale: 0.82 },
+  "Desert Eagle": { key: "launcher", accent: "#c3a24e", detail: "compact", scale: 0.78 },
+  "R8 Revolver": { key: "shotgun", accent: "#a36d42", detail: "compact", scale: 0.78 },
+  "MAC-10": { key: "chaingun", accent: "#b86f40", detail: "compact", scale: 0.84 },
+  MP9: { key: "chaingun", accent: "#718aa8", detail: "compact", scale: 0.88 },
+  MP7: { key: "plasma", accent: "#667988", detail: "compact", scale: 0.76 },
+  "MP5-SD": { key: "pistol", accent: "#607d73", detail: "suppressor", scale: 1.18 },
+  "UMP-45": { key: "shotgun", accent: "#738365", detail: "magazine", scale: 0.96 },
+  P90: { key: "bfg", accent: "#a49f55", detail: "compact", scale: 0.72 },
+  "PP-Bizon": { key: "launcher", accent: "#9b834c", detail: "drum", scale: 0.86 },
+  "Galil AR": { key: "chaingun", accent: "#9f6c35", detail: "magazine" },
+  FAMAS: { key: "plasma", accent: "#667e57", detail: "compact", scale: 0.92 },
+  "AK-47": { key: "chaingun", accent: "#b66f2f", detail: "wood", scale: 1.06 },
+  M4A4: { key: "plasma", accent: "#66889a", detail: "long-barrel", scale: 0.96 },
+  "M4A1-S": { key: "plasma", accent: "#879187", detail: "suppressor", scale: 0.94 },
+  "SG 553": { key: "bfg", accent: "#92703b", detail: "scope", scale: 0.82 },
+  AUG: { key: "bfg", accent: "#65848a", detail: "scope", scale: 0.84 },
+  "SSG 08": { key: "launcher", accent: "#788553", detail: "scope", scale: 1.02 },
+  AWP: { key: "launcher", accent: "#4f7049", detail: "large-scope", scale: 1.1 },
+  G3SG1: { key: "bfg", accent: "#8f713c", detail: "large-scope", scale: 0.9 },
+  "SCAR-20": { key: "plasma", accent: "#607d8b", detail: "large-scope", scale: 0.96 },
+  Nova: { key: "shotgun", accent: "#a8894c", detail: "long-barrel" },
+  XM1014: { key: "super-shotgun", accent: "#9b694d", detail: "magazine" },
+  "MAG-7": { key: "shotgun", accent: "#697b68", detail: "compact", scale: 0.92 },
+  "Sawed-Off": { key: "super-shotgun", accent: "#9c5e31", detail: "compact", scale: 0.9 },
+  M249: { key: "bfg", accent: "#687b55", detail: "magazine", scale: 1.08 },
+  Negev: { key: "bfg", accent: "#8e7945", detail: "drum", scale: 1.12 },
+});
+
+function freedoomWeaponTextureProfile(weapon) {
+  if (!weapon || weapon.melee) return null;
+  return freedoomWeaponProfiles[weapon.name] || { key: "chaingun", accent: weapon.color || "#8d9688" };
+}
+
 function freedoomWeaponTextureKey(weapon) {
-  if (!weapon || weapon.melee) return "";
-  if (weapon.category === "Pistol") return "pistol";
-  if (["Nova", "MAG-7"].includes(weapon.name)) return "shotgun";
-  if (["XM1014", "Sawed-Off"].includes(weapon.name)) return "super-shotgun";
-  if (weapon.category === "Sniper") return "launcher";
-  if (["AUG", "SG 553"].includes(weapon.name)) return "plasma";
-  if (["M249", "Negev"].includes(weapon.name)) return "bfg";
-  return "chaingun";
+  return freedoomWeaponTextureProfile(weapon)?.key || "";
+}
+
+function drawWeaponVariantDetail(vctx, profile, width, top, height) {
+  const center = width / 2;
+  vctx.fillStyle = profile.accent || "#8d9688";
+  vctx.strokeStyle = "rgba(15,18,16,0.86)";
+  vctx.lineWidth = 2;
+  if (profile.detail === "suppressor") {
+    vctx.fillRect(center - 5, 1, 10, top + 18);
+    vctx.strokeRect(center - 5, 1, 10, top + 18);
+  } else if (profile.detail === "long-barrel") {
+    vctx.fillRect(center - 3, 4, 6, top + 13);
+    vctx.strokeRect(center - 3, 4, 6, top + 13);
+  } else if (["scope", "large-scope"].includes(profile.detail)) {
+    const scopeW = profile.detail === "large-scope" ? 30 : 22;
+    vctx.fillRect(center - scopeW / 2, top + height * 0.16, scopeW, 10);
+    vctx.strokeRect(center - scopeW / 2, top + height * 0.16, scopeW, 10);
+    vctx.fillRect(center - 3, top + height * 0.12, 6, 8);
+  } else if (profile.detail === "magazine") {
+    vctx.fillRect(center + width * 0.08, top + height * 0.58, 10, Math.max(16, height * 0.28));
+    vctx.strokeRect(center + width * 0.08, top + height * 0.58, 10, Math.max(16, height * 0.28));
+  } else if (profile.detail === "drum") {
+    vctx.beginPath();
+    vctx.arc(center + width * 0.1, top + height * 0.67, Math.max(8, width * 0.1), 0, Math.PI * 2);
+    vctx.fill();
+    vctx.stroke();
+  } else if (profile.detail === "wood") {
+    vctx.fillStyle = "rgba(128,70,30,0.78)";
+    vctx.fillRect(center - width * 0.28, top + height * 0.55, width * 0.56, Math.max(6, height * 0.09));
+  } else if (profile.detail === "compact") {
+    vctx.fillStyle = "rgba(20,24,22,0.42)";
+    vctx.fillRect(center - width * 0.22, top + height * 0.72, width * 0.44, Math.max(5, height * 0.08));
+  }
+}
+
+function freedoomWeaponVariant(weapon) {
+  const profile = freedoomWeaponTextureProfile(weapon);
+  if (!profile) return null;
+  const image = freedoomWeaponTexture(profile.key);
+  if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return null;
+  if (freedoomWeaponVariants.has(weapon.name)) return freedoomWeaponVariants.get(weapon.name);
+  const dual = profile.detail === "dual";
+  const top = 26;
+  const width = image.naturalWidth * (dual ? 2 : 1) + 28;
+  const height = image.naturalHeight + top + 8;
+  const texture = document.createElement("canvas");
+  texture.width = width;
+  texture.height = height;
+  const vctx = texture.getContext("2d");
+  vctx.imageSmoothingEnabled = false;
+  if (dual) {
+    vctx.drawImage(image, 2, top + 6);
+    vctx.drawImage(image, image.naturalWidth - 2, top);
+  } else {
+    vctx.drawImage(image, (width - image.naturalWidth) / 2, top);
+  }
+  vctx.globalCompositeOperation = "source-atop";
+  vctx.globalAlpha = 0.52;
+  vctx.fillStyle = profile.accent || weapon.color || "#8d9688";
+  vctx.fillRect(0, 0, width, height);
+  vctx.globalAlpha = 1;
+  vctx.globalCompositeOperation = "source-over";
+  drawWeaponVariantDetail(vctx, profile, width, top, image.naturalHeight);
+  vctx.globalAlpha = 0.78;
+  vctx.fillStyle = profile.accent || weapon.color || "#8d9688";
+  vctx.fillRect(width * 0.38, top + image.naturalHeight * 0.48, width * 0.24, 3);
+  vctx.globalAlpha = 1;
+  freedoomWeaponVariants.set(weapon.name, texture);
+  return texture;
 }
 
 function drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming = false) {
-  const image = freedoomWeaponTexture(freedoomWeaponTextureKey(weapon));
-  if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return false;
-  const scale = clamp(Math.min(w / 400, h / 190) * (aiming ? 1.06 : 1), 2, 5.2);
-  const width = image.naturalWidth * scale;
-  const height = image.naturalHeight * scale;
+  const profile = freedoomWeaponTextureProfile(weapon);
+  const image = freedoomWeaponVariant(weapon);
+  if (!image?.width || !image?.height) return false;
+  const scale = clamp(Math.min(w / 400, h / 190) * (aiming ? 1.06 : 1) * (profile.scale || 1), 1.65, 5.2);
+  const width = image.width * scale;
+  const height = image.height * scale;
   const x = (w - width) / 2 + sway;
   const aimLift = aiming ? clamp(h * 0.14, 70, 130) : 0;
   const y = h - height - aimLift + recoilDrop;
@@ -5704,7 +5810,7 @@ function drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming = fals
   ctx.shadowBlur = 8 * scale;
   ctx.drawImage(image, Math.round(x), Math.round(y), Math.round(width), Math.round(height));
   ctx.restore();
-  drawWeaponMuzzleFlash(w / 2 - 3 * scale + sway, y + 8 * scale, scale * 0.8);
+  drawWeaponMuzzleFlash(w / 2 - 3 * scale + sway, y + 5 * scale, scale * 0.8);
   return true;
 }
 

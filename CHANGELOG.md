@@ -5,6 +5,7 @@
 3D weapon texture update.
 
 - Added tiny FreEDoom 0.13.0 weapon viewmodel PNGs to the 3D renderer without changing 2D weapons.
+- Added distinct cached FreEDoom-based texture variants and silhouette details for every built-in firearm.
 - Added full FPS mouse look in 3D with horizontal yaw, vertical pitch and a stable 70-degree up/down range during ADS.
 - Added CS-style team buy zones, round-start buy-time enforcement and clear shop/HUD availability feedback.
 - Added potato-friendly FPS controls for precise mouse, ADS/scope sensitivity, raw input, acceleration, FOV and viewmodel movement.
