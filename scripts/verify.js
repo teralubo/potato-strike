@@ -72,7 +72,7 @@ requireFiles([
   "DEV-tools/extract-freedoom-weapons.js",
   "scripts/package-offline.js", "scripts/build-single-html.js", "scripts/clean-editor-vendor.js", "scripts/sync-phone-assets.js", "scripts/package-compat.js", "scripts/package-beta-final.js",
   "PotatoStrike.html", "PotatoStrike.bat", "PotatoStrike-Window.bat", "PotatoStrike-Studio.bat",
-  "README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md", "PATCH-NOTES-1.2-BETA.md", "PATCH-NOTES-1.2-FINAL.md", "PATCH-NOTES-1.3-BETA.md", "SANDBOX-EXAMPLES-1.2-BETA.md",
+  "README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md", "PATCH-NOTES-1.2-BETA.md", "PATCH-NOTES-1.2-FINAL.md", "PATCH-NOTES-1.3-BETA.md", "PATCH-NOTES-1.3-FINAL.md", "PATCH-NOTES-1.3-BETA-FINAL.md", "SANDBOX-EXAMPLES-1.2-BETA.md",
   "game/assets/weapons/freedoom/README.md", "game/assets/weapons/freedoom/LICENSE-FREEDOOM.txt", "game/assets/weapons/freedoom/manifest.json",
   "game/assets/weapons/freedoom/pistol.png", "game/assets/weapons/freedoom/shotgun.png", "game/assets/weapons/freedoom/super-shotgun.png",
   "game/assets/weapons/freedoom/chaingun.png", "game/assets/weapons/freedoom/launcher.png", "game/assets/weapons/freedoom/plasma.png", "game/assets/weapons/freedoom/bfg.png",
@@ -224,28 +224,28 @@ requireSnippets(editorCss, ["#studio-viewport-3d", ".studio-viewport-toolbar", "
 
 const workflow = fs.readFileSync(".github/workflows/potato-strike-1-2-beta.yml", "utf8");
 requireSnippets(workflow, [
-  "Potato Strike 1.2 FINAL Compatibility Builds", "workflow_dispatch", "tags:", '"v*"', "concurrency:",
-  "build:win:compat", "build:linux:compat", "PotatoStrike-1.2-FINAL.apk",
-  "PotatoStrikeMini-1.2-FINAL-official.fap", "PotatoStrikeMini-1.2-FINAL-momentum.fap",
-  "PotatoStrikeMini-1.2-FINAL-unleashed.fap", "PotatoStrike-1.2-FINAL.zip", "potato-strike-1.2-final-folder",
-  "PotatoStrike-1.2-BETA-FINAL.zip", "potato-strike-1.2-beta-final-compressed",
-], "1.2 compatibility workflow feature");
+  "Potato Strike 1.3 FINAL Compatibility Builds", "workflow_dispatch", "tags:", '"v*"', "concurrency:",
+  "build:win:compat", "build:linux:compat", "PotatoStrike-1.3-FINAL.apk",
+  "PotatoStrikeMini-1.3-FINAL-official.fap", "PotatoStrikeMini-1.3-FINAL-momentum.fap",
+  "PotatoStrikeMini-1.3-FINAL-unleashed.fap", "PotatoStrike-1.3-FINAL.zip", "potato-strike-1.3-final-folder",
+  "PotatoStrike-1.3-BETA-FINAL.zip", "potato-strike-1.3-beta-final-compressed",
+], "1.3 compatibility workflow feature");
 
 const pagesWorkflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
 requireSnippets(pagesWorkflow, [
   "paths:", "PotatoStrike.html", "test -f PotatoStrike.html", "cp PotatoStrike.html _site/index.html",
-  "PATCH-NOTES-1.2-FINAL.md", "touch _site/.nojekyll", "pages-info.html", "not the repository README",
+  "PATCH-NOTES-1.3-FINAL.md", "touch _site/.nojekyll", "pages-info.html", "not the repository README",
 ], "GitHub Pages feature");
 for (const forbidden of ["npm ci", "npm run build:single", "actions/setup-node"]) {
   if (pagesWorkflow.includes(forbidden)) fail(`Pages workflow must stay cheap and exclude: ${forbidden}`);
 }
 
 const packageScript = fs.readFileSync("scripts/package-compat.js", "utf8");
-requireSnippets(packageScript, ["PotatoStrike-1.2-FINAL", "PATCH-NOTES-1.2-FINAL.md", "PotatoStrike-1.2-FINAL.apk"], "release packager feature");
+requireSnippets(packageScript, ["PotatoStrike-1.3-FINAL", "PATCH-NOTES-1.3-FINAL.md", "PotatoStrike-1.3-FINAL.apk"], "release packager feature");
 const betaPackageScript = fs.readFileSync("scripts/package-beta-final.js", "utf8");
-requireSnippets(betaPackageScript, ["PotatoStrike-1.3-BETA-texture-update", "PATCH-NOTES-1.3-BETA.md", "CompressionLevel Optimal", "mods", "game"], "compressed beta packager feature");
+requireSnippets(betaPackageScript, ["PotatoStrike-1.3-BETA-FINAL", "PATCH-NOTES-1.3-BETA-FINAL.md", "CompressionLevel Optimal", "mods", "game"], "compressed beta packager feature");
 
 console.log(`Game DOM IDs OK: ${gameIdCount}`);
 console.log(`Studio DOM IDs OK: ${editorIdCount}`);
 console.log(`Studio 3D vendor OK: ${(vendorSize / 1024).toFixed(1)} KiB`);
-console.log("Potato Strike 1.3 BETA texture update runtime, assets, packages and workflows OK");
+console.log("Potato Strike 1.3 FINAL runtime, assets, release packages and workflows OK");

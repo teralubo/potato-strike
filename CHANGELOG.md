@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.3 BETA
+## 1.3 FINAL
 
-3D weapon texture update.
+Final 3D weapon texture, FPS controls and CS-style buying update.
 
 - Added tiny FreEDoom 0.13.0 weapon viewmodel PNGs to the 3D renderer without changing 2D weapons.
 - Added distinct cached FreEDoom-based texture variants and silhouette details for every built-in firearm.

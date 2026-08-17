@@ -1,4 +1,4 @@
-name: Potato Strike 1.2 FINAL Compatibility Builds
+name: Potato Strike 1.3 FINAL Compatibility Builds
 
 on:
   workflow_dispatch:
@@ -79,11 +79,11 @@ jobs:
         run: gradle assembleDebug
       - name: Collect APK
         run: |
-          cp phone/android/app/build/outputs/apk/debug/app-debug.apk phone/android/PotatoStrike-1.2-FINAL.apk
+          cp phone/android/app/build/outputs/apk/debug/app-debug.apk phone/android/PotatoStrike-1.3-FINAL.apk
       - uses: actions/upload-artifact@v4
         with:
           name: potato-strike-android-apk
-          path: phone/android/PotatoStrike-1.2-FINAL.apk
+          path: phone/android/PotatoStrike-1.3-FINAL.apk
 
   flipperzero-fap:
     name: Flipper Zero FAP (${{ matrix.firmware }})
@@ -94,13 +94,13 @@ jobs:
         include:
           - firmware: official
             sdk_index: https://update.flipperzero.one/firmware/directory.json
-            output: PotatoStrikeMini-1.2-FINAL-official.fap
+            output: PotatoStrikeMini-1.3-FINAL-official.fap
           - firmware: momentum
             sdk_index: https://up.momentum-fw.dev/firmware/directory.json
-            output: PotatoStrikeMini-1.2-FINAL-momentum.fap
+            output: PotatoStrikeMini-1.3-FINAL-momentum.fap
           - firmware: unleashed
             sdk_index: https://up.unleashedflip.com/directory.json
-            output: PotatoStrikeMini-1.2-FINAL-unleashed.fap
+            output: PotatoStrikeMini-1.3-FINAL-unleashed.fap
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -146,30 +146,30 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: potato-strike-android-apk
-          path: dist/PotatoStrike-1.2-FINAL/phone/android
+          path: dist/PotatoStrike-1.3-FINAL/phone/android
       - uses: actions/download-artifact@v4
         with:
           pattern: potato-strike-flipperzero-*-fap
-          path: dist/PotatoStrike-1.2-FINAL/phone/flipperzero
+          path: dist/PotatoStrike-1.3-FINAL/phone/flipperzero
           merge-multiple: true
       - uses: actions/download-artifact@v4
         with:
           name: potato-strike-windows-compat
-          path: dist/PotatoStrike-1.2-FINAL/compat/builds/windows
+          path: dist/PotatoStrike-1.3-FINAL/compat/builds/windows
       - uses: actions/download-artifact@v4
         with:
           name: potato-strike-linux-compat
-          path: dist/PotatoStrike-1.2-FINAL/compat/builds/linux
+          path: dist/PotatoStrike-1.3-FINAL/compat/builds/linux
       - name: Repack with binaries
         run: |
-          rm -f PotatoStrike-1.2-FINAL.zip
+          rm -f PotatoStrike-1.3-FINAL.zip
           cd dist
-          zip -qr ../PotatoStrike-1.2-FINAL.zip PotatoStrike-1.2-FINAL
+          zip -qr ../PotatoStrike-1.3-FINAL.zip PotatoStrike-1.3-FINAL
       - uses: actions/upload-artifact@v4
         with:
-          name: potato-strike-1.2-final-folder
-          path: PotatoStrike-1.2-FINAL.zip
+          name: potato-strike-1.3-final-folder
+          path: PotatoStrike-1.3-FINAL.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: potato-strike-1.2-beta-final-compressed
-          path: PotatoStrike-1.2-BETA-FINAL.zip
+          name: potato-strike-1.3-beta-final-compressed
+          path: PotatoStrike-1.3-BETA-FINAL.zip
