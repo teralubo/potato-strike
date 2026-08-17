@@ -26,6 +26,8 @@ Wersja `1.2 FINAL` rozwija Potato Strike w lekka platforme sandbox:
 - Foldery w `mods/` sa kategoriami menedzera modow. Domyslny, wylaczony mod `mods/default/fps_info` pokazuje maly licznik FPS.
 - Ustawienia zawieraja nielimitowane, zapisywane w profilu `Fast Bind`, np. `F` do zakupu calego zestawu: broni, kamizelki i granatu. Kazdy wpis mozna wlaczyc, wylaczyc lub usunac, a pelny stan jest eksportowany z configiem. Skroty respektuja pieniadze, buy time i ograniczenia stron.
 - Domyslny V-Sync laczy odswiezanie z ekranem i presetem wydajnosci; nadal mozna wybrac reczny limit 30/60/120 lub maksymalna szybkosc przegladarki.
+- Dowodca pokoju LAN zarzadza server configiem, widocznoscia enemy na minimapie i konsola w stylu CS/GoldSrc. Config serwera mozna zapisac, wgrac jako JSON lub `.cfg` i wykonac przez `exec`.
+- W 3D AWP ma scope przytrzymywany PPM, a inne bronie opcjonalny ADS. Glock zachowuje przelaczanie semi/burst.
 - Biblioteka 3D Studio jest dostarczana lokalnie w `game/vendor/three.min.js`; edytor nie wymaga CDN ani internetu.
 - Szczegoly wydania sa w `PATCH-NOTES-1.2-FINAL.md`.
 
@@ -144,7 +146,7 @@ Configi startowe sa w folderze `configs/`, a export configu zawiera tez mapy i m
 ## Status online/LAN
 
 Offline z botami jest grywalny. Online/LAN maja menu konfiguracyjne i fallback do botow.
-`server.js` ma lekki lokalny serwer i endpoint heartbeat dla pokoi LAN, ale prawdziwa synchronizacja meczu gracz kontra gracz wymaga jeszcze podpiecia klienta do stanu serwera.
+`server.js` ma lekki lokalny serwer, heartbeat pokoi LAN, wybor dowodcy i autoryzowany server config. Prawdziwa synchronizacja meczu gracz kontra gracz nadal wymaga podpiecia klienta do pelnego stanu serwera.
 
 ## README MADE BY AI
 ## MESSAGE FROM TERALUBO: play

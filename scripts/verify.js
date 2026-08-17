@@ -112,11 +112,14 @@ for (const file of [
   }
 }
 
-for (const key of ["type", "configId", "userMaps", "storyMissions", "customTextures", "mods", "removedDefaultMods", "settings", "bindings", "nick", "playerId"]) {
+for (const key of ["type", "configId", "userMaps", "storyMissions", "customTextures", "mods", "removedDefaultMods", "settings", "serverConfig", "bindings", "nick", "playerId"]) {
   if (!(key in defaultConfig)) fail(`default config missing ${key}`);
 }
 if (defaultConfig.settings.hzLimit !== "vsync" || defaultConfig.settings.fastBindsEnabled !== true || !Array.isArray(defaultConfig.settings.fastBinds)) {
   fail("default config must enable V-Sync and contain Fast Binds");
+}
+if (defaultConfig.settings.adsEnabled !== true || defaultConfig.serverConfig.enemyMinimap !== false || defaultConfig.serverConfig.svCheats !== false) {
+  fail("default ADS or safe server settings are invalid");
 }
 const defaultFpsMod = JSON.parse(fs.readFileSync("mods/default/fps_info/mod.json", "utf8"));
 if (defaultFpsMod.id !== "default.fps_info" || defaultFpsMod.category !== "default" || defaultFpsMod.enabled !== false || defaultFpsMod.builtin !== "fps_info") {
@@ -148,13 +151,19 @@ requireSnippets(gameJs, [
   "const objectHeight = clamp(Number(wall.z || 96)", "const elevation = clamp(Number(wall.elevation || 0)",
   "editorUnitsForSide", "editorWaypointsForUnit", "spawnEditorPickups", "updateEditorTriggers",
   "runEditorTriggerExpression", "activateEditorTrigger",
+  "serverConfigSnapshot", "syncLanHeartbeat", "mp_show_enemy_minimap", "writecfg", "cvarlist", "requireCheats",
+  "openingMove", "botStop", "isAwpScoped", "drawAwpScope", "aimZoom", "mouse.rightDown",
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
   'id="fast-bind-key"', 'id="fast-bind-action"', 'id="fast-bind-add"', 'id="fast-bind-enabled"',
   'id="fast-bind-clear"', 'id="fast-bind-count"', 'id="fast-bind-list"',
+  'id="ads-enabled"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
+
+const serverJs = fs.readFileSync("server.js", "utf8");
+requireSnippets(serverJs, ["roomOwners", "roomConfigs", 'url.pathname === "/api/server-config"', "Only lobby owner can update server config"], "LAN server ownership feature");
 
 for (const obsolete of ["(h * 760) / d", "settings.quality === \"high\" ? 520 : 360"]) {
   if (gameJs.includes(obsolete)) fail(`Obsolete 3D renderer code is still present: ${obsolete}`);

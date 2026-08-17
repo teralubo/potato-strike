@@ -8,6 +8,10 @@ Sandbox Studio and 3D readability update.
 - Added grenade inventory slots, hold/release throwing, 3D arc physics, competitive purchase limits and synchronized jump-throws.
 - Added unlimited profile-backed Fast Binds with same-key action sequences, per-entry and global enable controls, permanent removal and full config round-tripping while preserving all economy, side and buy-time checks.
 - Added default adaptive V-Sync frame pacing with Eco/Balanced 30/60 FPS ceilings and optional manual caps.
+- Added LAN room ownership, authoritative server-config writes, enemy-minimap control and JSON/CFG import/export.
+- Expanded the owner console with CS/GoldSrc-style cvars, config execution, map/bot controls, bind inspection and `sv_cheats`-gated debugging.
+- Added immediate live-round bot movement and complete weapon/equipment transfer when taking over a teammate bot.
+- Added held AWP scope and optional held ADS for other 3D weapons, including FOV, sensitivity, speed and accuracy changes plus mobile AIM control.
 - Replaced the fixed isometric Studio preview with a direct, persistent WebGL scene editor and a software fallback.
 - Added separate 2D mission-plan and 3D scene workflows, including object/group/trigger/waypoint/sync/marker modes, transform tools, layers, history and multi-selection.
 - Added local Three.js vendor build so Studio 3D works offline without a CDN.

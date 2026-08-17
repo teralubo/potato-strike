@@ -95,6 +95,14 @@ const hud = {
   missionList: $("mission-list"),
   networkPanel: $("network-panel"),
   networkStatus: $("network-status"),
+  serverHostname: $("server-hostname"),
+  serverMaxplayers: $("server-maxplayers"),
+  serverEnemyMinimap: $("server-enemy-minimap"),
+  serverCheats: $("server-cheats"),
+  serverApply: $("server-apply"),
+  serverExport: $("server-export"),
+  serverImport: $("server-import"),
+  serverConfigFile: $("server-config-file"),
   modsPanel: $("mods-panel"),
   modManagerList: $("mod-manager-list"),
   rerollMissions: $("reroll-missions"),
@@ -146,6 +154,7 @@ const hud = {
   botCount: $("bot-count"),
   controlMode: $("control-mode"),
   showMinimap: $("show-minimap"),
+  adsEnabled: $("ads-enabled"),
   autoReload: $("auto-reload"),
   menuMode: $("menu-mode"),
   profileCurrent: $("profile-current"),
@@ -423,10 +432,31 @@ const settings = {
   fillMode: "bots",
   controlMode: "keyboard",
   showMinimap: true,
+  adsEnabled: true,
   autoReload: true,
   fastBindsEnabled: true,
   fastBinds: [],
 };
+
+const serverSettings = {
+  version: 1,
+  hostname: "Potato LAN",
+  svLan: true,
+  svCheats: false,
+  enemyMinimap: false,
+  maxPlayers: 10,
+  freezeTime: 5,
+  roundTime: 115,
+  buyTime: 20,
+  startMoney: 800,
+  botQuota: 5,
+  botDifficulty: "normal",
+  botStop: false,
+  gravity: 720,
+  friendlyFire: false,
+};
+
+const networkSync = { lastHeartbeat: 0, ownerId: "", connected: false };
 
 const simple3dTextures = {
   white: { base: "#d8d8ce", side: "#aeb2a8", seam: "rgba(34,38,33,0.32)", mark: "rgba(255,255,255,0.22)", mode: "panel", footstep: "concrete" },
@@ -777,7 +807,7 @@ const loadedMods = [];
 const removedDefaultModIds = [];
 const keys = new Set();
 const touchActions = new Set();
-const mouse = { x: 0, y: 0, down: false, clicked: false };
+const mouse = { x: 0, y: 0, down: false, clicked: false, rightDown: false };
 const camera = { x: 0, y: 0, shake: 0, pitch: 0 };
 const mobileLook = { pointerId: null, x: 0, y: 0 };
 const runtimeStats = { fps: 0, frames: 0, sampleStarted: performance.now() };
@@ -974,6 +1004,8 @@ function applyLanguage() {
   if (serverAudio) serverAudio.lastChild.textContent = `\n          ${tr("serverAudioLabel")}\n        `;
   const minimap = $("show-minimap")?.closest("label");
   if (minimap) minimap.lastChild.textContent = `\n          ${tr("minimapLabel")}\n        `;
+  const ads = $("ads-enabled")?.closest("label");
+  if (ads) ads.lastChild.textContent = settings.language === "en" ? "\n          Hold RMB: ADS in 3D\n        " : "\n          Przytrzymaj PPM: ADS w 3D\n        ";
   const autoReload = $("auto-reload")?.closest("label");
   if (autoReload) autoReload.lastChild.textContent = `\n          ${tr("autoReloadLabel")}\n        `;
   renderShop();
@@ -1354,6 +1386,7 @@ function serializeProfile() {
     playerId: settings.playerId,
     settings: { ...settings, fastBinds },
     bindings: { ...bindings },
+    serverConfig: serverConfigSnapshot(),
     userMaps: userMaps(),
     storyMissions: savedStoryMissions(),
     customTextures,
@@ -1405,11 +1438,14 @@ function syncProfileFields() {
   hud.footstepVolume.value = String(settings.footstepVolume);
   hud.serverAudio.checked = settings.serverAudio;
   hud.controlMode.value = settings.controlMode;
+  hud.showMinimap.checked = settings.showMinimap;
+  hud.adsEnabled.checked = settings.adsEnabled;
   hud.mobileControls.classList.toggle("hidden", settings.controlMode !== "mobile");
   normalizeFastBinds();
   renderFastBindOptions();
   renderFastBinds();
   drawCrosshairPaint();
+  syncServerControls();
 }
 
 function loadConfig() {
@@ -1517,6 +1553,167 @@ function renderProfileMenu() {
 
 function isLobbyCommander() {
   return Boolean(settings.playerId && state.lobbyOwnerId && settings.playerId === state.lobbyOwnerId);
+}
+
+function canManageServer() {
+  return !state.lobbyOwnerId || isLobbyCommander();
+}
+
+function serverConfigSnapshot() {
+  return {
+    type: "potato-strike-server-config",
+    version: 1,
+    ...serverSettings,
+    map: state.mapKey,
+    matchSize: Number(settings.matchSize),
+    fillMode: settings.fillMode,
+  };
+}
+
+function normalizeServerConfig(config = {}) {
+  const source = config.serverConfig || config;
+  const bool = (value, fallback) => value === undefined ? fallback : value === true || value === 1 || value === "1" || value === "true";
+  return {
+    hostname: String(source.hostname || serverSettings.hostname).slice(0, 64),
+    svLan: bool(source.svLan, serverSettings.svLan),
+    svCheats: bool(source.svCheats, serverSettings.svCheats),
+    enemyMinimap: bool(source.enemyMinimap, serverSettings.enemyMinimap),
+    maxPlayers: clamp(Number(source.maxPlayers ?? serverSettings.maxPlayers), 2, 20),
+    freezeTime: clamp(Number(source.freezeTime ?? serverSettings.freezeTime), 0, 30),
+    roundTime: clamp(Number(source.roundTime ?? serverSettings.roundTime), 15, 600),
+    buyTime: clamp(Number(source.buyTime ?? serverSettings.buyTime), 0, 120),
+    startMoney: clamp(Number(source.startMoney ?? serverSettings.startMoney), 0, 16000),
+    botQuota: clamp(Number(source.botQuota ?? serverSettings.botQuota), 0, 19),
+    botDifficulty: ["easy", "normal", "hard"].includes(source.botDifficulty) ? source.botDifficulty : serverSettings.botDifficulty,
+    botStop: bool(source.botStop, serverSettings.botStop),
+    gravity: clamp(Number(source.gravity ?? serverSettings.gravity), 100, 1600),
+    friendlyFire: bool(source.friendlyFire, serverSettings.friendlyFire),
+  };
+}
+
+function applyServerConfig(config, { quiet = false } = {}) {
+  if (!canManageServer()) {
+    if (!quiet) showMessage("Tylko dowodca moze zmienic server config");
+    return false;
+  }
+  Object.assign(serverSettings, normalizeServerConfig(config));
+  if (config.map && maps[config.map]) {
+    state.mapKey = config.map;
+    state.map = normalizeMap(maps[config.map]);
+    hud.menuMap.value = config.map;
+  }
+  if (config.matchSize) {
+    settings.matchSize = clamp(Number(config.matchSize), 1, Math.floor(serverSettings.maxPlayers / 2));
+    hud.matchSize.value = String(settings.matchSize);
+  }
+  if (config.fillMode) settings.fillMode = config.fillMode;
+  settings.difficulty = serverSettings.botDifficulty;
+  state.freezeTime = serverSettings.freezeTime;
+  state.roundTime = serverSettings.roundTime;
+  state.buyTime = serverSettings.buyTime;
+  syncServerControls();
+  saveConfig();
+  if (!quiet) showMessage("Server config zastosowany");
+  return true;
+}
+
+function syncServerControls() {
+  if (!hud.serverHostname) return;
+  const editable = canManageServer();
+  hud.serverHostname.value = serverSettings.hostname;
+  hud.serverMaxplayers.value = String(serverSettings.maxPlayers);
+  hud.serverEnemyMinimap.checked = serverSettings.enemyMinimap;
+  hud.serverCheats.checked = serverSettings.svCheats;
+  for (const control of [hud.serverHostname, hud.serverMaxplayers, hud.serverEnemyMinimap, hud.serverCheats, hud.serverApply, hud.serverImport]) {
+    if (control) control.disabled = !editable;
+  }
+  if (hud.networkStatus) {
+    const owner = state.lobbyOwnerId || settings.playerId;
+    const role = editable ? "dowodca" : "gracz";
+    hud.networkStatus.textContent = `${serverSettings.hostname} / ${role} / owner ${owner || "--"} / ${networkSync.connected ? "LAN online" : "lokalny fallback"}`;
+  }
+}
+
+function serverConfigFromControls() {
+  return {
+    ...serverConfigSnapshot(),
+    hostname: hud.serverHostname.value,
+    maxPlayers: Number(hud.serverMaxplayers.value),
+    enemyMinimap: hud.serverEnemyMinimap.checked,
+    svCheats: hud.serverCheats.checked,
+  };
+}
+
+function parseCfgText(source) {
+  const result = {};
+  const map = {
+    hostname: "hostname", sv_lan: "svLan", sv_cheats: "svCheats", mp_show_enemy_minimap: "enemyMinimap",
+    maxplayers: "maxPlayers", mp_freezetime: "freezeTime", mp_roundtime: "roundTime", mp_roundtime_defuse: "roundTime",
+    mp_buytime: "buyTime", mp_startmoney: "startMoney", bot_quota: "botQuota", bot_difficulty: "botDifficulty",
+    bot_stop: "botStop", sv_gravity: "gravity", mp_friendlyfire: "friendlyFire",
+  };
+  for (const line of String(source).split(/\r?\n/)) {
+    const tokens = line.trim().match(/"[^"]*"|'[^']*'|[^\s]+/g) || [];
+    if (!tokens.length || tokens[0].startsWith("//") || tokens[0].startsWith("#")) continue;
+    const key = map[tokens[0].toLowerCase()];
+    if (key) result[key] = (tokens.slice(1).join(" ") || "").replace(/^["']|["']$/g, "");
+  }
+  return result;
+}
+
+async function importServerConfigFile() {
+  const file = hud.serverConfigFile.files[0];
+  if (!file) return;
+  try {
+    const source = await file.text();
+    const config = file.name.toLowerCase().endsWith(".cfg") ? parseCfgText(source) : JSON.parse(source);
+    applyServerConfig(config);
+    localStorage.setItem("potatoStrikeServerConfig", JSON.stringify(serverConfigSnapshot()));
+    localStorage.setItem("potatoStrikeCfg:server", JSON.stringify(serverConfigSnapshot()));
+  } catch (error) {
+    showMessage(`Niepoprawny server config: ${error.message}`);
+  }
+  hud.serverConfigFile.value = "";
+}
+
+async function saveServerConfigRemote() {
+  if (state.gameMode !== "lan") return false;
+  try {
+    const response = await fetch(`${serverAudioBase()}/api/server-config`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ room: hud.lanRoom.value, playerId: settings.playerId, config: serverConfigSnapshot() }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    networkSync.connected = true;
+    return true;
+  } catch {
+    networkSync.connected = false;
+    return false;
+  }
+}
+
+async function syncLanHeartbeat(force = false) {
+  if (state.gameMode !== "lan" || !state.running) return;
+  const now = performance.now();
+  if (!force && now - networkSync.lastHeartbeat < 2000) return;
+  networkSync.lastHeartbeat = now;
+  try {
+    const response = await fetch(`${serverAudioBase()}/api/heartbeat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ room: hud.lanRoom.value, playerId: settings.playerId, name: settings.nick, team: state.team }),
+    });
+    if (!response.ok) throw new Error();
+    const payload = await response.json();
+    state.lobbyOwnerId = payload.ownerId || state.lobbyOwnerId || settings.playerId;
+    networkSync.ownerId = state.lobbyOwnerId;
+    networkSync.connected = true;
+    if (payload.config && !isLobbyCommander()) Object.assign(serverSettings, normalizeServerConfig(payload.config));
+  } catch {
+    networkSync.connected = false;
+  }
+  syncServerControls();
 }
 
 function openOwnerConsole() {
@@ -1732,6 +1929,7 @@ function applyStudioTestMeta(meta) {
 }
 
 function restoreUserContent(config) {
+  if (config.serverConfig) Object.assign(serverSettings, normalizeServerConfig(config.serverConfig));
   const mapList = config.userMaps || [];
   writeUserMaps(mapList);
   for (const item of mapList) {
@@ -1825,48 +2023,170 @@ function logCommand(text) {
   hud.commandLog.prepend(line);
 }
 
+const consoleCvars = {
+  hostname: ["hostname", "string"],
+  sv_lan: ["svLan", "bool"],
+  sv_cheats: ["svCheats", "bool"],
+  sv_gravity: ["gravity", "number", 100, 1600],
+  mp_show_enemy_minimap: ["enemyMinimap", "bool"],
+  mp_friendlyfire: ["friendlyFire", "bool"],
+  mp_freezetime: ["freezeTime", "number", 0, 30],
+  mp_roundtime: ["roundTime", "number", 15, 600],
+  mp_roundtime_defuse: ["roundTime", "number", 15, 600],
+  mp_buytime: ["buyTime", "number", 0, 120],
+  mp_startmoney: ["startMoney", "number", 0, 16000],
+  bot_quota: ["botQuota", "number", 0, 19],
+  bot_difficulty: ["botDifficulty", "difficulty"],
+  bot_stop: ["botStop", "bool"],
+};
+
+const consoleCommands = [
+  "help", "cmdlist", "cvarlist", "status", "version", "echo", "clear", "exec", "writecfg",
+  "map", "changelevel", "maps", "map_generate", "mp_restartgame", "bot_add", "bot_add_t", "bot_add_ct", "bot_kick",
+  "pause", "resume", "getpos", "getpos_exact", "setpos", "give", "give_money", "impulse", "god", "noclip", "notarget",
+  "bind", "unbind", "key_listboundkeys",
+];
+
+function consoleTokens(source) {
+  return (String(source).match(/"[^"]*"|'[^']*'|[^\s]+/g) || []).map((token) => token.replace(/^["']|["']$/g, ""));
+}
+
+function consoleBool(value) {
+  return value === "1" || value === "true" || value === "on";
+}
+
+function requireCheats(command) {
+  if (serverSettings.svCheats) return true;
+  logCommand(`${command}: sv_cheats 1 required`);
+  return false;
+}
+
+function setConsoleCvar(command, value) {
+  const [key, type, min, max] = consoleCvars[command];
+  if (value === undefined) {
+    logCommand(`\"${command}\" = \"${serverSettings[key]}\"`);
+    return;
+  }
+  if (type === "bool") serverSettings[key] = consoleBool(String(value).toLowerCase());
+  else if (type === "number") serverSettings[key] = clamp(Number(value), min, max);
+  else if (type === "difficulty") serverSettings[key] = ["easy", "normal", "hard"].includes(value) ? value : "normal";
+  else serverSettings[key] = String(value).slice(0, 64);
+  settings.difficulty = serverSettings.botDifficulty;
+  if (key === "freezeTime") state.freezeTime = serverSettings.freezeTime;
+  if (key === "roundTime") state.roundTime = serverSettings.roundTime;
+  if (key === "buyTime") state.buyTime = serverSettings.buyTime;
+  if (key === "botQuota") {
+    settings.matchSize = clamp(serverSettings.botQuota, 1, 10);
+    hud.matchSize.value = String(settings.matchSize);
+  }
+  syncServerControls();
+  saveConfig();
+  saveServerConfigRemote();
+  logCommand(`\"${command}\" changed to \"${serverSettings[key]}\"`);
+}
+
+function giveConsoleWeapon(name) {
+  const normalized = String(name || "").replace(/^weapon_/, "").replace(/_/g, "").toLowerCase();
+  const weapon = weapons.find((item) => item.name.replace(/[-\s]/g, "").toLowerCase() === normalized);
+  if (!weapon) return logCommand(`give: unknown weapon ${name || ""}`);
+  weapon.owned = true;
+  weapon.ammo = weapon.magSize;
+  weapon.currentReserve = weapon.reserve;
+  player.weaponId = weapon.id;
+  state.activeSpecial = "";
+  mouse.rightDown = false;
+  logCommand(`gave ${weapon.name}`);
+}
+
+function executeOwnerCommand(source) {
+  const parts = consoleTokens(source);
+  const command = (parts.shift() || "").toLowerCase();
+  if (!command) return;
+  if (consoleCvars[command]) return setConsoleCvar(command, parts.join(" ") || undefined);
+  if (command === "help" || command === "cmdlist") return logCommand(`commands: ${consoleCommands.join(", ")}`);
+  if (command === "cvarlist") return logCommand(`cvars: ${Object.keys(consoleCvars).join(", ")}`);
+  if (command === "status") return logCommand(`${serverSettings.hostname} | owner ${state.lobbyOwnerId} | ${state.gameMode} | ${state.map.name} | T ${state.score.T}:${state.score.CT} CT | bots ${bots.length + allies.length}`);
+  if (command === "version") return logCommand("Potato Strike 1.2 FINAL / console protocol 1");
+  if (command === "echo") return logCommand(parts.join(" "));
+  if (command === "clear") { hud.commandLog.innerHTML = ""; return; }
+  if (command === "pause") { setPaused(true); return logCommand("paused"); }
+  if (command === "resume") { setPaused(false); return logCommand("resumed"); }
+  if (command === "mp_restartgame") { newMatch(); return logCommand("game restarted"); }
+  if (command === "map_generate") { generateMapFromMenu(); return logCommand("generated map ready"); }
+  if (command === "maps") return logCommand(`maps: ${Object.keys(maps).join(", ")}`);
+  if (command === "map" || command === "changelevel") {
+    const mapKey = parts[0];
+    if (!maps[mapKey]) return logCommand(`map not found: ${mapKey || ""}`);
+    hud.menuMap.value = mapKey;
+    state.mapKey = mapKey;
+    state.map = normalizeMap(maps[mapKey]);
+    newMatch();
+    return logCommand(`loaded ${mapKey}`);
+  }
+  if (command === "bot_kick") { bots.length = 0; allies.length = 0; renderTeams(); return logCommand("all bots kicked"); }
+  if (["bot_add", "bot_add_t", "bot_add_ct"].includes(command)) {
+    const team = command === "bot_add_t" ? "T" : command === "bot_add_ct" ? "CT" : (bots.length <= allies.length ? state.enemyTeam : state.team);
+    addTeamSlot(team === state.team ? "ally" : "enemy");
+    serverSettings.botQuota = bots.length + allies.length;
+    return logCommand(`${command}: added ${team} bot`);
+  }
+  if (command === "getpos" || command === "getpos_exact") return logCommand(`setpos ${player.x.toFixed(2)} ${player.y.toFixed(2)}; setang ${(player.angle * 180 / Math.PI).toFixed(2)}`);
+  if (command === "setpos") {
+    if (!requireCheats(command)) return;
+    player.x = clamp(Number(parts[0]), player.r, state.map.w - player.r);
+    player.y = clamp(Number(parts[1]), player.r, state.map.h - player.r);
+    return logCommand(`position ${player.x.toFixed(1)} ${player.y.toFixed(1)}`);
+  }
+  if (command === "give_money") { player.money = clamp(Number(parts[0] || 16000), 0, 16000); return logCommand(`money ${player.money}`); }
+  if (command === "give") { if (requireCheats(command)) giveConsoleWeapon(parts[0]); return; }
+  if (command === "impulse") {
+    if (!requireCheats(command) || parts[0] !== "101") return;
+    player.hp = 100; player.armor = 100; player.helmet = true; player.money = 16000;
+    for (const weapon of ownedWeapons()) { weapon.ammo = weapon.magSize; weapon.currentReserve = weapon.reserve; }
+    return logCommand("impulse 101: health, armor, ammo, money");
+  }
+  if (["god", "noclip", "notarget"].includes(command)) {
+    if (!requireCheats(command)) return;
+    const key = `${command}Mode`;
+    player[key] = parts[0] === undefined ? !player[key] : consoleBool(parts[0]);
+    return logCommand(`${command} ${player[key] ? "ON" : "OFF"}`);
+  }
+  if (command === "writecfg") {
+    const name = (parts[0] || "server").replace(/[^a-z0-9_-]/gi, "");
+    localStorage.setItem(`potatoStrikeCfg:${name}`, JSON.stringify(serverConfigSnapshot()));
+    return logCommand(`wrote cfg ${name}`);
+  }
+  if (command === "exec") {
+    const name = (parts[0] || "server").replace(/\.cfg$/i, "");
+    const stored = localStorage.getItem(`potatoStrikeCfg:${name}`);
+    if (!stored) return logCommand(`couldn't exec ${name}.cfg`);
+    applyServerConfig(JSON.parse(stored), { quiet: true });
+    return logCommand(`exec ${name}.cfg`);
+  }
+  if (command === "key_listboundkeys") return logCommand(Object.entries(bindings).map(([action, key]) => `${key}=${action}`).join(" | "));
+  if (command === "bind") {
+    const [key, action] = parts;
+    if (!key || !bindings[action]) return logCommand("usage: bind <KeyboardEvent.code> <action>");
+    bindings[action] = key; saveConfig(); renderBinds(); return logCommand(`bound ${key} to ${action}`);
+  }
+  if (command === "unbind") {
+    const key = parts[0];
+    for (const action of Object.keys(bindings)) if (bindings[action] === key) bindings[action] = "";
+    saveConfig(); renderBinds(); return logCommand(`unbound ${key}`);
+  }
+  logCommand(`unknown command: ${command}. Type help.`);
+}
+
 function runOwnerCommand() {
   if (!isLobbyCommander()) {
     logCommand("Brak uprawnien: tylko dowodca lobby");
     showMessage("Tylko dowodca lobby moze uzywac komend");
     return;
   }
-  const parts = hud.commandInput.value.trim().split(/\s+/);
-  const cmd = parts[0] || "";
-  const arg = parts[1];
-  if (!cmd) return;
-  if (cmd === "bot_kick") {
-    bots.length = 0;
-    allies.length = 0;
-    logCommand("Usunieto boty");
-  } else if (cmd === "bot_add_t" || cmd === "bot_add_ct") {
-    settings.matchSize += 1;
-    spawnBots();
-    logCommand(`Dodano boty przez ${cmd}`);
-  } else if (cmd === "mp_restartgame") {
-    newMatch();
-    logCommand("Restart meczu");
-  } else if (cmd === "mp_freezetime") {
-    state.freezeTime = Number(arg || 0);
-    logCommand(`Freeze time: ${state.freezeTime}`);
-  } else if (cmd === "mp_roundtime" || cmd === "mp_roundtime_defuse") {
-    state.roundTime = Number(arg || 115);
-    logCommand(`Round time: ${state.roundTime}`);
-  } else if (cmd === "mp_startmoney" || cmd === "give_money") {
-    player.money = Number(arg || player.money);
-    logCommand(`Money: ${player.money}`);
-  } else if (cmd === "map_generate") {
-    generateMapFromMenu();
-    logCommand("Mapa wygenerowana");
-  } else if (cmd === "pause") {
-    setPaused(true);
-    logCommand("Pauza");
-  } else if (cmd === "resume") {
-    setPaused(false);
-    logCommand("Resume");
-  } else {
-    logCommand(`Nieznana komenda: ${cmd}`);
-  }
+  const source = hud.commandInput.value.trim();
+  if (!source) return;
+  logCommand(`] ${source}`);
+  for (const command of source.split(";").map((item) => item.trim()).filter(Boolean)) executeOwnerCommand(command);
   hud.commandInput.value = "";
 }
 
@@ -1898,6 +2218,25 @@ function defaultWeaponName(team) {
 
 function activeWeapon() {
   return weapons[player.weaponId] || weapons[0];
+}
+
+function canHoldAim(weapon = activeWeapon()) {
+  if (!isPerspectiveMode() || !player.alive || isBombSelected() || isGrenadeSelected() || weapon.melee || weapon.burstCapable) return false;
+  return weapon.name === "AWP" || settings.adsEnabled;
+}
+
+function isAimActive() {
+  return mouse.rightDown && canHoldAim();
+}
+
+function isAwpScoped() {
+  return isAimActive() && activeWeapon().name === "AWP";
+}
+
+function aimZoom() {
+  if (isAwpScoped()) return 2.65;
+  if (isAimActive()) return 1.42;
+  return 1;
 }
 
 function ownedWeapons() {
@@ -1947,6 +2286,7 @@ function carriedItems() {
 function selectInventoryItem(item) {
   if (!item) return;
   state.grenadePrime = null;
+  mouse.rightDown = false;
   if (item.type === "bomb") {
     state.activeSpecial = "bomb";
     showMessage("C4 Bomb");
@@ -2661,9 +3001,9 @@ function resetRoundPositions() {
   state.activeSpecial = "";
   state.grenadePrime = null;
   leaveSpectator();
-  state.roundTime = 115;
-  state.freezeTime = 5;
-  state.buyTime = 20;
+  state.roundTime = serverSettings.roundTime;
+  state.freezeTime = serverSettings.freezeTime;
+  state.buyTime = serverSettings.buyTime;
   state.phase = "freeze";
   state.winner = "";
   state.bomb.timer = 40;
@@ -2714,6 +3054,7 @@ function spawnBots() {
       name: `ENEMY ${i + 1}`,
       source: "BOT",
       flashed: 0,
+      openingMove: 0,
       editorWaypoints: editorWaypointsForUnit(placed.unit),
       editorWaypointIndex: 0,
     });
@@ -2743,6 +3084,7 @@ function spawnBots() {
       name: `BOT ${i}`,
       source: "BOT",
       flashed: 0,
+      openingMove: 0,
       editorWaypoints: editorWaypointsForUnit(placed.unit),
       editorWaypointIndex: 0,
     });
@@ -2802,6 +3144,7 @@ function newMatch() {
   state.gameMode = hud.menuMode.value;
   ensurePlayerId();
   state.lobbyOwnerId = settings.playerId;
+  networkSync.ownerId = settings.playerId;
   if (hud.launchTarget.value === "exe") showMessage("EXE: uzyj Pobierz lokalnie albo npm run build:win");
   settings.matchSize = Number(hud.matchSize.value);
   settings.fillMode = hud.fillMode.value;
@@ -2832,7 +3175,7 @@ function newMatch() {
   state.score = { T: 0, CT: 0 };
   camera.pitch = 0;
   setGraphicsMode(hud.menuGraphics.value);
-  player.money = 800;
+  player.money = serverSettings.startMoney;
   player.armor = 0;
   player.helmet = false;
   player.defuseKit = false;
@@ -2845,6 +3188,8 @@ function newMatch() {
   resetLoadout();
   resetRoundPositions();
   spawnBots();
+  syncServerControls();
+  syncLanHeartbeat(true);
   renderShop();
   renderMissions();
   renderStoryObjective();
@@ -2856,7 +3201,7 @@ function swapSidesIfNeeded() {
     state.team = enemyOf(state.team);
     state.enemyTeam = enemyOf(state.team);
     state.half = 2;
-    player.money = 800;
+    player.money = serverSettings.startMoney;
     resetLoadout();
     showMessage(`Zmiana stron: grasz jako ${teamName(state.team)}`);
   }
@@ -2952,7 +3297,10 @@ function useKey(dt) {
 function updateRoundRules(dt) {
   if (state.phase === "freeze") {
     state.freezeTime -= dt;
-    if (state.freezeTime <= 0) state.phase = "live";
+    if (state.freezeTime <= 0) {
+      state.phase = "live";
+      for (const actor of [...bots, ...allies]) actor.openingMove = Math.max(1.25, Number(actor.openingMove || 0));
+    }
     return;
   }
   if (state.phase !== "live") return;
@@ -3326,7 +3674,8 @@ function shoot(owner, angle, weapon, hostile = false) {
   const pelletCount = weapon.pellets || 1;
   for (let burst = 0; burst < burstShots; burst += 1) {
     for (let i = 0; i < pelletCount; i += 1) {
-      const spread = hostile ? 0.11 * difficultyScale() : weapon.spread + weapon.recoil * Math.min(1.5, owner.speedFactor || 0);
+      const aimFactor = !hostile && owner === player && isAimActive() ? (isAwpScoped() ? 0.16 : 0.52) : 1;
+      const spread = hostile ? 0.11 * difficultyScale() : (weapon.spread + weapon.recoil * Math.min(1.5, owner.speedFactor || 0)) * aimFactor;
       const burstOffset = (burst - (burstShots - 1) / 2) * 0.018;
       const a = angle + (Math.random() - 0.5) * spread + burstOffset;
       bullets.push({
@@ -3361,6 +3710,7 @@ function updatePlayer(dt) {
   const len = Math.hypot(forward, strafe) || 1;
   const walking = keys.has("ShiftLeft") || keys.has("ShiftRight") || state.phase === "freeze";
   let speed = player.speed * (walking ? 0.58 : 1);
+  if (isAimActive()) speed *= 0.72;
   if (isPerspectiveMode()) {
     const wantsJump = actionDown("dash");
     if (wantsJump && !player.jumpLatch && player.jumpHeight <= 0 && state.phase === "live") {
@@ -3369,7 +3719,7 @@ function updatePlayer(dt) {
       player.jumpLatch = true;
     }
     if (!wantsJump) player.jumpLatch = false;
-    player.verticalVelocity -= 720 * dt;
+    player.verticalVelocity -= serverSettings.gravity * dt;
     player.jumpHeight += player.verticalVelocity * dt;
     if (player.jumpHeight <= 0) {
       player.jumpHeight = 0;
@@ -3397,7 +3747,10 @@ function updatePlayer(dt) {
   if (isPerspectiveMode()) {
     const vx = Math.cos(player.angle) * forward * speed + Math.cos(player.angle + Math.PI / 2) * strafe * speed;
     const vy = Math.sin(player.angle) * forward * speed + Math.sin(player.angle + Math.PI / 2) * strafe * speed;
-    moveEntity(player, vx / len, vy / len, dt);
+    if (player.noclipMode) {
+      player.x = clamp(player.x + (vx / len) * dt, player.r, state.map.w - player.r);
+      player.y = clamp(player.y + (vy / len) * dt, player.r, state.map.h - player.r);
+    } else moveEntity(player, vx / len, vy / len, dt);
   } else {
     moveEntity(player, (strafe / len) * speed, (-forward / len) * speed, dt);
     player.angle = angleTo(player.x, player.y, mouse.x + camera.x, mouse.y + camera.y);
@@ -3421,25 +3774,29 @@ function updatePlayer(dt) {
 }
 
 function updateBots(dt) {
-  if (state.phase !== "live") return;
+  if (state.phase !== "live" || serverSettings.botStop) return;
   for (const bot of bots) {
     if (bot.hp <= 0) continue;
     bot.flashed = Math.max(0, bot.flashed - dt);
+    bot.openingMove = Math.max(0, Number(bot.openingMove || 0) - dt);
     const a = angleTo(bot.x, bot.y, player.x, player.y);
     bot.angle = a;
     const d = dist(bot.x, bot.y, player.x, player.y);
     const los = hasLineOfSight(bot.x, bot.y, player.x, player.y);
     const targetSite = state.enemyTeam === "T" ? state.map.sites[state.bomb.site || (Math.random() < 0.5 ? "A" : "B")] : null;
     const editorWaypoint = nextEditorWaypoint(bot);
-    if (bot.flashed <= 0 && (!los || d > 260)) {
+    if (bot.flashed <= 0 && (bot.openingMove > 0 || !los || d > 260 || player.notargetMode)) {
       const tx = editorWaypoint?.x ?? targetSite?.x ?? player.x;
       const ty = editorWaypoint?.y ?? targetSite?.y ?? player.y;
-      const moveA = angleTo(bot.x, bot.y, tx, ty) + Math.sin(performance.now() / 420 + bot.x) * 0.45;
+      const openingTarget = state.enemyTeam === "T" ? (targetSite || { x: state.map.w / 2, y: state.map.h / 2 }) : { x: state.map.w / 2, y: state.map.h / 2 };
+      const moveA = bot.openingMove > 0
+        ? angleTo(bot.x, bot.y, editorWaypoint?.x ?? openingTarget.x, editorWaypoint?.y ?? openingTarget.y)
+        : angleTo(bot.x, bot.y, tx, ty) + Math.sin(performance.now() / 420 + bot.x) * 0.45;
       moveEntity(bot, Math.cos(moveA) * bot.speed, Math.sin(moveA) * bot.speed, dt);
       maybeStep(bot, true, false);
     }
     bot.fire -= dt * 1000;
-    if (bot.fire <= 0 && los && d < 740 && player.alive && bot.flashed <= 0) {
+    if (bot.fire <= 0 && los && d < 740 && player.alive && !player.notargetMode && bot.flashed <= 0) {
       const weapon = actorWeaponStats(bot);
       shoot(bot, a, weapon, true);
       bot.fire = Math.max(260, (weapon.fireDelay || 520) / difficultyScale()) + Math.random() * 440;
@@ -3449,7 +3806,7 @@ function updateBots(dt) {
 }
 
 function updateAllies(dt) {
-  if (state.phase !== "live") return;
+  if (state.phase !== "live" || serverSettings.botStop) return;
   const aliveEnemies = bots.filter((bot) => bot.hp > 0);
   for (const ally of allies) {
     if (ally.hp <= 0) continue;
@@ -3544,10 +3901,29 @@ function takeoverBot(bot) {
   player.jumpLatch = false;
   player.crouched = false;
   player.eyeHeight = 58;
+  player.armor = clamp(Number(bot.armor || bot.loadout?.armor || 0), 0, 100);
+  player.helmet = Boolean(bot.helmet || bot.loadout?.helmet);
+  player.defuseKit = Boolean(bot.defuseKit || bot.loadout?.defuseKit);
+  player.zeus = Boolean(bot.zeus || bot.loadout?.zeus);
+  player.grenades = {};
+  for (const grenade of bot.grenades || bot.loadout?.grenades || []) player.grenades[grenade] = (player.grenades[grenade] || 0) + 1;
+  const knife = weapons[knifeWeaponId()];
+  for (const weapon of weapons) weapon.owned = weapon === knife;
+  const botWeapon = weapons.find((weapon) => weapon.name === bot.weapon) || weapons[defaultWeaponId(state.team)];
+  botWeapon.owned = true;
+  botWeapon.ammo = clamp(Number(bot.loadout?.ammo || botWeapon.magSize), 0, botWeapon.magSize);
+  botWeapon.currentReserve = clamp(Number(bot.loadout?.reserve ?? botWeapon.reserve), 0, botWeapon.reserve);
+  botWeapon.cooldown = 0;
+  botWeapon.reloading = 0;
+  player.weaponId = botWeapon.id;
+  state.activeSpecial = "";
+  mouse.rightDown = false;
   allies.splice(index, 1);
   leaveSpectator();
   renderTeams();
-  showMessage(`Przejales ${bot.name}. Grasz dalej.`);
+  renderShop();
+  updateHud();
+  showMessage(`Przejales ${bot.name}: ${botWeapon.name}. Grasz dalej.`);
 }
 
 function updateSpectator() {
@@ -3566,7 +3942,7 @@ function updateSpectator() {
 }
 
 function damagePlayer(amount) {
-  if (player.invuln > 0 || !player.alive) return;
+  if (player.invuln > 0 || !player.alive || player.godMode) return;
   const armorBlock = Math.min(player.armor, amount * 0.5);
   player.armor -= armorBlock;
   player.hp -= amount - armorBlock;
@@ -3963,8 +4339,12 @@ function drawMinimap() {
   ctx.fillStyle = "#d7bd62";
   for (const site of Object.values(state.map.sites)) ctx.fillRect(x + site.x * sx - 3, y + site.y * sy - 3, 6, 6);
   ctx.fillStyle = "#77b56f"; ctx.fillRect(x + player.x * sx - 2, y + player.y * sy - 2, 4, 4);
-  ctx.fillStyle = "#d95f4e";
-  for (const bot of bots) if (bot.hp > 0) ctx.fillRect(x + bot.x * sx - 2, y + bot.y * sy - 2, 4, 4);
+  ctx.fillStyle = "#75a6cf";
+  for (const ally of allies) if (ally.hp > 0) ctx.fillRect(x + ally.x * sx - 2, y + ally.y * sy - 2, 4, 4);
+  if (serverSettings.enemyMinimap) {
+    ctx.fillStyle = "#d95f4e";
+    for (const bot of bots) if (bot.hp > 0) ctx.fillRect(x + bot.x * sx - 2, y + bot.y * sy - 2, 4, 4);
+  }
   ctx.fillStyle = "#f5df88";
   for (const item of droppedWeapons) ctx.fillRect(x + item.x * sx - 2, y + item.y * sy - 2, 4, 4);
 }
@@ -4263,7 +4643,8 @@ function render3d() {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, horizon);
   draw3dTerrain(w, h, horizon);
-  const fov = Math.PI / 2.9;
+  const zoom = aimZoom();
+  const fov = (Math.PI / 2.9) / zoom;
   const cols = settings.quality === "low" ? 160 : settings.quality === "high" ? 480 : 320;
   const colW = w / cols;
   const depth = [];
@@ -4277,7 +4658,7 @@ function render3d() {
     const objectHeight = clamp(Number(wall.z || 96), 12, 512);
     const elevation = clamp(Number(wall.elevation || 0), 0, 1024);
     const eyeHeight = player.eyeHeight + player.jumpHeight;
-    const projection = h * 1.08;
+    const projection = h * 1.08 * zoom;
     const top = horizon - ((elevation + objectHeight - eyeHeight) * projection) / Math.max(1, d) + camera.shake;
     const bottom = horizon - ((elevation - eyeHeight) * projection) / Math.max(1, d) + camera.shake;
     const wallH = clamp(bottom - top, 2, h * 1.6);
@@ -4299,16 +4680,44 @@ function render3d() {
     const sx = (0.5 + rel / fov) * w;
     const col = clamp(Math.floor(sx / colW), 0, depth.length - 1);
     if (s.d > depth[col] + 45) continue;
-    const size = clamp((h * 96) / s.d, 14, 180);
-    const actorY = horizon + clamp((h * (player.eyeHeight + player.jumpHeight)) / Math.max(1, s.d), 2, 260) - size * 0.62;
+    const size = clamp((h * 96 * zoom) / s.d, 14, 240);
+    const actorY = horizon + clamp((h * (player.eyeHeight + player.jumpHeight) * zoom) / Math.max(1, s.d), 2, 320) - size * 0.62;
     draw3dCharacter(sx, actorY, size, s.color, s.bot.hostile);
   }
   draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon);
   draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
   draw3dWeapon(w, h);
+  if (isAwpScoped()) drawAwpScope(w, h);
   drawFpsStatusStrip(w, h);
   drawMinimap();
-  drawCrosshair();
+  if (!isAwpScoped()) drawCrosshair();
+}
+
+function drawAwpScope(w, h) {
+  const radius = Math.min(w, h) * 0.43;
+  const cx = w / 2;
+  const cy = h / 2;
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.96)";
+  ctx.beginPath();
+  ctx.rect(0, 0, w, h);
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2, true);
+  ctx.fill("evenodd");
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.strokeStyle = "rgba(10,12,10,0.88)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy);
+  ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius);
+  ctx.stroke();
+  ctx.fillStyle = "#111";
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = "rgba(200,210,194,0.46)";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke();
 }
 
 function draw3dTerrain(w, h, horizon = h / 2) {
@@ -4566,6 +4975,7 @@ function drawWeaponMuzzleFlash(x, y, scale) {
 }
 
 function draw3dWeapon(w, h) {
+  if (isAwpScoped()) return;
   const grenade = selectedGrenade();
   if (grenade) {
     const scale = clamp(w / 1280, 0.78, 1.15);
@@ -4603,8 +5013,9 @@ function draw3dWeapon(w, h) {
   }
   const weapon = activeWeapon();
   const model = weaponViewModel(weapon);
+  const aiming = isAimActive();
   const scale = clamp(w / 1280, 0.78, 1.15);
-  const sway = Math.sin(performance.now() / 140) * player.speedFactor * 10;
+  const sway = Math.sin(performance.now() / 140) * player.speedFactor * (aiming ? 2.5 : 10);
   const recoilDrop = camera.shake * 1.8;
   if (model.knife) {
     const x = w / 2 + 86 * scale + sway;
@@ -4629,8 +5040,8 @@ function draw3dWeapon(w, h) {
     ctx.restore();
     return;
   }
-  const x = w / 2 + (weapon.category === "Pistol" ? 84 : 44) * scale + sway;
-  const y = h - (weapon.category === "Pistol" ? 132 : 150) * scale + recoilDrop;
+  const x = w / 2 + (aiming ? (weapon.category === "Pistol" ? -18 : -74) : weapon.category === "Pistol" ? 84 : 44) * scale + sway;
+  const y = h - (aiming ? 116 : weapon.category === "Pistol" ? 132 : 150) * scale + recoilDrop;
   const bodyH = (weapon.category === "Pistol" ? 28 : 34) * scale;
   drawWeaponHands(x, y, scale);
   if (model.stock) drawWeaponPart(x - 82 * scale, y + 26 * scale, 80 * scale, 22 * scale, "#2d332f");
@@ -4665,7 +5076,7 @@ function updateHud() {
   const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
   hud.timer.textContent = `${Math.floor(time / 60)}:${String(Math.max(0, Math.ceil(time % 60))).padStart(2, "0")}`;
   hud.bomb.textContent = state.bomb.status === "planted" ? `${tr("bomb")} ${state.bomb.site} ${Math.ceil(state.bomb.timer)}s` : playerHasBomb() ? `${tr("bomb")} ${isBombSelected() ? "READY" : tr("you")}` : state.bomb.status === "dropped" ? `${tr("bomb")} DROP` : `${tr("bomb")} --`;
-  hud.weaponName.textContent = isBombSelected() ? "C4 Bomb" : grenade ? grenade.name : weapon.burstCapable ? `${weapon.name} ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}` : weapon.name;
+  hud.weaponName.textContent = isBombSelected() ? "C4 Bomb" : grenade ? grenade.name : weapon.burstCapable ? `${weapon.name} ${weapon.fireMode === "burst" ? "BURST" : "SEMI"}` : `${weapon.name}${isAwpScoped() ? " / SCOPE" : isAimActive() ? " / ADS" : ""}`;
   hud.ammo.textContent = isBombSelected() ? "HOLD E" : grenade ? `${player.grenades[grenade.name] || 0} / ${state.grenadePrime ? "RELEASE LMB" : "HOLD LMB"}` : weapon.melee ? "MELEE" : weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
 }
 
@@ -4753,6 +5164,7 @@ function tick(now) {
     runtimeStats.sampleStarted = now;
   }
   if (state.running && !state.paused) {
+    syncLanHeartbeat();
     updateRoundRules(dt);
     updatePlayer(dt);
     updateAllies(dt);
@@ -4909,9 +5321,10 @@ window.addEventListener("keyup", (event) => keys.delete(event.code));
 canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
     if (isPerspectiveMode()) {
-      player.angle += event.movementX * 0.0032 * settings.sensitivity;
+      const aimSensitivity = isAwpScoped() ? 0.42 : isAimActive() ? 0.68 : 1;
+      player.angle += event.movementX * 0.0032 * settings.sensitivity * aimSensitivity;
       const pitchDirection = settings.invertY ? 1 : -1;
-      camera.pitch = clamp(camera.pitch + event.movementY * 0.72 * settings.sensitivity * settings.pitchSensitivity * pitchDirection, -window.innerHeight * 0.36, window.innerHeight * 0.36);
+      camera.pitch = clamp(camera.pitch + event.movementY * 0.72 * settings.sensitivity * settings.pitchSensitivity * pitchDirection * aimSensitivity, -window.innerHeight * 0.36, window.innerHeight * 0.36);
       mouse.x = window.innerWidth / 2;
       mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
     } else {
@@ -4958,7 +5371,10 @@ canvas.addEventListener("mousedown", async (event) => {
   }
   ensureAudio();
   if (event.button === 2) {
-    toggleWeaponMode();
+    if (canHoldAim()) {
+      mouse.rightDown = true;
+      try { await canvas.requestPointerLock(); } catch { /* optional */ }
+    } else toggleWeaponMode();
     event.preventDefault();
     return;
   }
@@ -4980,7 +5396,8 @@ canvas.addEventListener("wheel", (event) => {
   cycleWeapon(event.deltaY > 0 ? 1 : -1);
 }, { passive: false });
 window.addEventListener("mouseup", (event) => {
-  mouse.down = false;
+  if (event.button === 0) mouse.down = false;
+  if (event.button === 2) mouse.rightDown = false;
   if (event.button === 0) releaseGrenadeAim();
 });
 
@@ -5000,7 +5417,19 @@ async function openStandaloneEditor() {
 hud.quickEditor.addEventListener("click", () => togglePanel(hud.editorPanel));
 hud.openEditor.addEventListener("click", openStandaloneEditor);
 hud.openConsole.addEventListener("click", openOwnerConsole);
-hud.openNetwork.addEventListener("click", () => togglePanel(hud.networkPanel));
+hud.openNetwork.addEventListener("click", () => {
+  syncServerControls();
+  togglePanel(hud.networkPanel);
+});
+hud.serverApply.addEventListener("click", async () => {
+  if (!applyServerConfig(serverConfigFromControls())) return;
+  localStorage.setItem("potatoStrikeServerConfig", JSON.stringify(serverConfigSnapshot()));
+  const remote = await saveServerConfigRemote();
+  if (state.gameMode === "lan") showMessage(remote ? "Server config zapisany w lobby LAN" : "Server offline: config zapisany lokalnie");
+});
+hud.serverExport.addEventListener("click", () => downloadJson("potato-strike-server.json", serverConfigSnapshot()));
+hud.serverImport.addEventListener("click", () => hud.serverConfigFile.click());
+hud.serverConfigFile.addEventListener("change", importServerConfigFile);
 hud.openProfile.addEventListener("click", () => {
   const shouldOpen = hud.playerMenu?.classList.contains("hidden");
   closePanels();
@@ -5206,6 +5635,7 @@ hud.matchSize.addEventListener("change", () => {
 });
 hud.fillMode.addEventListener("change", () => { settings.fillMode = hud.fillMode.value; });
 hud.showMinimap.addEventListener("change", () => { settings.showMinimap = hud.showMinimap.checked; });
+hud.adsEnabled.addEventListener("change", () => { settings.adsEnabled = hud.adsEnabled.checked; saveConfig(); });
 hud.autoReload.addEventListener("change", () => { settings.autoReload = hud.autoReload.checked; });
 hud.rerollMissions.addEventListener("click", () => {
   if (player.money < 300) return showMessage("Za malo kasy");
@@ -5223,6 +5653,9 @@ document.querySelectorAll("[data-touch-action]").forEach((button) => {
         mouse.down = true;
         mouse.clicked = true;
       }
+    } else if (action === "aim") {
+      if (canHoldAim()) mouse.rightDown = true;
+      else toggleWeaponMode();
     } else if (action === "reload") {
       reload();
     } else if (action === "grenade") {
@@ -5238,6 +5671,7 @@ document.querySelectorAll("[data-touch-action]").forEach((button) => {
       mouse.down = false;
       releaseGrenadeAim();
     }
+    if (action === "aim") mouse.rightDown = false;
     touchActions.delete(action);
   };
   button.addEventListener("pointerdown", down);
