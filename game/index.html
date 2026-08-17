@@ -230,6 +230,10 @@
           Minimap
         </label>
         <label class="check">
+          <input id="ads-enabled" type="checkbox" checked>
+          Przytrzymaj PPM: ADS w 3D
+        </label>
+        <label class="check">
           <input id="auto-reload" type="checkbox" checked>
           Auto reload przy pustym magazynku
         </label>
@@ -473,6 +477,7 @@
         </label>
       </div>
       <button id="run-command">Wykonaj</button>
+      <p class="panel-note">Wpisz <code>help</code>, <code>cvarlist</code> albo <code>status</code>. Komendy mozna laczyc srednikiem; komendy debug wymagaja <code>sv_cheats 1</code>.</p>
       <div id="command-log" class="command-log"></div>
     </div>
     <div id="pause-panel" class="panel hidden" aria-label="Pauza">
@@ -509,6 +514,28 @@
           Adres serwera
           <input id="server-url" value="ws://localhost:8787">
         </label>
+        <label>
+          Nazwa serwera
+          <input id="server-hostname" value="Potato LAN">
+        </label>
+        <label>
+          Limit graczy
+          <input id="server-maxplayers" type="number" min="2" max="20" value="10">
+        </label>
+        <label class="check">
+          <input id="server-enemy-minimap" type="checkbox">
+          Dowodca: pokaz enemy na minimapie
+        </label>
+        <label class="check">
+          <input id="server-cheats" type="checkbox">
+          sv_cheats (debug/modding)
+        </label>
+      </div>
+      <div class="menu-actions left">
+        <button id="server-apply">Zastosuj na serwerze</button>
+        <button id="server-export" class="secondary">Zapisz server config</button>
+        <button id="server-import" class="secondary">Wgraj server config</button>
+        <input id="server-config-file" class="hidden" type="file" accept="application/json,.cfg">
       </div>
       <p class="panel-note" id="network-status">Offline z botami jest w pelni grywalny. Online/LAN ma menu i konfiguracje; do prawdziwych graczy trzeba uruchomic serwer WebSocket.</p>
     </div>
@@ -534,6 +561,7 @@
       </div>
       <div class="mobile-actions">
         <button data-touch-action="fire">FIRE</button>
+        <button data-touch-action="aim" title="Przytrzymaj: ADS / scope">AIM</button>
         <button data-touch-action="dash" title="Skok 3D / dash 2D">JUMP</button>
         <button data-touch-action="crouch" title="Kucanie 3D">DUCK</button>
         <button data-touch-action="use">E</button>

@@ -2,6 +2,15 @@
 
 Potato Strike 1.2 FINAL closes the Sandbox Studio line with finished FPS movement, folder-based mods and a rebuilt grenade inventory.
 
+## LAN owner, console and aiming
+
+- The player who creates a LAN room is its commander. The lightweight server keeps the owner ID and rejects server-config writes from other players.
+- The commander can toggle enemy minimap visibility, set the hostname/player limit, enable debug cheats, and import/export a complete JSON or Valve-style `.cfg` server configuration.
+- The owner console now supports command batches and a safe CS/GoldSrc-style set including `status`, `cvarlist`, `exec`, `writecfg`, `map`, bot commands, round cvars, binds and cheat-gated debugging commands.
+- Bots receive an opening movement order as soon as freeze time ends. Taking over a teammate bot transfers its weapon, ammunition, armor, helmet, kit, Zeus and grenades immediately.
+- AWP has a held RMB scope in 3D. Other non-burst weapons support optional held RMB ADS with adjusted FOV, sensitivity, movement speed and spread; Glock keeps RMB burst switching.
+- Server rules, minimap ownership and inventory behavior are shared by the 2D and 3D game paths.
+
 ## Fast Bind and frame pacing
 
 - Settings include unlimited profile-backed Fast Binds for buying any weapon, grenade or equipment item and for common inventory actions.
