@@ -192,6 +192,7 @@ requireSnippets(gameHtml, [
   'id="game-rules"', 'id="server-aim-mode"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
   'id="create-lan"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="menu-aim-mode"',
   'id="server-bot-difficulty"', 'id="server-buytime"', 'id="server-team-damage"',
+  'id="release-version"', 'V1.3-FINAL PATCH: 1.0',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
 

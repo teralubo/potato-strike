@@ -111,6 +111,33 @@ body {
     repeating-linear-gradient(45deg, #1d271f 0 18px, #253226 18px 36px);
 }
 
+#release-version {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  color: #d8d5bf;
+  font: 700 12px/1.2 Consolas, monospace;
+  text-align: right;
+  pointer-events: none;
+  opacity: 0.82;
+}
+
+@media (max-height: 720px), (max-width: 560px) {
+  #menu {
+    place-content: start center;
+    overflow-y: auto;
+    padding-bottom: 46px;
+  }
+
+  #release-version {
+    position: fixed;
+    right: 10px;
+    bottom: 8px;
+    padding: 4px 6px;
+    background: rgba(17, 20, 17, 0.9);
+  }
+}
+
 #player-menu {
   position: absolute;
   right: 14px;

@@ -1,8 +1,28 @@
 # Changelog
 
-## 1.3 FINAL
+## 1.3 FINAL - Patch 1.0
 
-Final 3D weapon texture, FPS controls and CS-style buying update.
+Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.0`.
+
+### Patch 1.0 - Combat, economy and server rules
+
+- Added distinct low-cost 2D silhouettes for pistols, rifles, sniper rifles, heavy weapons and the knife; actors and dropped weapons now show their actual weapon class.
+- Changed player AWP hits against enemies to one-shot kills through armor for both body and head-equivalent 2D/3D collision hits.
+- Added teammate damage scaling. Friendly fire deals 50% weapon, melee and grenade damage by default and can be changed by the LAN commander.
+- Added `mp_friendlyfire_damage_reduction` support to server CFG files and the owner console, with an accepted range of `0.0-1.0`.
+- Replaced the unexplained money number with the explicit `KASA $...` or `MONEY $...` top HUD label.
+- Kept shop purchases behind all three checks: active freeze/live phase, remaining buy time and the player's own team buy zone.
+- Standardized regular buy times at 20 seconds, Casual at 30 seconds and retained special-mode overrides where continuous buying is part of the mode.
+- Expanded the LAN commander panel with bot difficulty, buy time, freeze time, round time, starting money, gravity, friendly fire and teammate damage controls.
+- Expanded bot difficulty from three names to levels `0-5`; level `5` is the default and highest difficulty.
+- Added automatic migration of old `easy`, `normal` and `hard` profile/server values to levels `1`, `3` and `5`.
+- BOT matches use the player's `0-5` menu selection. LAN uses the commander's synchronized server setting. Story always starts at level `5`.
+- Enabled friendly fire for Classic, Competitive and Wingman presets while Casual keeps it disabled, matching their intended rule style.
+- Changed Wingman buy time from 15 to 20 seconds for consistency with the requested 20-30 second purchase window.
+- Added release verification checks for the difficulty scale, teammate damage, commander controls, 2D weapon silhouettes and AWP behavior.
+- Rebuilt the self-contained browser HTML, Android embedded HTML, full release package and compressed beta package.
+
+### 1.3 Release - 3D textures, FPS controls and buying
 
 - Added tiny FreEDoom 0.13.0 weapon viewmodel PNGs to the 3D renderer without changing 2D weapons.
 - Added distinct cached FreEDoom-based texture variants and silhouette details for every built-in firearm.
@@ -16,10 +36,6 @@ Final 3D weapon texture, FPS controls and CS-style buying update.
 - Kept procedural weapon rendering as the automatic missing-asset fallback and as the ADS/scope view.
 - Excluded the original WAD files from Git and release packages; the runtime does not read them.
 - Added BSD 3-Clause attribution and license files beside the exported assets.
-- Added distinct 2D silhouettes for pistols, rifles, sniper rifles, heavy weapons and the knife.
-- Made player AWP hits lethal through armor and added configurable 50% teammate damage when friendly fire is enabled.
-- Clarified the top money HUD, enforced team buy zones and exposed buy time, round time, freeze time, economy, gravity and friendly fire to the LAN commander.
-- Expanded bot difficulty to `0-5`, migrated old difficulty names automatically and made Story use level `5`.
 
 ## 1.2 FINAL
 
