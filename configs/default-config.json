@@ -34,6 +34,7 @@
     "controlMode": "keyboard",
     "showMinimap": true,
     "autoReload": true,
+    "fastBindsEnabled": true,
     "fastBinds": []
   },
   "bindings": {

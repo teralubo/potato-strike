@@ -107,6 +107,10 @@ const hud = {
   fastBindKey: $("fast-bind-key"),
   fastBindAction: $("fast-bind-action"),
   fastBindAdd: $("fast-bind-add"),
+  fastBindEnabled: $("fast-bind-enabled"),
+  fastBindEnabledLabel: $("fast-bind-enabled-label"),
+  fastBindCount: $("fast-bind-count"),
+  fastBindClear: $("fast-bind-clear"),
   fastBindList: $("fast-bind-list"),
   crosshairStyle: $("crosshair-style"),
   crosshairColor: $("crosshair-color"),
@@ -420,6 +424,7 @@ const settings = {
   controlMode: "keyboard",
   showMinimap: true,
   autoReload: true,
+  fastBindsEnabled: true,
   fastBinds: [],
 };
 
@@ -519,10 +524,14 @@ const i18n = {
     resolutionLabel: "Rozdzielczosc",
     hzLabel: "Hz / FPS cap",
     fastBindTitle: "Fast Bind",
-    fastBindHelp: "Przypisz klawisz do szybkiego zakupu lub akcji. Zakupy nadal wymagaja buy time, pieniedzy i zgodnej strony.",
+    fastBindHelp: "Przypisz dowolna liczbe szybkich zakupow lub akcji. Wiele wpisow moze korzystac z tego samego klawisza; zakupy nadal respektuja zasady sklepu.",
     fastBindSetKey: "Ustaw klawisz",
     fastBindAdd: "Dodaj",
     fastBindRemove: "Usun",
+    fastBindEnabled: "Fast Bind wlaczone",
+    fastBindEntryEnabled: "Aktywny",
+    fastBindClear: "Usun wszystkie",
+    fastBindCount: "Wpisy: {count}",
     fastBindEmpty: "Brak Fast Bind. Ustaw klawisz i wybierz akcje.",
     fastBindPress: "Nacisnij klawisz...",
     fastBindBuyWeapons: "Kup bron",
@@ -605,10 +614,14 @@ const i18n = {
     resolutionLabel: "Resolution",
     hzLabel: "Hz / FPS cap",
     fastBindTitle: "Fast Bind",
-    fastBindHelp: "Assign a key to a quick purchase or action. Purchases still require buy time, money and the correct side.",
+    fastBindHelp: "Assign any number of quick purchases or actions. Multiple entries may use the same key; purchases still follow shop rules.",
     fastBindSetKey: "Set key",
     fastBindAdd: "Add",
     fastBindRemove: "Remove",
+    fastBindEnabled: "Fast Bind enabled",
+    fastBindEntryEnabled: "Enabled",
+    fastBindClear: "Remove all",
+    fastBindCount: "Entries: {count}",
     fastBindEmpty: "No Fast Binds. Set a key and choose an action.",
     fastBindPress: "Press a key...",
     fastBindBuyWeapons: "Buy weapon",
@@ -871,6 +884,8 @@ function applyLanguage() {
   setText("#fast-bind-title", tr("fastBindTitle"));
   setText("#fast-bind-help", tr("fastBindHelp"));
   setText("#fast-bind-add", tr("fastBindAdd"));
+  setText("#fast-bind-enabled-label", tr("fastBindEnabled"));
+  setText("#fast-bind-clear", tr("fastBindClear"));
   hud.fastBindAction?.setAttribute("aria-label", tr("fastBindActionAria"));
   setText("#missions-panel h2", tr("missionsTitle"));
   setText("#binds-panel h2", tr("bindsTitle"));
@@ -1018,12 +1033,17 @@ function fastBindActionEntries() {
 
 function normalizeFastBinds(value = settings.fastBinds) {
   const allowed = new Set(fastBindActionEntries().map((entry) => entry.value));
-  const byKey = new Map();
+  const normalized = [];
+  const ids = new Set();
   for (const bind of Array.isArray(value) ? value : []) {
     if (!bind || typeof bind.key !== "string" || !allowed.has(bind.action)) continue;
-    byKey.set(bind.key, { key: bind.key, action: bind.action });
+    let id = typeof bind.id === "string" && bind.id ? bind.id : "";
+    if (!id || ids.has(id)) id = `fb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+    ids.add(id);
+    normalized.push({ id, key: bind.key, action: bind.action, enabled: bind.enabled !== false });
   }
-  settings.fastBinds = [...byKey.values()];
+  settings.fastBinds = normalized;
+  settings.fastBindsEnabled = settings.fastBindsEnabled !== false;
   return settings.fastBinds;
 }
 
@@ -1055,6 +1075,9 @@ function renderFastBinds() {
   if (!hud.fastBindList || !hud.fastBindKey) return;
   normalizeFastBinds();
   hud.fastBindKey.textContent = waitingForFastBind ? tr("fastBindPress") : pendingFastBindKey ? codeName(pendingFastBindKey) : tr("fastBindSetKey");
+  hud.fastBindEnabled.checked = settings.fastBindsEnabled;
+  hud.fastBindCount.textContent = tr("fastBindCount").replace("{count}", String(settings.fastBinds.length));
+  hud.fastBindClear.disabled = settings.fastBinds.length === 0;
   hud.fastBindList.innerHTML = "";
   if (!settings.fastBinds.length) {
     const empty = document.createElement("div");
@@ -1065,22 +1088,35 @@ function renderFastBinds() {
   }
   for (const bind of settings.fastBinds) {
     const item = document.createElement("div");
-    item.className = "fast-bind-item";
+    item.className = `fast-bind-item${bind.enabled ? "" : " disabled"}`;
     const key = document.createElement("span");
     key.className = "tag";
     key.textContent = codeName(bind.key);
     const label = document.createElement("span");
     label.textContent = fastBindActionLabel(bind.action);
+    const toggle = document.createElement("label");
+    toggle.className = "fast-bind-toggle";
+    const enabled = document.createElement("input");
+    enabled.type = "checkbox";
+    enabled.checked = bind.enabled;
+    enabled.addEventListener("change", () => {
+      bind.enabled = enabled.checked;
+      saveConfig();
+      renderFastBinds();
+    });
+    const enabledLabel = document.createElement("span");
+    enabledLabel.textContent = tr("fastBindEntryEnabled");
+    toggle.append(enabled, enabledLabel);
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "secondary";
     remove.textContent = tr("fastBindRemove");
     remove.addEventListener("click", () => {
-      settings.fastBinds = settings.fastBinds.filter((entry) => entry.key !== bind.key);
+      settings.fastBinds = settings.fastBinds.filter((entry) => entry.id !== bind.id);
       saveConfig();
       renderFastBinds();
     });
-    item.append(key, label, remove);
+    item.append(key, label, toggle, remove);
     hud.fastBindList.appendChild(item);
   }
 }
@@ -1309,14 +1345,15 @@ function ensurePlayerId() {
 }
 
 function serializeProfile() {
+  const fastBinds = normalizeFastBinds().map((bind) => ({ ...bind }));
   return {
     version: 1,
     type: "potato-strike-player-profile",
     configId: settings.configId,
     nick: settings.nick,
     playerId: settings.playerId,
-    settings,
-    bindings,
+    settings: { ...settings, fastBinds },
+    bindings: { ...bindings },
     userMaps: userMaps(),
     storyMissions: savedStoryMissions(),
     customTextures,
@@ -1846,6 +1883,13 @@ function sideAllows(item, team = state.team) {
 function equipmentPrice(item) {
   if (item.key === "helmet" && player.armor >= 100 && !player.helmet) return 350;
   return item.price;
+}
+
+function ownsEquipment(item) {
+  return (item.key === "armor" && player.armor >= 100)
+    || (item.key === "helmet" && player.armor >= 100 && player.helmet)
+    || (item.key === "defuseKit" && player.defuseKit)
+    || (item.key === "zeus" && player.zeus);
 }
 
 function defaultWeaponName(team) {
@@ -2971,6 +3015,7 @@ function buyItem(type, id) {
   if (type === "equipment") {
     const item = equipmentCatalog[id];
     if (!item || !sideAllows(item)) return;
+    if (ownsEquipment(item)) return showMessage(settings.language === "en" ? "Already owned" : "Juz posiadasz");
     const price = equipmentPrice(item);
     if (player.money < price) return showMessage("Za malo kasy");
     player.money -= price;
@@ -3772,7 +3817,7 @@ function renderShop() {
   }
   for (const gear of equipmentCatalog.filter((item) => sideAllows(item))) {
     const id = equipmentCatalog.indexOf(gear);
-    const owned = (gear.key === "armor" && player.armor >= 100) || (gear.key === "helmet" && player.helmet) || (gear.key === "defuseKit" && player.defuseKit) || (gear.key === "zeus" && player.zeus);
+    const owned = ownsEquipment(gear);
     const price = equipmentPrice(gear);
     const stat = gear.key === "defuseKit" ? "DEFUSE 2.5s" : gear.key === "zeus" ? "TASER" : "ARMOR 100";
     const tag = gear.key === "helmet" ? "HELMET" : gear.key === "zeus" ? "ZEUS" : "GEAR";
@@ -4828,12 +4873,12 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(event.target?.tagName);
-  const fastBind = !event.repeat && !typing && !state.overlayOpen
-    ? normalizeFastBinds().find((bind) => bind.key === event.code)
-    : null;
-  if (fastBind) {
+  const fastBinds = !event.repeat && !typing && !state.overlayOpen && settings.fastBindsEnabled !== false
+    ? normalizeFastBinds().filter((bind) => bind.enabled && bind.key === event.code)
+    : [];
+  if (fastBinds.length) {
     event.preventDefault();
-    executeFastBind(fastBind.action);
+    for (const fastBind of fastBinds) executeFastBind(fastBind.action);
     return;
   }
   if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.crouch, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev, "Tab"].includes(event.code)) event.preventDefault();
@@ -5053,12 +5098,29 @@ hud.fastBindKey.addEventListener("click", () => {
 hud.fastBindAdd.addEventListener("click", () => {
   if (!pendingFastBindKey) return showMessage(tr("fastBindPress"));
   const action = hud.fastBindAction.value;
-  settings.fastBinds = normalizeFastBinds().filter((bind) => bind.key !== pendingFastBindKey);
-  settings.fastBinds.push({ key: pendingFastBindKey, action });
+  normalizeFastBinds();
+  settings.fastBinds.push({
+    id: `fb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`,
+    key: pendingFastBindKey,
+    action,
+    enabled: true,
+  });
   showMessage(`Fast Bind: ${codeName(pendingFastBindKey)} = ${fastBindActionLabel(action)}`);
   pendingFastBindKey = "";
   saveConfig();
   renderFastBinds();
+});
+hud.fastBindEnabled.addEventListener("change", () => {
+  settings.fastBindsEnabled = hud.fastBindEnabled.checked;
+  saveConfig();
+  renderFastBinds();
+});
+hud.fastBindClear.addEventListener("click", () => {
+  settings.fastBinds = [];
+  pendingFastBindKey = "";
+  saveConfig();
+  renderFastBinds();
+  showMessage(settings.language === "en" ? "All Fast Binds removed" : "Usunieto wszystkie Fast Bind");
 });
 hud.crosshairStyle.addEventListener("change", () => { settings.crosshairStyle = hud.crosshairStyle.value; saveConfig(); });
 hud.crosshairColor.addEventListener("input", () => { settings.crosshairColor = hud.crosshairColor.value; saveConfig(); });

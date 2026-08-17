@@ -115,7 +115,7 @@ for (const file of [
 for (const key of ["type", "configId", "userMaps", "storyMissions", "customTextures", "mods", "removedDefaultMods", "settings", "bindings", "nick", "playerId"]) {
   if (!(key in defaultConfig)) fail(`default config missing ${key}`);
 }
-if (defaultConfig.settings.hzLimit !== "vsync" || !Array.isArray(defaultConfig.settings.fastBinds)) {
+if (defaultConfig.settings.hzLimit !== "vsync" || defaultConfig.settings.fastBindsEnabled !== true || !Array.isArray(defaultConfig.settings.fastBinds)) {
   fail("default config must enable V-Sync and contain Fast Binds");
 }
 const defaultFpsMod = JSON.parse(fs.readFileSync("mods/default/fps_info/mod.json", "utf8"));
@@ -143,7 +143,7 @@ requireSnippets(gameJs, [
   "jumpHeight", "verticalVelocity", 'crouch: "ControlLeft"', "mobileLook",
   "bundledDefaultMods", "installBundledDefaultMods", "loadNativeMods", "drawEnabledModOverlays",
   "selectedGrenade", "beginGrenadeAim", "releaseGrenadeAim", "jumpThrowQueued", "totalGrenades",
-  "fastBindActionEntries", "normalizeFastBinds", "executeFastBind", 'hzLimit: "vsync"',
+  "fastBindActionEntries", "normalizeFastBinds", "executeFastBind", "fastBindsEnabled", "ownsEquipment", "settings: { ...settings, fastBinds }", 'hzLimit: "vsync"',
   "obstacleLocalPoint", "pointInMapObstacle", "autoTextureForHit", "drawPotatoWallColumn",
   "const objectHeight = clamp(Number(wall.z || 96)", "const elevation = clamp(Number(wall.elevation || 0)",
   "editorUnitsForSide", "editorWaypointsForUnit", "spawnEditorPickups", "updateEditorTriggers",
@@ -151,7 +151,8 @@ requireSnippets(gameJs, [
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
-  'id="fast-bind-key"', 'id="fast-bind-action"', 'id="fast-bind-add"', 'id="fast-bind-list"',
+  'id="fast-bind-key"', 'id="fast-bind-action"', 'id="fast-bind-add"', 'id="fast-bind-enabled"',
+  'id="fast-bind-clear"', 'id="fast-bind-count"', 'id="fast-bind-list"',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
 
