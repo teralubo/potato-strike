@@ -2,6 +2,13 @@
 
 Potato Strike 1.2 FINAL closes the Sandbox Studio line with finished FPS movement, folder-based mods and a rebuilt grenade inventory.
 
+## Fast Bind and frame pacing
+
+- Settings include profile-backed Fast Binds for buying any weapon, grenade or equipment item and for common inventory actions.
+- A Fast Bind uses the normal shop path, so money, buy time, team restrictions and inventory replacement still apply.
+- V-Sync is the default frame mode. It follows the browser/display refresh through `requestAnimationFrame`, with the existing Eco/Balanced performance presets limiting work to 30/60 FPS on potato PCs.
+- Manual 30, 60 and 120 FPS caps and the maximum browser frame rate remain available.
+
 ## FPS movement
 
 - `Space` jumps in 3D and keeps the existing dash in 2D.

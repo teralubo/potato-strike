@@ -108,8 +108,9 @@
         <label>
           Hz / FPS cap
           <select id="hz-limit">
+            <option value="vsync" selected>V-Sync (zalecane)</option>
             <option value="30">30 Hz</option>
-            <option value="60" selected>60 Hz</option>
+            <option value="60">60 Hz</option>
             <option value="120">120 Hz</option>
             <option value="0">Bez limitu</option>
           </select>
@@ -233,6 +234,18 @@
           Auto reload przy pustym magazynku
         </label>
       </div>
+      <section class="fast-bind-card" aria-labelledby="fast-bind-title">
+        <div>
+          <strong id="fast-bind-title">Fast Bind</strong>
+          <p id="fast-bind-help" class="panel-note">Przypisz klawisz do szybkiego zakupu lub akcji. Zakupy nadal wymagaja buy time, pieniedzy i zgodnej strony.</p>
+        </div>
+        <div class="fast-bind-controls">
+          <button id="fast-bind-key" type="button" class="secondary">Ustaw klawisz</button>
+          <select id="fast-bind-action" aria-label="Akcja Fast Bind"></select>
+          <button id="fast-bind-add" type="button">Dodaj</button>
+        </div>
+        <div id="fast-bind-list" class="fast-bind-list"></div>
+      </section>
       <div class="menu-actions left">
         <button id="export-config">Pobierz config</button>
         <button id="import-config">Wgraj config</button>
