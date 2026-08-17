@@ -15,7 +15,7 @@
         <div class="pill" id="team-pill">TEAM T</div>
         <div class="pill" id="health">HP 100</div>
         <div class="pill" id="armor">ARMOR 0</div>
-        <div class="pill" id="money">$800</div>
+        <div class="pill" id="money">KASA $800</div>
         <div class="pill hidden" id="buy-zone-pill">BUY ZONE</div>
         <div class="pill" id="round">R 1/32</div>
         <div class="pill" id="score">T 0 : 0 CT</div>
@@ -92,9 +92,12 @@
         <label>
           Poziom botow
           <select id="difficulty">
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
+            <option value="0">0 - bardzo latwy</option>
+            <option value="1">1 - latwy</option>
+            <option value="2">2 - sredni</option>
+            <option value="3">3 - trudny</option>
+            <option value="4">4 - ekspert</option>
+            <option value="5" selected>5 - najwyzszy</option>
           </select>
         </label>
         <label>
@@ -341,9 +344,12 @@
         <label>
           Trudnosc teamu
           <select id="team-difficulty">
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
+            <option value="0">0 - bardzo latwy</option>
+            <option value="1">1 - latwy</option>
+            <option value="2">2 - sredni</option>
+            <option value="3">3 - trudny</option>
+            <option value="4">4 - ekspert</option>
+            <option value="5" selected>5 - najwyzszy</option>
           </select>
         </label>
       </div>
@@ -575,6 +581,38 @@
         <label>
           Limit graczy
           <input id="server-maxplayers" type="number" min="2" max="20" value="10">
+        </label>
+        <label>
+          Poziom botow (0-5)
+          <input id="server-bot-difficulty" type="number" min="0" max="5" step="1" value="5">
+        </label>
+        <label>
+          Czas kupowania (sekundy)
+          <input id="server-buytime" type="number" min="0" max="120" value="20">
+        </label>
+        <label>
+          Freeze time (sekundy)
+          <input id="server-freezetime" type="number" min="0" max="30" value="5">
+        </label>
+        <label>
+          Czas rundy (sekundy)
+          <input id="server-roundtime" type="number" min="15" max="600" value="115">
+        </label>
+        <label>
+          Pieniadze startowe
+          <input id="server-startmoney" type="number" min="0" max="16000" value="800">
+        </label>
+        <label>
+          Grawitacja
+          <input id="server-gravity" type="number" min="100" max="1600" value="720">
+        </label>
+        <label class="check">
+          <input id="server-friendly-fire" type="checkbox">
+          Friendly fire
+        </label>
+        <label>
+          Obrazenia teamu (0-100%)
+          <input id="server-team-damage" type="number" min="0" max="100" value="50">
         </label>
         <label class="check">
           <input id="server-enemy-minimap" type="checkbox">

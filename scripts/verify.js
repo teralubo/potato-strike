@@ -123,6 +123,9 @@ if (defaultConfig.settings.hzLimit !== "vsync" || defaultConfig.settings.fastBin
   fail("default config must enable V-Sync and contain Fast Binds");
 }
 if (defaultConfig.settings.botAimMode !== "sights") fail("default BOT RMB aiming mode must use sights");
+if (defaultConfig.settings.difficulty !== 5 || defaultConfig.serverConfig.botDifficulty !== 5 || defaultConfig.serverConfig.teamDamageScale !== 0.5) {
+  fail("default bot difficulty and teammate damage settings are invalid");
+}
 if (defaultConfig.settings.crosshairEnabled !== true || defaultConfig.settings.crosshairVersion !== 2 || defaultConfig.settings.crosshairStyle !== "dot") {
   fail("default crosshair must be the enabled fixed-dot preset");
 }
@@ -179,6 +182,7 @@ requireSnippets(gameJs, [
   "freedoomWeaponTextureSources", "freedoomWeaponTexture", "freedoomWeaponTextureKey", "freedoomWeaponProfiles", "freedoomWeaponVariant", "drawWeaponVariantDetail", "drawFreedoomWeaponTexture", "migrateCrosshairSettings", "crosshairEnabled",
   "drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming)", "if (!isAimActive()) drawCrosshair();", "customEnabled: settings.crosshairCustomEnabled",
   "buyZoneForTeam", "inBuyZone", "drawBuyZones2d", "draw3dBuyZoneMarker", "zoomSensitivity", "rawMouseInput", "fieldOfView",
+  "drawWeaponSilhouette2d", "normalizeBotDifficulty", "teamDamageScale", "mp_friendlyfire_damage_reduction", 'b.weaponName === "AWP"',
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
@@ -187,6 +191,7 @@ requireSnippets(gameHtml, [
   'id="crosshair-enabled"', 'id="crosshair-reset"', 'id="crosshair-paint-canvas"',
   'id="game-rules"', 'id="server-aim-mode"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
   'id="create-lan"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="menu-aim-mode"',
+  'id="server-bot-difficulty"', 'id="server-buytime"', 'id="server-team-damage"',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
 
