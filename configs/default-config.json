@@ -51,6 +51,7 @@
     "grenade": "KeyH",
     "drop": "KeyG",
     "dash": "Space",
+    "crouch": "ControlLeft",
     "pause": "KeyP",
     "console": "Backquote"
   },
