@@ -25,7 +25,7 @@ Android APK buduje sie na GitHubie jako artifact `potato-strike-android-apk`.
 Flipper Zero `.fap` buduje sie na GitHubie osobno dla Official, Momentum i Unleashed firmware.
 Pelna paczka do pobrania buduje sie jako artifact `potato-strike-1.1-beta-folder`.
 Wersja webowa na GitHub Pages jest budowana z `PotatoStrike.html` i publikowana jako `index.html`, wiec po wejsciu na strone otwiera sie gra, a nie README.
-Buildy desktop kompatybilnosci buduja sie jako `potato-strike-windows-compat` oraz `potato-strike-linux-compat`.
+Buildy desktop kompatybilnosci buduja sie jako `potato-strike-Bindoj-compat` oraz `potato-strike-linux-compat`.
 
 ## GitHub Actions Costs
 
@@ -125,4 +125,4 @@ Offline z botami jest grywalny. Online/LAN maja menu konfiguracyjne i fallback d
 `server.js` ma lekki lokalny serwer i endpoint heartbeat dla pokoi LAN, ale prawdziwa synchronizacja meczu gracz kontra gracz wymaga jeszcze podpiecia klienta do stanu serwera.
 
 ## README MADE BY AI
-## MESSAGE FROM TERALUBO: play
+## MESSAGE FROM TERALUBO: this game started as a light version of cs and end as a sandbox
