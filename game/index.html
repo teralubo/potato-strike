@@ -235,14 +235,24 @@
         </label>
       </div>
       <section class="fast-bind-card" aria-labelledby="fast-bind-title">
-        <div>
-          <strong id="fast-bind-title">Fast Bind</strong>
-          <p id="fast-bind-help" class="panel-note">Przypisz klawisz do szybkiego zakupu lub akcji. Zakupy nadal wymagaja buy time, pieniedzy i zgodnej strony.</p>
+        <div class="fast-bind-title-row">
+          <div>
+            <strong id="fast-bind-title">Fast Bind</strong>
+            <p id="fast-bind-help" class="panel-note">Przypisz dowolna liczbe szybkich zakupow lub akcji. Wiele wpisow moze korzystac z tego samego klawisza.</p>
+          </div>
+          <label class="fast-bind-master">
+            <input id="fast-bind-enabled" type="checkbox" checked>
+            <span id="fast-bind-enabled-label">Fast Bind wlaczone</span>
+          </label>
         </div>
         <div class="fast-bind-controls">
           <button id="fast-bind-key" type="button" class="secondary">Ustaw klawisz</button>
           <select id="fast-bind-action" aria-label="Akcja Fast Bind"></select>
           <button id="fast-bind-add" type="button">Dodaj</button>
+        </div>
+        <div class="fast-bind-list-head">
+          <span id="fast-bind-count">0 wpisow</span>
+          <button id="fast-bind-clear" type="button" class="secondary">Usun wszystkie</button>
         </div>
         <div id="fast-bind-list" class="fast-bind-list"></div>
       </section>

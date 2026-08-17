@@ -6,7 +6,7 @@ Sandbox Studio and 3D readability update.
 
 - Added folder-based mod categories and the removable/restorable `default/fps_info` mod, disabled by default.
 - Added grenade inventory slots, hold/release throwing, 3D arc physics, competitive purchase limits and synchronized jump-throws.
-- Added profile-backed Fast Binds for shop and inventory actions while preserving all economy, side and buy-time checks.
+- Added unlimited profile-backed Fast Binds with same-key action sequences, per-entry and global enable controls, permanent removal and full config round-tripping while preserving all economy, side and buy-time checks.
 - Added default adaptive V-Sync frame pacing with Eco/Balanced 30/60 FPS ceilings and optional manual caps.
 - Replaced the fixed isometric Studio preview with a direct, persistent WebGL scene editor and a software fallback.
 - Added separate 2D mission-plan and 3D scene workflows, including object/group/trigger/waypoint/sync/marker modes, transform tools, layers, history and multi-selection.
