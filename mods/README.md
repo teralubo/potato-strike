@@ -67,3 +67,8 @@ In story mode the player can press `Tab` to view the current objective. If no cu
 ## Bomb and weapon rules
 
 On death, actors drop their weapons, but never the knife. The bomb is a special inventory slot: scroll or number keys can select it, and holding `E` uses it. Only Terrorists can pick up a dropped bomb.
+
+## Unreleased ideas
+
+Eksperymentalne pomysly do przyszlych wersji sa w `mods/unreleased/`.
+Folder `mods/examples/1.2-beta/` zawiera gotowe, domyslnie wylaczone JSON-y do importu w menu `Mody`.

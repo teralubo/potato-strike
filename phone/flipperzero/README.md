@@ -2,14 +2,14 @@
 
 ## Najprosciej
 
-1. Pobierz paczke `potato-strike-1.1-beta-folder` z GitHub Actions.
-2. Rozpakuj `PotatoStrike-1.1-BETA.zip`.
+1. Pobierz paczke `potato-strike-1.2-beta-folder` z GitHub Actions.
+2. Rozpakuj `PotatoStrike-1.2-BETA.zip`.
 3. Wybierz plik pod swoj firmware:
 
 ```text
-PotatoStrikeMini-1.1-BETA-official.fap   - oficjalny firmware Flipper Zero
-PotatoStrikeMini-1.1-BETA-momentum.fap   - Momentum Firmware
-PotatoStrikeMini-1.1-BETA-unleashed.fap  - Unleashed Firmware
+PotatoStrikeMini-1.2-BETA-official.fap   - oficjalny firmware Flipper Zero
+PotatoStrikeMini-1.2-BETA-momentum.fap   - Momentum Firmware
+PotatoStrikeMini-1.2-BETA-unleashed.fap  - Unleashed Firmware
 ```
 
 4. Skopiuj wybrany plik z `phone/flipperzero/` na karte SD Flipper Zero do:
@@ -28,7 +28,7 @@ potato-strike-flipperzero-momentum-fap
 potato-strike-flipperzero-unleashed-fap
 ```
 
-This is a tiny Flipper Zero mini-game for the Potato Strike 1.1 BETA compatibility pack.
+This is a tiny Flipper Zero mini-game for the Potato Strike 1.2 BETA compatibility pack.
 
 It is intentionally minimal:
 
@@ -65,9 +65,9 @@ To build all supported firmware variants locally:
 This script creates:
 
 ```text
-dist/PotatoStrikeMini-1.1-BETA-official.fap
-dist/PotatoStrikeMini-1.1-BETA-momentum.fap
-dist/PotatoStrikeMini-1.1-BETA-unleashed.fap
+dist/PotatoStrikeMini-1.2-BETA-official.fap
+dist/PotatoStrikeMini-1.2-BETA-momentum.fap
+dist/PotatoStrikeMini-1.2-BETA-unleashed.fap
 ```
 
 ## Firmware variants

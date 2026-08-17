@@ -18,10 +18,12 @@
         <label class="editor-graphics-switch">
           Grafika edytora
           <select id="viewport-mode" title="Grafika edytora">
-            <option value="2d" selected>2D</option>
-            <option value="3d">3D</option>
+            <option value="2d" selected>Plan 2D</option>
+            <option value="3d">Scena 3D</option>
           </select>
         </label>
+        <button id="undo-editor" class="icon-command secondary" title="Cofnij" aria-label="Cofnij">Cofnij</button>
+        <button id="redo-editor" class="icon-command secondary" title="Ponow" aria-label="Ponow">Ponow</button>
         <button id="new-map">Nowa</button>
         <button id="generate-map">Generuj</button>
         <button id="save-map">Zapisz</button>
@@ -67,6 +69,14 @@
           <label>
             Ambient 3D
             <input id="ambient-color" type="color" value="#3d555d">
+          </label>
+          <label>
+            Niebo 3D
+            <input id="sky-color" type="color" value="#70858b">
+          </label>
+          <label>
+            Mgla 3D
+            <input id="fog-distance" type="number" min="600" max="8000" step="100" value="3600">
           </label>
           <label>
             Tekstura 3D
@@ -178,6 +188,11 @@
           <button data-tool="logic">Logic</button>
           <button data-tool="weaponPickup">Weapon</button>
           <button data-tool="prop">Prop</button>
+          <button data-tool="unitT">Unit T</button>
+          <button data-tool="unitCT">Unit CT</button>
+          <button data-tool="waypoint">Waypoint</button>
+          <button data-tool="marker">Marker</button>
+          <button data-tool="sync">Sync</button>
           <button data-tool="delete">Delete</button>
         </div>
       </div>
@@ -224,7 +239,33 @@
       </div>
     </aside>
     <main class="studio-canvas-wrap">
-      <canvas id="studio-canvas" width="2200" height="1400"></canvas>
+      <div class="studio-viewport-toolbar" role="toolbar" aria-label="Narzedzia przestrzeni roboczej">
+        <div class="toolbar-segment" aria-label="Typ encji">
+          <button data-editor-mode="objects" class="active" title="Obiekty">F1 Obj</button>
+          <button data-editor-mode="groups" title="Grupy">F2 Group</button>
+          <button data-editor-mode="triggers" title="Triggery">F3 Trigger</button>
+          <button data-editor-mode="waypoints" title="Waypoints">F4 WP</button>
+          <button data-editor-mode="sync" title="Synchronizacja">F5 Sync</button>
+          <button data-editor-mode="markers" title="Markery">F6 Marker</button>
+        </div>
+        <div class="toolbar-segment" aria-label="Transformacja">
+          <button data-transform="select" title="Zaznaczanie">1 Select</button>
+          <button data-transform="translate" class="active" title="Przesuwanie">2 Move</button>
+          <button data-transform="rotate" title="Obrot">3 Rotate</button>
+          <button data-transform="scale" title="Skala">4 Scale</button>
+        </div>
+        <label class="toolbar-field">
+          Warstwa
+          <select id="active-layer"></select>
+        </label>
+        <button id="add-layer" class="secondary" title="Dodaj warstwe">+ Warstwa</button>
+        <button id="focus-selection" class="secondary" title="Ustaw kamere na zaznaczeniu">Focus</button>
+        <button id="reset-camera" class="secondary" title="Resetuj kamere">Reset kamery</button>
+      </div>
+      <div id="studio-viewport-stage">
+        <canvas id="studio-canvas" width="1280" height="720"></canvas>
+        <div id="studio-viewport-3d" class="hidden" aria-label="Widok edytora 3D"></div>
+      </div>
       <div id="studio-status">Gotowe</div>
     </main>
     <aside class="studio-panel studio-right">
@@ -237,11 +278,19 @@
         <div id="object-list" class="object-list"></div>
       </div>
       <div class="studio-section">
+        <div class="section-line">
+          <div class="muted">WARSTWY</div>
+          <span id="selection-count" class="tag">0 selected</span>
+        </div>
+        <div id="layer-list" class="object-list"></div>
+      </div>
+      <div class="studio-section">
         <div class="muted">LISTA PLIKOW / ASSETY</div>
         <div id="asset-list" class="object-list"></div>
       </div>
     </aside>
   </div>
+  <script src="vendor/three.min.js"></script>
   <script src="editor.js"></script>
 </body>
 </html>

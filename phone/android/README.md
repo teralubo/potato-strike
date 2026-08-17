@@ -2,15 +2,15 @@
 
 ## Najprosciej
 
-1. Pobierz paczke `potato-strike-1.1-beta-folder` z GitHub Actions.
-2. Rozpakuj `PotatoStrike-1.1-BETA.zip`.
+1. Pobierz paczke `potato-strike-1.2-beta-folder` z GitHub Actions.
+2. Rozpakuj `PotatoStrike-1.2-BETA.zip`.
 3. Wejdz na telefonie do folderu:
 
 ```text
 phone/android/
 ```
 
-4. Kliknij `PotatoStrike-1.1-BETA.apk`.
+4. Kliknij `PotatoStrike-1.2-BETA.apk`.
 5. Jesli Android zapyta, pozwol na instalacje z tego zrodla.
 6. Otworz aplikacje `Potato Strike`.
 
@@ -42,5 +42,5 @@ phone/android/app/build/outputs/apk/debug/app-debug.apk
 GitHub Actions kopiuje go do prostszej nazwy:
 
 ```text
-phone/android/PotatoStrike-1.1-BETA.apk
+phone/android/PotatoStrike-1.2-BETA.apk
 ```

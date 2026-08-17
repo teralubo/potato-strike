@@ -1,0 +1,55 @@
+{
+  "id": "ps12-aim-lab-bunker",
+  "name": "1.2 Example - Aim Lab Bunker",
+  "enabled": true,
+  "priority": 12,
+  "mode": "training",
+  "roundTime": 90,
+  "map": {
+    "name": "Aim Lab Bunker",
+    "w": 1400,
+    "h": 920,
+    "tSpawn": { "x": 160, "y": 760 },
+    "ctSpawn": { "x": 1240, "y": 160 },
+    "sites": {
+      "A": { "x": 700, "y": 460, "r": 110 },
+      "B": { "x": 1080, "y": 690, "r": 95 }
+    },
+    "meta": {
+      "format": "potato-map-3d-lite",
+      "idea": "1.2-beta-training",
+      "storyGoal": {
+        "type": "kills",
+        "target": 5,
+        "text": "Warmup: zdobadz 5 fragow i nie gin.",
+        "code": "return ctx.kills >= 5 && ctx.player.hp > 0;"
+      }
+    },
+    "obstacles": [
+      { "id": "back-wall", "type": "wall", "x": 680, "y": 40, "w": 1120, "h": 70, "z": 120, "rot": 0, "color": "#f3f3f0", "material": "potato-concrete" },
+      { "id": "left-lane", "type": "wall", "x": 310, "y": 300, "w": 90, "h": 440, "z": 110, "rot": 0, "color": "#d8e1df", "material": "tile" },
+      { "id": "right-lane", "type": "wall", "x": 1090, "y": 330, "w": 90, "h": 390, "z": 110, "rot": 0, "color": "#d8e1df", "material": "tile" },
+      { "id": "center-cover-a", "type": "crate", "x": 610, "y": 430, "w": 110, "h": 110, "z": 72, "rot": 0, "color": "#9a8159", "material": "potato-wood" },
+      { "id": "center-cover-b", "type": "crate", "x": 800, "y": 510, "w": 110, "h": 110, "z": 72, "rot": 0, "color": "#8e7854", "material": "potato-wood" },
+      { "id": "target-panel-red", "type": "prop", "x": 930, "y": 235, "w": 75, "h": 30, "z": 90, "rot": 0, "color": "#c84848", "material": "redpanel" },
+      { "id": "target-panel-blue", "type": "prop", "x": 480, "y": 650, "w": 75, "h": 30, "z": 90, "rot": 0, "color": "#3e6ed8", "material": "bluewall" }
+    ]
+  },
+  "weapons": [
+    {
+      "id": "ps12-trainer",
+      "name": "PS-12 Trainer",
+      "category": "Rifle",
+      "price": 900,
+      "damage": 22,
+      "magSize": 32,
+      "reserve": 96,
+      "fireDelay": 95,
+      "reloadTime": 1.4,
+      "spread": 0.045,
+      "recoil": 0.032,
+      "automatic": true,
+      "color": "#f5f0df"
+    }
+  ]
+}

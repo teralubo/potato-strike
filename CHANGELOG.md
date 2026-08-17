@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.2 BETA
+
+Sandbox Studio and 3D readability update.
+
+- Replaced the fixed isometric Studio preview with a direct, persistent WebGL scene editor and a software fallback.
+- Added separate 2D mission-plan and 3D scene workflows, including object/group/trigger/waypoint/sync/marker modes, transform tools, layers, history and multi-selection.
+- Added local Three.js vendor build so Studio 3D works offline without a CDN.
+- Added map schema `editorData.version: 2` for units, groups, triggers, waypoints, markers, systems, pickups and connections while retaining old obstacle compatibility.
+- Connected Studio units, bot routes, pickups and triggers to game tests.
+- Corrected FPS wall projection to use object height and elevation instead of oversized fixed walls.
+- Added rotated obstacle collision/rendering and more readable low-cost materials, terrain, fog, characters and wall shading.
+- Removed screen-space material stripes, aimed round spawns into the map and fixed status/minimap overlap on compact screens.
+- Preserved the existing 2D game, profiles, mods, story mode, economy, LAN setup and offline crash guards.
+- Promoted the Aim Lab Bunker, Extraction Sweep and Micro Royale JSON prototypes as optional 1.2 mod examples.
+- Updated Android, Flipper Zero, desktop compatibility, Pages and release ZIP naming to 1.2 BETA.
+- Kept heavy GitHub Actions builds manual/tag-only and Pages free of npm installation to reduce billed minutes.
+
 ## 1.1 BETA
 
 Compatibility update focused on portable builds.

@@ -88,7 +88,7 @@ body {
 #message {
   position: absolute;
   left: 50%;
-  top: 16px;
+  top: 60px;
   transform: translateX(-50%);
   max-width: min(560px, calc(100vw - 28px));
   padding: 8px 12px;
@@ -573,6 +573,16 @@ button:disabled {
     left: 8px;
     right: 8px;
     bottom: 8px;
+  }
+
+  #message {
+    left: 8px;
+    right: 140px;
+    top: 130px;
+    transform: none;
+    max-width: none;
+    padding: 7px 9px;
+    font-size: 12px;
   }
 
   .weapon-card.wide {
@@ -1574,6 +1584,8 @@ const state = {
   randomMissions: [],
   spectator: { active: false, index: 0, target: null, takeoverLatch: false },
   frameSkip: 0,
+  triggerPoll: 0,
+  triggerStates: {},
 };
 
 const settings = {
@@ -1613,21 +1625,21 @@ const settings = {
 };
 
 const simple3dTextures = {
-  white: { base: "#f0f0e6", side: "#d1d4c8", seam: "rgba(35,35,31,0.24)", mark: "rgba(255,255,255,0.28)", mode: "panel", footstep: "concrete" },
-  concrete: { base: "#d2d5cb", side: "#aeb7ad", seam: "rgba(45,45,40,0.26)", mark: "rgba(255,255,255,0.18)", mode: "panel", footstep: "concrete" },
-  brick: { base: "#cda47f", side: "#91664e", seam: "rgba(65,38,28,0.34)", mark: "rgba(255,245,220,0.16)", mode: "brick", footstep: "stone" },
-  crate: { base: "#b88752", side: "#745032", seam: "rgba(49,30,17,0.36)", mark: "rgba(255,230,176,0.18)", mode: "crate", footstep: "wood" },
-  metal: { base: "#b9c5c9", side: "#74868c", seam: "rgba(22,35,38,0.32)", mark: "rgba(255,255,255,0.24)", mode: "metal", footstep: "metal" },
-  glass: { base: "#b7dce4", side: "#6daab8", seam: "rgba(33,67,74,0.28)", mark: "rgba(255,255,255,0.35)", mode: "glass", footstep: "glass" },
+  white: { base: "#d8d8ce", side: "#aeb2a8", seam: "rgba(34,38,33,0.32)", mark: "rgba(255,255,255,0.22)", mode: "panel", footstep: "concrete" },
+  concrete: { base: "#aeb4aa", side: "#7f8980", seam: "rgba(39,45,40,0.34)", mark: "rgba(255,255,255,0.14)", mode: "speckle", footstep: "concrete" },
+  brick: { base: "#b77e61", side: "#764a3c", seam: "rgba(54,29,24,0.42)", mark: "rgba(255,235,210,0.13)", mode: "brick", footstep: "stone" },
+  crate: { base: "#9a6b3f", side: "#5e3e27", seam: "rgba(43,25,14,0.46)", mark: "rgba(255,224,167,0.14)", mode: "crate", footstep: "wood" },
+  metal: { base: "#88999f", side: "#52656d", seam: "rgba(17,29,33,0.4)", mark: "rgba(255,255,255,0.2)", mode: "metal", footstep: "metal" },
+  glass: { base: "#80b1bd", side: "#437884", seam: "rgba(25,55,64,0.38)", mark: "rgba(255,255,255,0.32)", mode: "glass", footstep: "glass" },
   hazard: { base: "#f0d06e", side: "#88622e", seam: "rgba(42,31,18,0.38)", mark: "rgba(20,20,15,0.3)", mode: "hazard", footstep: "metal" },
-  bluewall: { base: "#bfd2df", side: "#71899b", seam: "rgba(20,36,50,0.28)", mark: "rgba(255,255,255,0.22)", mode: "panel", footstep: "concrete" },
-  redpanel: { base: "#d9b0a2", side: "#925d54", seam: "rgba(65,28,24,0.28)", mark: "rgba(255,238,230,0.18)", mode: "panel", footstep: "concrete" },
-  greenpanel: { base: "#c8d7b4", side: "#70885f", seam: "rgba(30,50,25,0.26)", mark: "rgba(255,255,235,0.18)", mode: "panel", footstep: "concrete" },
-  tile: { base: "#e2dfd2", side: "#aaa89d", seam: "rgba(38,38,34,0.32)", mark: "rgba(255,255,255,0.26)", mode: "tile", footstep: "stone" },
+  bluewall: { base: "#86a9bd", side: "#526f82", seam: "rgba(17,31,43,0.36)", mark: "rgba(255,255,255,0.18)", mode: "panel", footstep: "concrete" },
+  redpanel: { base: "#b67c70", side: "#744741", seam: "rgba(55,22,20,0.36)", mark: "rgba(255,238,230,0.14)", mode: "panel", footstep: "concrete" },
+  greenpanel: { base: "#8fa27a", side: "#536648", seam: "rgba(25,42,22,0.34)", mark: "rgba(255,255,235,0.14)", mode: "panel", footstep: "concrete" },
+  tile: { base: "#c2c0b5", side: "#89887f", seam: "rgba(34,34,31,0.38)", mark: "rgba(255,255,255,0.2)", mode: "tile", footstep: "stone" },
   asphalt: { base: "#9fa49c", side: "#626c65", seam: "rgba(17,20,18,0.34)", mark: "rgba(255,255,255,0.16)", mode: "speckle", footstep: "stone" },
   camo: { base: "#bbc6a0", side: "#667453", seam: "rgba(38,49,28,0.28)", mark: "rgba(237,245,205,0.18)", mode: "camo", footstep: "dirt" },
   stripe: { base: "#e1c981", side: "#816b43", seam: "rgba(28,24,16,0.35)", mark: "rgba(255,255,230,0.2)", mode: "stripe", footstep: "metal" },
-  terrain: { base: "#47553e", side: "#283229", seam: "rgba(242,240,223,0.12)", mark: "rgba(255,255,255,0.08)", mode: "terrain", footstep: "dirt" },
+  terrain: { base: "#3d4b39", side: "#222b23", seam: "rgba(242,240,223,0.1)", mark: "rgba(255,255,255,0.07)", mode: "terrain", footstep: "dirt" },
 };
 
 const bindings = {
@@ -2651,6 +2663,12 @@ function loadStudioTestMap() {
   try {
     const testMap = JSON.parse(localStorage.getItem("potatoStrikeStudioTestMap") || "null");
     if (!testMap?.obstacles) return false;
+    const studioTextures = JSON.parse(localStorage.getItem("potatoStrikeStudioTextures") || "[]");
+    if (Array.isArray(studioTextures)) {
+      const merged = new Map(customTextures.map((texture) => [texture.id, texture]));
+      for (const texture of studioTextures) if (texture?.id) merged.set(texture.id, texture);
+      customTextures.splice(0, customTextures.length, ...merged.values());
+    }
     maps.studioTest = normalizeMap(testMap);
     if (![...hud.menuMap.options].some((option) => option.value === "studioTest")) {
       const option = document.createElement("option");
@@ -3003,14 +3021,36 @@ function pointInRect(x, y, o) {
   return x > o.x && x < o.x + o.w && y > o.y && y < o.y + o.h;
 }
 
+function obstacleBlocks(o) {
+  return o && o.visible !== false && o.collidable !== false && !["trigger", "logic", "light"].includes(o.type);
+}
+
+function obstacleLocalPoint(o, x, y) {
+  const angle = -(Number(o.rot || 0) * Math.PI) / 180;
+  const dx = x - (o.x + o.w / 2);
+  const dy = y - (o.y + o.h / 2);
+  return {
+    x: dx * Math.cos(angle) - dy * Math.sin(angle),
+    y: dx * Math.sin(angle) + dy * Math.cos(angle),
+  };
+}
+
+function pointInMapObstacle(x, y, o) {
+  if (!obstacleBlocks(o)) return false;
+  const local = obstacleLocalPoint(o, x, y);
+  return Math.abs(local.x) < o.w / 2 && Math.abs(local.y) < o.h / 2;
+}
+
 function pointInObstacle(x, y) {
-  return state.map.obstacles.some((o) => pointInRect(x, y, o));
+  return state.map.obstacles.some((o) => pointInMapObstacle(x, y, o));
 }
 
 function rectCircleHit(rect, cx, cy, r) {
-  const x = clamp(cx, rect.x, rect.x + rect.w);
-  const y = clamp(cy, rect.y, rect.y + rect.h);
-  return dist(cx, cy, x, y) < r;
+  if (!obstacleBlocks(rect)) return false;
+  const local = obstacleLocalPoint(rect, cx, cy);
+  const x = clamp(local.x, -rect.w / 2, rect.w / 2);
+  const y = clamp(local.y, -rect.h / 2, rect.h / 2);
+  return Math.hypot(local.x - x, local.y - y) < r;
 }
 
 function inSite(siteKey, x = player.x, y = player.y) {
@@ -3051,15 +3091,29 @@ function normalizeMap(rawMap, fallback = maps.custom) {
       w: clamp(Math.abs(Number(obj.w) || 96), 12, map.w),
       h: clamp(Math.abs(Number(obj.h) || 96), 12, map.h),
       z: clamp(Number(obj.z) || 64, 0, 512),
+      elevation: clamp(Number(obj.elevation) || 0, 0, 1024),
       rot: Number(obj.rot) || 0,
       color: obj.color || "",
-      texture: obj.texture || obj.material || defaultTextureForType(obj.type),
-      material: obj.material || obj.texture || defaultTextureForType(obj.type),
+      texture: obj.texture || obj.material || source.meta?.defaultTexture || autoTextureForHit(obj),
+      material: obj.material || obj.texture || source.meta?.defaultTexture || autoTextureForHit(obj),
       textureColor: obj.textureColor || "",
+      layer: obj.layer || "default",
+      visible: obj.visible !== false,
+      locked: Boolean(obj.locked),
+      script: obj.script || "",
     }))
     .filter((obj) => obj.w > 0 && obj.h > 0);
   map.name = source.name || fallback.name || "Custom Mission";
-  map.meta = { ...(fallback.meta || {}), ...(source.meta || {}), storyGoal: normalizeStoryGoal(source.meta?.storyGoal || fallback.meta?.storyGoal) };
+  map.meta = {
+    terrainColor: "#3d4b39",
+    skyColor: "#61777f",
+    ambientColor: "#41565c",
+    fogDistance: 3600,
+    ...(fallback.meta || {}),
+    ...(source.meta || {}),
+    storyGoal: normalizeStoryGoal(source.meta?.storyGoal || fallback.meta?.storyGoal),
+  };
+  map.editorData = source.editorData && typeof source.editorData === "object" ? JSON.parse(JSON.stringify(source.editorData)) : null;
   return map;
 }
 
@@ -3378,10 +3432,61 @@ function resetLoadout() {
   state.bomb.carrier = state.team === "T" ? "player" : "";
 }
 
+function editorUnitsForSide(team) {
+  const units = state.map.editorData?.units;
+  return Array.isArray(units) ? units.filter((unit) => unit.side === team) : [];
+}
+
+function editorUnitSpawn(team, index, fallback) {
+  const units = editorUnitsForSide(team);
+  const unit = units[index];
+  if (!unit) return { point: fallback, unit: null };
+  return { point: findSafePoint({ x: unit.x, y: unit.y }), unit };
+}
+
+function editorWaypointsForUnit(unit) {
+  if (!unit || !state.map.editorData) return [];
+  const group = state.map.editorData.groups?.find((item) => Array.isArray(item.members) && item.members.includes(unit.id));
+  if (!group) return [];
+  return (state.map.editorData.waypoints || [])
+    .filter((waypoint) => waypoint.groupId === group.id)
+    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
+    .map((waypoint) => ({ x: waypoint.x, y: waypoint.y, type: waypoint.type || "MOVE" }));
+}
+
+function nextEditorWaypoint(actor) {
+  if (!Array.isArray(actor.editorWaypoints) || !actor.editorWaypoints.length) return null;
+  actor.editorWaypointIndex = clamp(Number(actor.editorWaypointIndex || 0), 0, actor.editorWaypoints.length - 1);
+  let point = actor.editorWaypoints[actor.editorWaypointIndex];
+  if (dist(actor.x, actor.y, point.x, point.y) < 54) {
+    if (point.type === "CYCLE") actor.editorWaypointIndex = 0;
+    else actor.editorWaypointIndex = Math.min(actor.editorWaypoints.length - 1, actor.editorWaypointIndex + 1);
+    point = actor.editorWaypoints[actor.editorWaypointIndex];
+  }
+  return point;
+}
+
+function spawnEditorPickups() {
+  const pickups = state.map.editorData?.pickups;
+  if (!Array.isArray(pickups)) return;
+  for (const pickup of pickups) {
+    const weapon = weapons.find((item) => item.name === pickup.weapon);
+    if (!weapon || weapon.melee) continue;
+    const item = weaponDropData(weapon, pickup.x, pickup.y);
+    item.ammo = clamp(Number(pickup.ammo || weapon.magSize), 0, weapon.magSize);
+    item.currentReserve = weapon.reserve;
+    item.editorPickup = true;
+    droppedWeapons.push(item);
+  }
+}
+
 function resetRoundPositions() {
-  const spawn = findSafePoint(state.team === "T" ? state.map.tSpawn : state.map.ctSpawn);
+  const fallback = findSafePoint(state.team === "T" ? state.map.tSpawn : state.map.ctSpawn);
+  const spawn = editorUnitSpawn(state.team, 0, fallback).point;
   player.x = spawn.x;
   player.y = spawn.y;
+  player.angle = angleTo(player.x, player.y, state.map.w / 2, state.map.h / 2);
+  camera.pitch = 0;
   player.hp = 100;
   player.armor = Math.min(player.armor, 100);
   player.alive = true;
@@ -3401,6 +3506,9 @@ function resetRoundPositions() {
   state.winner = "";
   state.bomb.timer = 40;
   state.bomb.defuse = 0;
+  state.triggerPoll = 0;
+  state.triggerStates = {};
+  spawnEditorPickups();
   if (state.team === "T") {
     state.bomb.status = "carried";
     state.bomb.carrier = "player";
@@ -3421,7 +3529,8 @@ function spawnBots() {
   const count = Math.max(1, Number(settings.matchSize));
   const enemySpawn = findSafePoint(state.enemyTeam === "T" ? state.map.tSpawn : state.map.ctSpawn);
   for (let i = 0; i < count; i += 1) {
-    const spawn = findSafePoint({ x: enemySpawn.x + (Math.random() - 0.5) * 180, y: enemySpawn.y + (Math.random() - 0.5) * 180 });
+    const placed = editorUnitSpawn(state.enemyTeam, i, null);
+    const spawn = placed.point || findSafePoint({ x: enemySpawn.x + (Math.random() - 0.5) * 180, y: enemySpawn.y + (Math.random() - 0.5) * 180 });
     const loadout = makeBotLoadout(state.enemyTeam);
     bots.push({
       x: spawn.x,
@@ -3443,11 +3552,14 @@ function spawnBots() {
       name: `ENEMY ${i + 1}`,
       source: "BOT",
       flashed: 0,
+      editorWaypoints: editorWaypointsForUnit(placed.unit),
+      editorWaypointIndex: 0,
     });
   }
   const allySpawn = findSafePoint(state.team === "T" ? state.map.tSpawn : state.map.ctSpawn);
   for (let i = 1; i < count; i += 1) {
-    const spawn = findSafePoint({ x: allySpawn.x + (Math.random() - 0.5) * 170, y: allySpawn.y + (Math.random() - 0.5) * 170 });
+    const placed = editorUnitSpawn(state.team, i, null);
+    const spawn = placed.point || findSafePoint({ x: allySpawn.x + (Math.random() - 0.5) * 170, y: allySpawn.y + (Math.random() - 0.5) * 170 });
     const loadout = makeBotLoadout(state.team);
     allies.push({
       x: spawn.x,
@@ -3469,6 +3581,8 @@ function spawnBots() {
       name: `BOT ${i}`,
       source: "BOT",
       flashed: 0,
+      editorWaypoints: editorWaypointsForUnit(placed.unit),
+      editorWaypointIndex: 0,
     });
   }
   renderTeams();
@@ -4095,9 +4209,10 @@ function updateBots(dt) {
     const d = dist(bot.x, bot.y, player.x, player.y);
     const los = hasLineOfSight(bot.x, bot.y, player.x, player.y);
     const targetSite = state.enemyTeam === "T" ? state.map.sites[state.bomb.site || (Math.random() < 0.5 ? "A" : "B")] : null;
+    const editorWaypoint = nextEditorWaypoint(bot);
     if (bot.flashed <= 0 && (!los || d > 260)) {
-      const tx = targetSite ? targetSite.x : player.x;
-      const ty = targetSite ? targetSite.y : player.y;
+      const tx = editorWaypoint?.x ?? targetSite?.x ?? player.x;
+      const ty = editorWaypoint?.y ?? targetSite?.y ?? player.y;
       const moveA = angleTo(bot.x, bot.y, tx, ty) + Math.sin(performance.now() / 420 + bot.x) * 0.45;
       moveEntity(bot, Math.cos(moveA) * bot.speed, Math.sin(moveA) * bot.speed, dt);
       maybeStep(bot, true, false);
@@ -4123,8 +4238,10 @@ function updateAllies(dt) {
     ally.angle = a;
     const d = dist(ally.x, ally.y, target.x, target.y);
     const los = hasLineOfSight(ally.x, ally.y, target.x, target.y);
+    const editorWaypoint = nextEditorWaypoint(ally);
     if (!los || d > 360) {
-      moveEntity(ally, Math.cos(a) * ally.speed, Math.sin(a) * ally.speed, dt);
+      const moveAngle = editorWaypoint ? angleTo(ally.x, ally.y, editorWaypoint.x, editorWaypoint.y) : a;
+      moveEntity(ally, Math.cos(moveAngle) * ally.speed, Math.sin(moveAngle) * ally.speed, dt);
       maybeStep(ally, true, false);
     }
     ally.fire -= dt * 1000;
@@ -4492,30 +4609,35 @@ function drawMap2d() {
   }
   ctx.strokeStyle = "#848b72"; ctx.lineWidth = 3;
   for (const o of state.map.obstacles) {
+    if (o.visible === false) continue;
+    ctx.save();
+    ctx.translate(o.x + o.w / 2 - camera.x, o.y + o.h / 2 - camera.y);
+    ctx.rotate((Number(o.rot || 0) * Math.PI) / 180);
     ctx.fillStyle = wallBaseColor(o);
-    ctx.fillRect(o.x - camera.x, o.y - camera.y, o.w, o.h);
+    ctx.fillRect(-o.w / 2, -o.h / 2, o.w, o.h);
     if (settings.quality !== "low") {
       ctx.strokeStyle = "rgba(255,255,255,0.13)";
       const step = o.type === "crate" ? 18 : 28;
-      for (let tx = o.x; tx < o.x + o.w; tx += step) {
+      for (let tx = -o.w / 2; tx < o.w / 2; tx += step) {
         ctx.beginPath();
-        ctx.moveTo(tx - camera.x, o.y - camera.y);
-        ctx.lineTo(tx - camera.x, o.y + o.h - camera.y);
+        ctx.moveTo(tx, -o.h / 2);
+        ctx.lineTo(tx, o.h / 2);
         ctx.stroke();
       }
       if (o.type === "light") {
         ctx.fillStyle = "rgba(255,238,143,0.24)";
         ctx.beginPath();
-        ctx.arc(o.x + o.w / 2 - camera.x, o.y + o.h / 2 - camera.y, Math.max(o.w, o.h), 0, Math.PI * 2);
+        ctx.arc(0, 0, Math.max(o.w, o.h), 0, Math.PI * 2);
         ctx.fill();
       }
     }
-    ctx.strokeRect(o.x - camera.x, o.y - camera.y, o.w, o.h);
+    ctx.strokeRect(-o.w / 2, -o.h / 2, o.w, o.h);
     if (o.type) {
       ctx.fillStyle = "#f2f0df";
       ctx.font = "10px Arial";
-      ctx.fillText(o.type, o.x - camera.x + o.w / 2, o.y - camera.y + o.h / 2);
+      ctx.fillText(o.type, 0, 4);
     }
+    ctx.restore();
   }
   ctx.strokeStyle = "#786544"; ctx.lineWidth = 12; ctx.strokeRect(-camera.x, -camera.y, state.map.w, state.map.h);
 }
@@ -4576,12 +4698,23 @@ function drawProjectiles2d() {
 
 function drawMinimap() {
   if (!settings.showMinimap) return;
-  const w = 170, h = 112, x = window.innerWidth - w - 16, y = 16;
+  const compact = window.innerWidth <= 640;
+  const w = compact ? 124 : 170;
+  const h = compact ? 82 : 112;
+  const x = window.innerWidth - w - (compact ? 8 : 16);
+  const y = compact ? 130 : 16;
   ctx.fillStyle = "rgba(12,14,12,.72)"; ctx.fillRect(x, y, w, h);
   ctx.strokeStyle = "rgba(242,240,223,.18)"; ctx.strokeRect(x, y, w, h);
   const sx = w / state.map.w, sy = h / state.map.h;
   ctx.fillStyle = "#7a8169";
-  for (const o of state.map.obstacles) ctx.fillRect(x + o.x * sx, y + o.y * sy, o.w * sx, o.h * sy);
+  for (const o of state.map.obstacles) {
+    if (!obstacleBlocks(o)) continue;
+    ctx.save();
+    ctx.translate(x + (o.x + o.w / 2) * sx, y + (o.y + o.h / 2) * sy);
+    ctx.rotate((Number(o.rot || 0) * Math.PI) / 180);
+    ctx.fillRect(-(o.w * sx) / 2, -(o.h * sy) / 2, o.w * sx, o.h * sy);
+    ctx.restore();
+  }
   ctx.fillStyle = "#d7bd62";
   for (const site of Object.values(state.map.sites)) ctx.fillRect(x + site.x * sx - 3, y + site.y * sy - 3, 6, 6);
   ctx.fillStyle = "#77b56f"; ctx.fillRect(x + player.x * sx - 2, y + player.y * sy - 2, 4, 4);
@@ -4723,32 +4856,35 @@ function render2d() {
 function castRay(angle) {
   let x = player.x, y = player.y, d = 0;
   const step = settings.quality === "low" ? 24 : 14;
-  while (d < 1200) {
+  const maxDistance = clamp(Number(state.map.meta?.fogDistance || 1800), 1200, 2600);
+  while (d < maxDistance) {
     x += Math.cos(angle) * step; y += Math.sin(angle) * step; d += step;
     if (x < 0 || y < 0 || x > state.map.w || y > state.map.h || pointInObstacle(x, y)) return d;
   }
-  return 1200;
+  return maxDistance;
 }
 
 function castRayHit(angle) {
   let x = player.x, y = player.y, d = 0;
   const step = settings.quality === "low" ? 24 : 14;
-  while (d < 1200) {
+  const maxDistance = clamp(Number(state.map.meta?.fogDistance || 1800), 1200, 2600);
+  while (d < maxDistance) {
     x += Math.cos(angle) * step;
     y += Math.sin(angle) * step;
     d += step;
     if (x < 0 || y < 0 || x > state.map.w || y > state.map.h) return { d, hit: null, edge: true };
-    const hit = state.map.obstacles.find((obj) => x >= obj.x && y >= obj.y && x <= obj.x + obj.w && y <= obj.y + obj.h);
+    const hit = state.map.obstacles.find((obj) => pointInMapObstacle(x, y, obj));
     if (hit) return { d, hit, edge: false, x, y, side: wallHitSide(hit, x, y) };
   }
-  return { d: 1200, hit: null, edge: false };
+  return { d: maxDistance, hit: null, edge: false };
 }
 
 function wallHitSide(hit, x, y) {
-  const left = Math.abs(x - hit.x);
-  const right = Math.abs(hit.x + hit.w - x);
-  const top = Math.abs(y - hit.y);
-  const bottom = Math.abs(hit.y + hit.h - y);
+  const local = obstacleLocalPoint(hit, x, y);
+  const left = Math.abs(local.x + hit.w / 2);
+  const right = Math.abs(hit.w / 2 - local.x);
+  const top = Math.abs(local.y + hit.h / 2);
+  const bottom = Math.abs(hit.h / 2 - local.y);
   const min = Math.min(left, right, top, bottom);
   if (min === left) return "west";
   if (min === right) return "east";
@@ -4773,7 +4909,8 @@ function defaultTextureForType(type) {
 
 function autoTextureForHit(hit) {
   if (!hit) return "white";
-  if (hit.texture || hit.material || hit.type) return defaultTextureForType(hit.type);
+  if (hit.texture || hit.material) return hit.texture || hit.material;
+  if (["crate", "cover", "light", "ramp", "hazard"].includes(hit.type)) return defaultTextureForType(hit.type);
   const hash = Math.abs(Math.floor(hit.x * 7 + hit.y * 11 + hit.w * 13 + hit.h * 17));
   const longWall = Math.max(hit.w, hit.h) > Math.min(hit.w, hit.h) * 2.4;
   const palette = longWall
@@ -4785,11 +4922,16 @@ function autoTextureForHit(hit) {
 function textureForHit(hit) {
   if (!hit) return simple3dTextures.white;
   const key = hit.texture || hit.material || autoTextureForHit(hit);
+  const custom = customTextures.find((texture) => texture.id === key);
+  if (custom) {
+    const base = custom.baseColor || hit.textureColor || hit.color || "#b8b8ae";
+    return { base, side: shadeHex(base, -34), seam: "rgba(25,28,24,0.34)", mark: "rgba(255,255,255,0.16)", mode: custom.kind === "paint" ? "tile" : "panel", footstep: "concrete" };
+  }
   return simple3dTextures[key] || simple3dTextures.white;
 }
 
 function materialAt(x, y) {
-  const hit = state.map.obstacles.find((o) => x >= o.x && x <= o.x + o.w && y >= o.y && y <= o.y + o.h);
+  const hit = state.map.obstacles.find((o) => pointInMapObstacle(x, y, o));
   return textureForHit(hit || { texture: "terrain" }).footstep || "dirt";
 }
 
@@ -4809,17 +4951,17 @@ function shadeHex(color, amount) {
   return `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
 }
 
-function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column, side = "", texCoord = 0) {
+function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, side = "", texCoord = 0) {
   const texture = textureForHit(hit);
   const baseColor = hit?.color && hit.texture === "custom-color" ? hit.color : wallBaseColor(hit);
   const sideShade = side === "north" || side === "south" ? -18 : 0;
-  const base = shadeHex(baseColor, shade - 150 + sideShade);
+  const base = shadeHex(baseColor, shade + sideShade);
   ctx.fillStyle = base;
   const drawX = Math.floor(x);
   const drawW = Math.ceil(colW) + 1;
   ctx.fillRect(drawX, y, drawW, wallH);
-  const stripe = texture.mode === "crate" ? 96 : texture.mode === "brick" ? 72 : texture.mode === "metal" ? 112 : 128;
-  if (settings.quality === "high" && Math.floor(texCoord) % stripe < Math.max(5, stripe * 0.08)) {
+  const stripe = texture.mode === "crate" ? 128 : texture.mode === "brick" ? 96 : texture.mode === "metal" ? 160 : 220;
+  if (settings.quality === "high" && Math.floor(texCoord) % stripe < Math.max(3, stripe * 0.035)) {
     ctx.fillStyle = texture.seam;
     ctx.fillRect(drawX, y, drawW, wallH);
   }
@@ -4845,33 +4987,22 @@ function drawPotatoWallColumn(x, y, colW, wallH, hit, shade, distance, column, s
     for (let row = y + Math.max(10, wallH / 6); row < y + wallH; row += Math.max(10, wallH / 6)) ctx.fillRect(drawX, row, drawW, 1);
     if (Math.floor(texCoord) % 64 < 6) ctx.fillRect(drawX, y, drawW, wallH);
   }
-  if (settings.quality !== "low" && texture.mode === "speckle" && column % 5 === 0) {
-    ctx.fillStyle = "rgba(255,255,255,0.12)";
-    ctx.fillRect(drawX, y + wallH * 0.22, drawW, Math.max(1, wallH * 0.03));
-    ctx.fillStyle = "rgba(0,0,0,0.16)";
-    ctx.fillRect(drawX, y + wallH * 0.58, drawW, Math.max(1, wallH * 0.03));
-  }
   if (settings.quality !== "low" && texture.mode === "camo") {
-    ctx.fillStyle = column % 11 < 5 ? "rgba(74,92,55,0.2)" : "rgba(224,232,188,0.16)";
-    ctx.fillRect(drawX, y + wallH * ((column % 17) / 28), drawW, wallH * 0.34);
+    const patch = Math.abs(Math.floor(texCoord / 48)) % 5;
+    ctx.fillStyle = patch < 2 ? "rgba(74,92,55,0.1)" : "rgba(224,232,188,0.07)";
+    ctx.fillRect(drawX, y + wallH * (0.18 + patch * 0.09), drawW, wallH * 0.16);
   }
   if (settings.quality !== "low" && texture.mode === "stripe") {
-    ctx.fillStyle = Math.floor((texCoord + column * 3) / 22) % 2 ? "rgba(20,20,15,0.26)" : "rgba(255,255,220,0.16)";
+    ctx.fillStyle = Math.abs(Math.floor(texCoord / 42)) % 2 ? "rgba(20,20,15,0.12)" : "rgba(255,255,220,0.08)";
     ctx.fillRect(drawX, y, drawW, wallH);
   }
-  if (settings.quality === "high" && (column % 24 === 0 || side === "edge")) {
-    ctx.strokeStyle = `rgba(0,0,0,${clamp(0.12 + distance / 6200, 0.1, 0.26)})`;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(drawX + 0.5, y + 0.5, drawW, wallH);
-  }
-  ctx.fillStyle = `rgba(255,255,255,${clamp(0.11 - distance / 7600, 0.02, 0.09)})`;
+  ctx.fillStyle = `rgba(255,255,255,${clamp(0.09 - distance / 9000, 0.015, 0.075)})`;
   ctx.fillRect(drawX, y, drawW, Math.max(1, wallH * 0.025));
   ctx.fillStyle = `rgba(0,0,0,${clamp(0.2 + distance / 5200, 0.18, 0.46)})`;
   ctx.fillRect(drawX, y + wallH - Math.max(2, wallH * 0.04), drawW, Math.max(2, wallH * 0.04));
-  ctx.fillStyle = `rgba(255,255,255,${clamp(0.16 - distance / 8500, 0.025, 0.12)})`;
-  ctx.fillRect(drawX, y, Math.max(1, drawW * 0.22), wallH);
-  ctx.fillStyle = `rgba(0,0,0,${clamp(distance / 2200, 0.04, 0.4)})`;
-  ctx.fillRect(drawX, y + wallH * 0.72, drawW, Math.max(1, wallH * 0.12));
+  const fogDistance = Math.max(900, Number(state.map.meta?.fogDistance || 3600));
+  ctx.fillStyle = `rgba(73,91,96,${clamp((distance - fogDistance * 0.34) / fogDistance, 0, 0.48)})`;
+  ctx.fillRect(drawX, y, drawW, wallH);
 }
 
 function render3d() {
@@ -4879,15 +5010,16 @@ function render3d() {
   const w = window.innerWidth, h = window.innerHeight;
   ctx.imageSmoothingEnabled = true;
   const horizon = clamp(h * 0.52 + camera.pitch * 0.3, h * 0.26, h * 0.74);
+  const skyColor = state.map.meta?.skyColor || state.map.meta?.ambientColor || "#61777f";
   const sky = ctx.createLinearGradient(0, 0, 0, horizon);
-  sky.addColorStop(0, "#536a72");
-  sky.addColorStop(0.72, "#314247");
-  sky.addColorStop(1, "#202a2d");
+  sky.addColorStop(0, shadeHex(skyColor, 28));
+  sky.addColorStop(0.72, skyColor);
+  sky.addColorStop(1, shadeHex(skyColor, -38));
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, horizon);
   draw3dTerrain(w, h, horizon);
   const fov = Math.PI / 2.9;
-  const cols = settings.quality === "low" ? 160 : settings.quality === "high" ? 520 : 360;
+  const cols = settings.quality === "low" ? 160 : settings.quality === "high" ? 480 : 320;
   const colW = w / cols;
   const depth = [];
   for (let i = 0; i < cols; i += 1) {
@@ -4895,16 +5027,20 @@ function render3d() {
     const hitInfo = castRayHit(ray);
     const d = hitInfo.d * Math.cos(ray - player.angle);
     depth[i] = d;
-    const wallH = clamp((h * 760) / d, 12, h * 1.85);
-    const shade = clamp(252 - d * 0.095, 84, 232);
+    if (!hitInfo.hit && !hitInfo.edge) continue;
+    const wall = hitInfo.hit || { texture: "concrete", material: "concrete", z: 160, elevation: 0 };
+    const objectHeight = clamp(Number(wall.z || 96), 12, 512);
+    const elevation = clamp(Number(wall.elevation || 0), 0, 1024);
+    const eyeHeight = 58;
+    const projection = h * 1.08;
+    const top = horizon - ((elevation + objectHeight - eyeHeight) * projection) / Math.max(1, d) + camera.shake;
+    const bottom = horizon - ((elevation - eyeHeight) * projection) / Math.max(1, d) + camera.shake;
+    const wallH = clamp(bottom - top, 2, h * 1.6);
+    const shade = clamp(12 - d * 0.022, -54, 10);
     const x = i * colW;
-    const y = horizon - wallH / 2 + camera.shake;
+    const y = clamp(top, -h * 0.8, h * 1.5);
     const texCoord = hitInfo.hit ? (hitInfo.side === "north" || hitInfo.side === "south" ? hitInfo.x - hitInfo.hit.x : hitInfo.y - hitInfo.hit.y) : i;
-    drawPotatoWallColumn(x, y, colW, wallH, hitInfo.hit, shade, d, i, hitInfo.side, texCoord);
-    if (settings.quality === "high" && i % 8 === 0) {
-      ctx.fillStyle = `rgba(255,255,255,${clamp(0.14 - d / 8200, 0.025, 0.1)})`;
-      ctx.fillRect(x, y + wallH * 0.18, colW + 1, Math.max(1, wallH * 0.06));
-    }
+    drawPotatoWallColumn(x, y, colW, wallH, wall, shade, d, hitInfo.side, texCoord);
   }
   const sprites = [
     ...bots.filter((bot) => bot.hp > 0).map((bot) => ({ bot, color: state.enemyTeam === "T" ? "#b84d42" : "#557bb0", d: dist(player.x, player.y, bot.x, bot.y), a: angleTo(player.x, player.y, bot.x, bot.y) })),
@@ -4918,8 +5054,9 @@ function render3d() {
     const sx = (0.5 + rel / fov) * w;
     const col = clamp(Math.floor(sx / colW), 0, depth.length - 1);
     if (s.d > depth[col] + 45) continue;
-    const size = clamp((h * 94) / s.d, 14, 180);
-    draw3dCharacter(sx, horizon, size, s.color);
+    const size = clamp((h * 96) / s.d, 14, 180);
+    const actorY = horizon + clamp((h * 58) / Math.max(1, s.d), 2, 220) - size * 0.62;
+    draw3dCharacter(sx, actorY, size, s.color, s.bot.hostile);
   }
   draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon);
   draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
@@ -4930,10 +5067,11 @@ function render3d() {
 }
 
 function draw3dTerrain(w, h, horizon = h / 2) {
+  const terrainColor = state.map.meta?.terrainColor || simple3dTextures.terrain.base;
   const floor = ctx.createLinearGradient(0, horizon, 0, h);
-  floor.addColorStop(0, "#68775e");
-  floor.addColorStop(0.5, simple3dTextures.terrain.base);
-  floor.addColorStop(1, "#223024");
+  floor.addColorStop(0, shadeHex(terrainColor, 34));
+  floor.addColorStop(0.48, terrainColor);
+  floor.addColorStop(1, shadeHex(terrainColor, -28));
   ctx.fillStyle = floor;
   ctx.fillRect(0, horizon, w, h - horizon);
   draw3dFloorPerspectiveGrid(w, h, horizon);
@@ -4944,18 +5082,18 @@ function draw3dFloorPerspectiveGrid(w, h, horizon = h / 2) {
   ctx.save();
   ctx.lineWidth = 1;
   const floorHeight = h - horizon;
-  for (let i = 1; i <= 12; i += 1) {
-    const y = horizon + Math.pow(i / 12, 1.72) * floorHeight;
-    ctx.strokeStyle = `rgba(242,240,223,${0.16 - i * 0.008})`;
+  for (let i = 1; i <= 8; i += 1) {
+    const y = horizon + Math.pow(i / 8, 1.72) * floorHeight;
+    ctx.strokeStyle = `rgba(242,240,223,${0.09 - i * 0.007})`;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(w, y);
     ctx.stroke();
   }
-  ctx.strokeStyle = "rgba(242,240,223,0.11)";
+  ctx.strokeStyle = "rgba(242,240,223,0.055)";
   const yawOffset = Math.sin(player.angle) * w * 0.08;
-  for (let i = -6; i <= 6; i += 1) {
-    const foot = w / 2 + yawOffset + i * w * 0.11;
+  for (let i = -5; i <= 5; i += 1) {
+    const foot = w / 2 + yawOffset + i * w * 0.13;
     ctx.beginPath();
     ctx.moveTo(w / 2, horizon);
     ctx.lineTo(foot, h);
@@ -5078,32 +5216,48 @@ function draw3dSiteMarkers(w, h, fov, depth, colW, horizon = h / 2) {
   }
 }
 
-function draw3dCharacter(x, y, size, color) {
+function draw3dCharacter(x, y, size, color, hostile = false) {
   ctx.save();
   ctx.fillStyle = "rgba(0,0,0,0.38)";
   ctx.beginPath();
-  ctx.ellipse(x, y + size * 0.62, size * 0.34, size * 0.09, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + size * 0.64, size * 0.34, size * 0.09, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "rgba(255,248,218,0.92)";
-  ctx.lineWidth = Math.max(2, size * 0.045);
-  ctx.strokeRect(x - size * 0.26, y - size * 0.49, size * 0.52, size * 0.7);
-  ctx.strokeStyle = "rgba(14,16,13,0.78)";
-  ctx.lineWidth = Math.max(1, size * 0.025);
+  const outline = Math.max(2, size * 0.035);
+  ctx.strokeStyle = "rgba(12,15,13,0.9)";
+  ctx.lineWidth = outline;
   ctx.fillStyle = color;
-  ctx.fillRect(x - size * 0.22, y - size * 0.45, size * 0.44, size * 0.62);
-  ctx.strokeRect(x - size * 0.22, y - size * 0.45, size * 0.44, size * 0.62);
-  ctx.fillStyle = "rgba(255,255,255,0.16)";
-  ctx.fillRect(x - size * 0.18, y - size * 0.39, size * 0.36, size * 0.05);
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.24, y - size * 0.43);
+  ctx.lineTo(x + size * 0.24, y - size * 0.43);
+  ctx.lineTo(x + size * 0.2, y + size * 0.18);
+  ctx.lineTo(x - size * 0.2, y + size * 0.18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = hostile ? "#7a3130" : "#3e5964";
+  ctx.fillRect(x - size * 0.17, y - size * 0.3, size * 0.34, size * 0.34);
+  ctx.strokeRect(x - size * 0.17, y - size * 0.3, size * 0.34, size * 0.34);
   ctx.fillStyle = "#d8c19a";
-  ctx.fillRect(x - size * 0.16, y - size * 0.72, size * 0.32, size * 0.25);
-  ctx.fillStyle = "#1a1d18";
-  ctx.fillRect(x + size * 0.08, y - size * 0.25, size * 0.55, size * 0.08);
-  ctx.fillStyle = "#f2f0df";
-  ctx.fillRect(x - size * 0.08, y - size * 0.64, size * 0.05, size * 0.04);
-  ctx.fillRect(x + size * 0.04, y - size * 0.64, size * 0.05, size * 0.04);
+  ctx.beginPath();
+  ctx.arc(x, y - size * 0.57, size * 0.16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = hostile ? "#4b2925" : "#34464f";
+  ctx.beginPath();
+  ctx.arc(x, y - size * 0.61, size * 0.17, Math.PI, Math.PI * 2);
+  ctx.fill();
   ctx.fillStyle = "#2b2d28";
-  ctx.fillRect(x - size * 0.2, y + size * 0.18, size * 0.16, size * 0.42);
-  ctx.fillRect(x + size * 0.04, y + size * 0.18, size * 0.16, size * 0.42);
+  ctx.fillRect(x - size * 0.19, y + size * 0.14, size * 0.15, size * 0.47);
+  ctx.fillRect(x + size * 0.04, y + size * 0.14, size * 0.15, size * 0.47);
+  ctx.strokeRect(x - size * 0.19, y + size * 0.14, size * 0.15, size * 0.47);
+  ctx.strokeRect(x + size * 0.04, y + size * 0.14, size * 0.15, size * 0.47);
+  ctx.fillStyle = "#171a16";
+  ctx.fillRect(x + size * 0.05, y - size * 0.18, size * 0.58, size * 0.085);
+  ctx.fillRect(x + size * 0.1, y - size * 0.07, size * 0.17, size * 0.23);
+  ctx.strokeRect(x + size * 0.05, y - size * 0.18, size * 0.58, size * 0.085);
+  ctx.fillStyle = hostile ? "#df5f54" : "#6ca5c6";
+  ctx.fillRect(x - size * 0.29, y - size * 0.42, size * 0.08, size * 0.18);
+  ctx.fillRect(x + size * 0.21, y - size * 0.42, size * 0.08, size * 0.18);
   ctx.restore();
 }
 
@@ -5233,6 +5387,70 @@ function updateHud() {
   hud.ammo.textContent = isBombSelected() ? "HOLD E" : weapon.melee ? "MELEE" : weapon.reloading > 0 ? "reloading..." : `${weapon.ammo} / ${weapon.currentReserve}`;
 }
 
+function playerInsideEditorTrigger(trigger) {
+  const dx = player.x - trigger.x;
+  const dy = player.y - trigger.y;
+  if (trigger.shape === "ellipse") return (dx * dx) / Math.max(1, (trigger.w / 2) ** 2) + (dy * dy) / Math.max(1, (trigger.h / 2) ** 2) <= 1;
+  return Math.abs(dx) <= trigger.w / 2 && Math.abs(dy) <= trigger.h / 2;
+}
+
+function runEditorTriggerExpression(source, ctx) {
+  const code = String(source || "true").trim();
+  if (!code || code === "true") return true;
+  try {
+    if (/\breturn\b/.test(code)) return Boolean(Function("ctx", `"use strict";\n${code}`)(ctx));
+    return Boolean(Function("ctx", `"use strict"; return Boolean(${code});`)(ctx));
+  } catch (error) {
+    console.warn("Editor trigger condition", error);
+    return false;
+  }
+}
+
+function activateEditorTrigger(trigger, ctx) {
+  const code = String(trigger.onActivation || "").trim();
+  if (!code) {
+    showMessage(trigger.name || "Trigger aktywowany");
+    return;
+  }
+  try {
+    Function("ctx", `"use strict";\n${code}`)(ctx);
+  } catch (error) {
+    console.warn("Editor trigger activation", error);
+    showMessage(`Blad triggera: ${trigger.name || trigger.id}`);
+  }
+}
+
+function updateEditorTriggers(dt) {
+  const triggers = state.map.editorData?.triggers;
+  if (!Array.isArray(triggers) || !triggers.length || !player.alive) return;
+  state.triggerPoll -= dt;
+  if (state.triggerPoll > 0) return;
+  state.triggerPoll = 0.25;
+  for (const trigger of triggers) {
+    const inside = playerInsideEditorTrigger(trigger);
+    const previous = state.triggerStates[trigger.id] || { inside: false, activated: false };
+    const ctx = {
+      trigger,
+      player,
+      team: state.team,
+      round: state.round,
+      enemiesAlive: bots.filter((bot) => bot.hp > 0).length,
+      alliesAlive: allies.filter((bot) => bot.hp > 0).length + (player.alive ? 1 : 0),
+      inside,
+      showMessage,
+      completeObjective: () => { state.storyComplete = true; renderStoryObjective(); },
+      endRound,
+    };
+    const canActivate = inside && (!previous.activated || (trigger.repeatable && !previous.inside)) && runEditorTriggerExpression(trigger.condition, ctx);
+    if (canActivate) {
+      activateEditorTrigger(trigger, ctx);
+      previous.activated = true;
+    }
+    previous.inside = inside;
+    state.triggerStates[trigger.id] = previous;
+  }
+}
+
 function tick(now) {
   const target = settings.hzLimit ? 1000 / settings.hzLimit : settings.perfLimit === "eco" ? 1000 / 30 : settings.perfLimit === "balanced" ? 1000 / 60 : 0;
   if (target && now - last < target) {
@@ -5248,6 +5466,7 @@ function tick(now) {
     updateBots(dt);
     updateBullets(dt);
     updateGrenades(dt);
+    updateEditorTriggers(dt);
     updateSpectator();
     pollServerAudioEvents();
     try {

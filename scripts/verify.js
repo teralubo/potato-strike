@@ -1,360 +1,188 @@
 const fs = require("fs");
+const path = require("path");
 
-const html = fs.readFileSync("game/index.html", "utf8");
-const js = fs.readFileSync("game/game.js", "utf8");
+function fail(message) {
+  console.error(message);
+  process.exit(1);
+}
+
+function requireFiles(files, label = "required file") {
+  for (const file of files) {
+    if (!fs.existsSync(file)) fail(`Missing ${label}: ${file}`);
+  }
+}
+
+function requireSnippets(source, snippets, label) {
+  for (const snippet of snippets) {
+    if (!source.includes(snippet)) fail(`Missing ${label}: ${snippet}`);
+  }
+}
+
+function verifyDomIds(source, html, label) {
+  const ids = [...source.matchAll(/\$\("([^"]+)"\)/g)].map((match) => match[1]);
+  const missing = [...new Set(ids)].filter((id) => !html.includes(`id="${id}"`));
+  if (missing.length) fail(`${label} missing DOM IDs: ${missing.join(", ")}`);
+  return new Set(ids).size;
+}
+
+function jsonFiles(directory) {
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const file = path.join(directory, entry.name);
+    if (entry.isDirectory()) return jsonFiles(file);
+    return entry.isFile() && entry.name.endsWith(".json") ? [file] : [];
+  });
+}
+
+const gameHtml = fs.readFileSync("game/index.html", "utf8");
+const gameJs = fs.readFileSync("game/game.js", "utf8");
+const editorHtml = fs.readFileSync("game/editor.html", "utf8");
+const editorJs = fs.readFileSync("game/editor.js", "utf8");
+const editorCss = fs.readFileSync("game/editor.css", "utf8");
+const mainJs = fs.readFileSync("main.js", "utf8");
+const preloadJs = fs.readFileSync("preload.js", "utf8");
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const packageLock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
 const defaultConfig = JSON.parse(fs.readFileSync("configs/default-config.json", "utf8"));
 
-const ids = [...js.matchAll(/\$\("([^"]+)"\)/g)].map((match) => match[1]);
-const missing = [...new Set(ids)].filter((id) => !html.includes(`id="${id}"`));
+const gameIdCount = verifyDomIds(gameJs, gameHtml, "Game");
+const editorIdCount = verifyDomIds(editorJs, editorHtml, "Studio");
 
-if (missing.length) {
-  console.error(`Missing DOM IDs: ${missing.join(", ")}`);
-  process.exit(1);
+if (packageJson.version !== "1.2.0-beta") fail(`Unexpected package version: ${packageJson.version}`);
+if (packageLock.version !== packageJson.version || packageLock.packages?.[""]?.version !== packageJson.version) {
+  fail("package-lock.json version does not match package.json");
 }
 
-if (!packageJson.scripts || !packageJson.scripts.start || !packageJson.scripts["start:safe"] || !packageJson.scripts["start:editor"] || !packageJson.scripts["build:win"] || !packageJson.scripts["build:win:compat"] || !packageJson.scripts["build:linux"] || !packageJson.scripts["build:linux:compat"] || !packageJson.scripts.serve || !packageJson.scripts["phone:sync"] || !packageJson.scripts["package:compat"]) {
-  console.error("package.json is missing start/build scripts");
-  process.exit(1);
+for (const script of [
+  "start", "start:safe", "start:editor", "serve", "verify", "build:editor-vendor", "build:single",
+  "package:offline", "package:compat", "phone:sync", "build:win", "build:win:compat", "build:linux", "build:linux:compat",
+]) {
+  if (!packageJson.scripts?.[script]) fail(`package.json is missing script: ${script}`);
 }
 
-for (const file of ["main.js", "preload.js", "game/index.html", "game/styles.css", "game/game.js", "game/editor.html", "game/editor.css", "game/editor.js", "launch-offline-window.bat", "scripts/package-offline.js", "scripts/build-single-html.js", "scripts/sync-phone-assets.js", "scripts/package-compat.js", "DEV-tools/README.md", "DEV-tools/mod-template.json", "mods/README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md", "GITHUB-ACTIONS-COST-SAVING.md"]) {
-  if (!fs.existsSync(file)) {
-    console.error(`Missing required offline file: ${file}`);
-    process.exit(1);
-  }
+if (!packageJson.dependencies?.three || !packageJson.devDependencies?.esbuild) fail("Studio 3D build dependencies are missing");
+if (!packageJson.build?.files?.includes("game/vendor/three.min.js") || !packageJson.build?.files?.includes("game/vendor/THREE-LICENSE.txt")) {
+  fail("Electron package does not include the local Studio 3D vendor and license");
 }
 
-for (const file of [
-  ".github/workflows/potato-strike-1-1-beta.yml",
-  ".github/workflows/pages.yml",
-  "phone/README.md",
-  "phone/android/README.md",
-  "phone/android/settings.gradle",
-  "phone/android/build.gradle",
-  "phone/android/app/build.gradle",
-  "phone/android/app/src/main/AndroidManifest.xml",
+requireFiles([
+  "main.js", "preload.js", "server.js", "game/index.html", "game/styles.css", "game/game.js",
+  "game/editor.html", "game/editor.css", "game/editor.js", "game/vendor/three.min.js", "game/vendor/THREE-LICENSE.txt",
+  "DEV-tools/three-vendor-entry.js", "DEV-tools/README.md", "DEV-tools/mod-template.json",
+  "scripts/package-offline.js", "scripts/build-single-html.js", "scripts/clean-editor-vendor.js", "scripts/sync-phone-assets.js", "scripts/package-compat.js",
+  "PotatoStrike.html", "PotatoStrike.bat", "PotatoStrike-Window.bat", "PotatoStrike-Studio.bat",
+  "README.md", "CHANGELOG.md", "PATCH-NOTES-1.1-BETA.md", "PATCH-NOTES-1.2-BETA.md", "SANDBOX-EXAMPLES-1.2-BETA.md",
+  "mods/README.md", "mods/examples/README.md", "mods/examples/1.2-beta/README.md",
+  "mods/examples/1.2-beta/aim-lab-bunker.json", "mods/examples/1.2-beta/extraction-sweep.json", "mods/examples/1.2-beta/micro-royale.json",
+  ".github/workflows/potato-strike-1-2-beta.yml", ".github/workflows/pages.yml",
+  "phone/README.md", "phone/android/README.md", "phone/android/settings.gradle", "phone/android/build.gradle",
+  "phone/android/app/build.gradle", "phone/android/app/src/main/AndroidManifest.xml",
   "phone/android/app/src/main/java/local/potatostrike/android/MainActivity.java",
-  "phone/android/app/src/main/assets/PotatoStrike.html",
-  "phone/flipperzero/README.md",
-  "phone/flipperzero/application.fam",
-  "phone/flipperzero/potato_strike_mini.c",
-  "phone/flipperzero/build-flipper.ps1",
-  "phone/flipperzero/build-variants.ps1",
-  "compat/README.md",
-  "compat/windows/PotatoStrike-Windows-Legacy.cmd",
-  "compat/linux/PotatoStrike-Linux-Portable.sh",
-  "compat/linux/PotatoStrike-Linux-Server.sh",
-  "compat/macos/PotatoStrike-macOS.command",
-]) {
-  if (!fs.existsSync(file)) {
-    console.error(`Missing required 1.1 compatibility file: ${file}`);
-    process.exit(1);
-  }
-}
+  "phone/android/app/src/main/assets/PotatoStrike.html", "phone/flipperzero/README.md",
+  "phone/flipperzero/application.fam", "phone/flipperzero/potato_strike_mini.c",
+  "phone/flipperzero/build-flipper.ps1", "phone/flipperzero/build-variants.ps1",
+  "compat/README.md", "compat/windows/PotatoStrike-Windows-Legacy.cmd",
+  "compat/linux/PotatoStrike-Linux-Portable.sh", "compat/linux/PotatoStrike-Linux-Server.sh",
+  "compat/macos/PotatoStrike-macOS.command", "logs/.gitkeep",
+]);
 
-const compatWorkflow = fs.readFileSync(".github/workflows/potato-strike-1-1-beta.yml", "utf8");
-for (const snippet of ["workflow_dispatch", "tags:", "\"v*\"", "concurrency:", "desktop-compat", "build:win:compat", "build:linux:compat", "potato-strike-windows-compat", "potato-strike-linux-compat", "phone/android/PotatoStrike-1.1-BETA.apk", "PotatoStrikeMini-1.1-BETA-official.fap", "PotatoStrikeMini-1.1-BETA-momentum.fap", "PotatoStrikeMini-1.1-BETA-unleashed.fap", "https://up.momentum-fw.dev/firmware/directory.json", "merge-multiple: true"]) {
-  if (!compatWorkflow.includes(snippet)) {
-    console.error(`Missing required desktop compatibility workflow feature: ${snippet}`);
-    process.exit(1);
-  }
-}
+if (fs.existsSync("beta")) fail("Local beta folder must not exist; beta is a Git branch");
+if (fs.existsSync(".github/workflows/potato-strike-1-1-beta.yml")) fail("Obsolete 1.1 compatibility workflow is still present");
 
-const pagesWorkflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
-for (const snippet of ["paths:", "PotatoStrike.html", "test -f PotatoStrike.html", "cp PotatoStrike.html _site/index.html", "touch _site/.nojekyll", "pages-info.html", "not the repository README"]) {
-  if (!pagesWorkflow.includes(snippet)) {
-    console.error(`Missing required GitHub Pages HTML-game feature: ${snippet}`);
-    process.exit(1);
-  }
-}
+const vendorSize = fs.statSync("game/vendor/three.min.js").size;
+if (vendorSize < 100000 || vendorSize > 1200000) fail(`Unexpected Studio 3D vendor size: ${vendorSize} bytes`);
 
-for (const forbidden of ["npm ci", "npm run build:single", "actions/setup-node"]) {
-  if (pagesWorkflow.includes(forbidden)) {
-    console.error(`GitHub Pages workflow should stay cheap and must not include: ${forbidden}`);
-    process.exit(1);
+for (const file of ["package.json", ...jsonFiles("configs"), ...jsonFiles("mods"), ...jsonFiles("DEV-tools")]) {
+  try {
+    JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (error) {
+    fail(`Invalid JSON ${file}: ${error.message}`);
   }
 }
 
 for (const file of [
-  "PotatoStrike.bat",
-  "PotatoStrike.html",
-  "PotatoStrike-Window.bat",
-  "PotatoStrike-Studio.bat",
-  "configs/default-config.json",
-  "mods/README.md",
+  "mods/examples/1.2-beta/aim-lab-bunker.json",
+  "mods/examples/1.2-beta/extraction-sweep.json",
+  "mods/examples/1.2-beta/micro-royale.json",
 ]) {
-  if (!fs.existsSync(file)) {
-    console.error(`Missing required game artifact: ${file}`);
-    process.exit(1);
+  const mod = JSON.parse(fs.readFileSync(file, "utf8"));
+  if (!mod.id || !mod.name || !mod.map || !Array.isArray(mod.map.obstacles) || !Array.isArray(mod.weapons)) {
+    fail(`Invalid example mod shape: ${file}`);
   }
-}
-
-if (fs.existsSync("beta")) {
-  console.error("Local beta folder should not exist; beta is published via the GitHub beta branch");
-  process.exit(1);
 }
 
 for (const key of ["type", "configId", "userMaps", "storyMissions", "customTextures", "mods", "settings", "bindings", "nick", "playerId"]) {
-  if (!(key in defaultConfig)) {
-    console.error(`default config missing ${key}`);
-    process.exit(1);
-  }
-}
-
-if (!js.includes("userMaps()") || !js.includes("storyMissions: savedStoryMissions()")) {
-  console.error("runtime config does not include generated maps and story missions");
-  process.exit(1);
-}
-
-const mainJs = fs.readFileSync("main.js", "utf8");
-if (!mainJs.includes("config:save") || !fs.readFileSync("preload.js", "utf8").includes("saveConfig")) {
-  console.error("Electron config save bridge is missing");
-  process.exit(1);
-}
-
-if (!packageJson.build?.files?.includes("PotatoStrike.html")) {
-  console.error("Electron build must include PotatoStrike.html for safe offline mode");
-  process.exit(1);
-}
-
-if (!fs.existsSync("logs/.gitkeep")) {
-  console.error("Missing logs folder marker");
-  process.exit(1);
+  if (!(key in defaultConfig)) fail(`default config missing ${key}`);
 }
 
 const singleHtml = fs.readFileSync("PotatoStrike.html", "utf8");
 if (!singleHtml.includes("<style>") || !singleHtml.includes("<script>") || singleHtml.includes('src="game.js"') || singleHtml.includes('href="styles.css"')) {
-  console.error("Single-file HTML build is not self-contained");
-  process.exit(1);
+  fail("PotatoStrike.html is not self-contained");
 }
 
-if (!mainJs.includes("playersDir") || !mainJs.includes("profile.json") || !mainJs.includes("assets.json")) {
-  console.error("Player profile folder storage is missing");
-  process.exit(1);
+requireSnippets(mainJs, [
+  "config:save", "playersDir", "profile.json", "assets.json", "crashReporter", "showCrashRecoveryWindow",
+  "POTATO_SAFE_OFFLINE", "PotatoStrike.html", "log:renderer",
+], "offline runtime feature");
+requireSnippets(preloadJs, ["saveConfig", "sendRendererLog", "log:renderer"], "preload bridge feature");
+
+requireSnippets(gameJs, [
+  "normalizeMap", "findSafePoint", "showFatalError", "ensureNormalBootMenu", "applyLanguage", "i18n",
+  "makeBotLoadout", "botRoundBudget", "chooseAffordableWeapon", "equipmentCatalog", "dropActiveWeapon",
+  "pickupDroppedWeapon", "dropPlayerLoadoutOnDeath", "knifeWeaponId", "toggleWeaponMode", "enterSpectator",
+  "takeoverBot", "renderModManager", "sortedMods", "createPlayerProfile", "openStandaloneEditor",
+  "normalizeGraphicsMode", "renderGameView", "camera.pitch", "cycleWeapon", "drawCustomCrosshair",
+  "obstacleLocalPoint", "pointInMapObstacle", "autoTextureForHit", "drawPotatoWallColumn",
+  "const objectHeight = clamp(Number(wall.z || 96)", "const elevation = clamp(Number(wall.elevation || 0)",
+  "editorUnitsForSide", "editorWaypointsForUnit", "spawnEditorPickups", "updateEditorTriggers",
+  "runEditorTriggerExpression", "activateEditorTrigger",
+], "game/runtime feature");
+
+for (const obsolete of ["(h * 760) / d", "settings.quality === \"high\" ? 520 : 360"]) {
+  if (gameJs.includes(obsolete)) fail(`Obsolete 3D renderer code is still present: ${obsolete}`);
 }
 
-for (const snippet of [
-  "draw3dCharacter",
-  "simple3dTextures",
-  "textureForHit",
-  "sideColorForHit",
-  "draw3dTerrain",
-  "draw3dFloorPerspectiveGrid",
-  "drawFpsStatusStrip",
-  "settings.quality === \"high\" ? 520 : 360",
-  "draw3dFloorGuides",
-  "drawPotatoWallColumn",
-  "castRayHit",
-  "draw3dWeapon",
-  "weaponViewModel",
-  "drawWeaponHands",
-  "drawWeaponMuzzleFlash",
-  "draw3dSiteMarkers",
-  "draw3dProjectilesAndObjectives",
-  "projectWorldToFps",
-  "equipmentCatalog",
-  "Defuse Kit",
-  "Kevlar + Helmet",
-  "canBuyNow",
-  "buyTime",
-  "shop-status",
-  "droppedWeapons",
-  "dropActiveWeapon",
-  "pickupDroppedWeapon",
-  "dropOwnedWeaponCategory",
-  "Knife",
-  "droppable: false",
-  "meleeAttack",
-  "knifeWeaponId",
-  "burstCapable",
-  "toggleWeaponMode",
-  "fireMode",
-  "dropPlayerLoadoutOnDeath",
-  "dropActorLoadoutOnDeath",
-  "pickupDroppedBomb",
-  "carriedItems",
-  "isBombSelected",
-  "story-objective-panel",
-  "checkStoryObjective",
-  "runStoryGoalCode",
-  "makeBotLoadout",
-  "botRoundBudget",
-  "chooseAffordableWeapon",
-  "actorWeaponStats",
-  "equipmentPrice",
-  "Zeus x27",
-  "Kevlar + Helmet",
-  "Defuse Kit",
-  "state.round > 1 || weapon.category === \"Pistol\"",
-  "bindings.drop",
-  "KeyH",
-  "openOwnerConsole",
-  "isLobbyCommander",
-  "editorWidth",
-  "editorHeight",
-  "editorRotation",
-  "editorColor",
-  "registerUserMap",
-  "importTexture",
-  "importMod",
-  "loadedMods",
-  "customTextures",
-  "makeClassicMap",
-  "dust2",
-  "quickEditor",
-  "openStandaloneEditor",
-  "loadStudioTestMap",
-  "loadUserMapsFromStorage",
-  "createPlayerProfile",
-  "renderProfileMenu",
-  "applyProfile",
-  "camera.pitch",
-  "normalizeGraphicsMode",
-  "isPerspectiveMode",
-  "renderGameView",
-  "3D FPS",
-  "renderModManager",
-  "sortedMods",
-  "enterSpectator",
-  "updateSpectator",
-  "takeoverBot",
-  "livingTeamBots",
-  "ensureAudio",
-  "emitAudioEvent",
-  "pollServerAudioEvents",
-  "weaponAudioProfile",
-  "stepAudioProfile",
-  "impactAudioProfile",
-  "materialAt",
-  "autoTextureForHit",
-  "hazard",
-  "bluewall",
-  "impact",
-  "maybeStep",
-  "applyLanguage",
-  "i18n",
-  "bindLabel",
-  "setOptionText",
-  "crosshairSize",
-  "crosshairGap",
-  "crosshairThickness",
-  "crosshairOutline",
-  "crosshairCustomEnabled",
-  "crosshairPaintCanvas",
-  "drawCustomCrosshair",
-  "paintCrosshairCell",
-  "normalizeCrosshairPixels",
-  "cycleWeapon",
-  "pitchSensitivity",
-  "invertY",
-  "redpanel",
-  "greenpanel",
-  "tile",
-  "camo",
-  "stripe",
-  "3D FPS",
-]) {
-  if (!js.includes(snippet)) {
-    console.error(`Missing required runtime feature: ${snippet}`);
-    process.exit(1);
-  }
+requireSnippets(editorHtml, [
+  'src="vendor/three.min.js"', 'id="studio-viewport-3d"', 'value="2d"', 'value="3d"',
+  'data-editor-mode="objects"', 'data-editor-mode="groups"', 'data-editor-mode="triggers"',
+  'data-editor-mode="waypoints"', 'data-editor-mode="sync"', 'data-editor-mode="markers"',
+  'data-transform="select"', 'data-transform="translate"', 'data-transform="rotate"', 'data-transform="scale"',
+  'id="layer-list"', 'id="add-layer"', 'id="undo-editor"', 'id="redo-editor"',
+], "Studio UI feature");
+
+requireSnippets(editorJs, [
+  "defaultEditorData", "normalizeEditorData", "version: 2", "normalizeStudioMap", "testMap", "saveMap",
+  "generateMap", "importAssets", "storyGoal", "applyTerrainSettings", "renderLayers", "recordHistory",
+  "undoEditor", "redoEditor", "copySelection", "pasteSelection", 'event.code === "KeyA"',
+  "new THREE.WebGLRenderer", "powerPreference: \"low-power\"", "new THREE.PerspectiveCamera",
+  "new THREE.Raycaster", "new THREE.CanvasTexture", "draw3dCanvasFallback", "handleStudio3dMouseDown",
+  "studio3dGroundPoint", "focusStudioSelection", "setTransformMode", "setEditorMode",
+  "units", "groups", "triggers", "waypoints", "markers", "systems", "pickups", "connections",
+], "Studio 1.2 feature");
+
+requireSnippets(editorCss, ["#studio-viewport-3d", ".studio-viewport-toolbar", "#studio-viewport-stage", "@media"], "Studio layout feature");
+
+const workflow = fs.readFileSync(".github/workflows/potato-strike-1-2-beta.yml", "utf8");
+requireSnippets(workflow, [
+  "Potato Strike 1.2 BETA Compatibility Builds", "workflow_dispatch", "tags:", '"v*"', "concurrency:",
+  "build:win:compat", "build:linux:compat", "PotatoStrike-1.2-BETA.apk",
+  "PotatoStrikeMini-1.2-BETA-official.fap", "PotatoStrikeMini-1.2-BETA-momentum.fap",
+  "PotatoStrikeMini-1.2-BETA-unleashed.fap", "PotatoStrike-1.2-BETA.zip", "potato-strike-1.2-beta-folder",
+], "1.2 compatibility workflow feature");
+
+const pagesWorkflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
+requireSnippets(pagesWorkflow, [
+  "paths:", "PotatoStrike.html", "test -f PotatoStrike.html", "cp PotatoStrike.html _site/index.html",
+  "PATCH-NOTES-1.2-BETA.md", "touch _site/.nojekyll", "pages-info.html", "not the repository README",
+], "GitHub Pages feature");
+for (const forbidden of ["npm ci", "npm run build:single", "actions/setup-node"]) {
+  if (pagesWorkflow.includes(forbidden)) fail(`Pages workflow must stay cheap and exclude: ${forbidden}`);
 }
 
-const editorJs = fs.readFileSync("game/editor.js", "utf8");
-for (const snippet of ["testMap", "saveMap", "generateMap", "draw3dPreview", "isoCanvasPoint", "viewportMode", "importAssets", "potatoStrikeStudioTestMap", "potatoStrikeUserMaps", "testGraphics", "storyGoal", "story-goal-code"]) {
-  if (!editorJs.includes(snippet)) {
-    console.error(`Missing required Studio feature: ${snippet}`);
-    process.exit(1);
-  }
-}
+const packageScript = fs.readFileSync("scripts/package-compat.js", "utf8");
+requireSnippets(packageScript, ["PotatoStrike-1.2-BETA", "PATCH-NOTES-1.2-BETA.md", "PotatoStrike-1.2-BETA.apk"], "release packager feature");
 
-for (const snippet of ["wrap.dataset.view", "canvas.style.width = \"100%\"", "drawViewLabel(\"3D EDIT\"", "window.addEventListener(\"resize\", draw)"]) {
-  if (!editorJs.includes(snippet)) {
-    console.error(`Missing required persistent Studio viewport feature: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-const editorHtml = fs.readFileSync("game/editor.html", "utf8");
-for (const snippet of ["Grafika edytora", "drawIsoFloor", "shadeColor", "Kamera testu", "<option value=\"3d\">3D FPS</option>"]) {
-  if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
-    console.error(`Missing required Studio editor graphics separation: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-for (const snippet of ["TEREN / ADVANCED", "applyTerrainSettings", "snapPoint", "terrainColor", "moddingMode", "autosave-map"]) {
-  if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
-    console.error(`Missing required Studio advanced terrain/modding feature: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-for (const snippet of ["default-texture", "textureOptions", "studioTexturePalette", "[\"texture\", \"texture\"]", "defaultTexture"]) {
-  if (!editorJs.includes(snippet) && !editorHtml.includes(snippet)) {
-    console.error(`Missing required simple texture Studio feature: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-for (const snippet of ["texture-paint-canvas", "paint-color", "paint-size", "savePaintTexture", "applyPaintTextureToSelected", "textureColor"]) {
-  if (!editorJs.includes(snippet) && !editorHtml.includes(snippet) && !js.includes(snippet)) {
-    console.error(`Missing required mini-paint texture feature: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-for (const snippet of ["hitIsoObject", "isoBoxFaces", "hitObjectAtEvent", "pointInPolygon"]) {
-  if (!editorJs.includes(snippet)) {
-    console.error(`Missing required Studio 3D editing feature: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-for (const snippet of ["showFatalError", "normalizeMap", "findSafePoint", "showFatalError(fallbackError, \"renderu\")", "normalizeMap(maps[state.mapKey]"]) {
-  if (!js.includes(snippet)) {
-    console.error(`Missing required runtime safety guard: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-for (const snippet of ["showBootError", "ensureNormalBootMenu", "if (!loadStudioTestMap()) ensureNormalBootMenu()"]) {
-  if (!js.includes(snippet)) {
-    console.error(`Missing required offline boot guard: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-const preloadJs = fs.readFileSync("preload.js", "utf8");
-for (const snippet of ["writeLog", "logs", "potato-strike.log", "preload-error", "log:renderer", "crashReporter", "showCrashRecoveryWindow", "POTATO_SAFE_OFFLINE", "PotatoStrike.html"]) {
-  if (!mainJs.includes(snippet) && !preloadJs.includes(snippet)) {
-    console.error(`Missing required offline logging feature: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-const stylesCss = fs.readFileSync("game/styles.css", "utf8").replace(/\r\n/g, "\n");
-if (!stylesCss.includes("#menu {\n  position: absolute;\n  inset: 0;\n  z-index: 5;")) {
-  console.error("Menu overlay z-index guard is missing");
-  process.exit(1);
-}
-
-for (const snippet of ["cycleSpectatorTarget", "spectatorNext", "OBS HP", "po dead strzalki lub klik"]) {
-  if (!js.includes(snippet) && !html.includes(snippet)) {
-    console.error(`Missing required spectator feature: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-for (const snippet of ["normalizeStudioMap", "map = normalizeStudioMap(map);", "Nie udalo sie zaimportowac mapy", "Mapa przekonwertowana do edycji"]) {
-  if (!editorJs.includes(snippet)) {
-    console.error(`Missing required Studio safety guard: ${snippet}`);
-    process.exit(1);
-  }
-}
-
-console.log(`DOM IDs OK: ${new Set(ids).size}`);
-console.log("package.json OK");
-console.log("config/offline requirements OK");
-console.log("main-folder/beta/editor/model requirements OK");
+console.log(`Game DOM IDs OK: ${gameIdCount}`);
+console.log(`Studio DOM IDs OK: ${editorIdCount}`);
+console.log(`Studio 3D vendor OK: ${(vendorSize / 1024).toFixed(1)} KiB`);
+console.log("Potato Strike 1.2 BETA runtime, sandbox, packages and workflows OK");

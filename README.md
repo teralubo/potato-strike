@@ -1,29 +1,52 @@
 # Potato Strike
 
-Lekki CS-like prototyp w HTML Canvas. Dziala bez serwera przez otwarcie `index.html`.
+Lekki CS-like sandbox w HTML Canvas. Dziala bez serwera przez otwarcie `PotatoStrike.html`.
 
 Repozytorium gry: [teralubo/potato-strike](https://github.com/teralubo/potato-strike)
 
 Licencja: GNU GPL 3.0 (`GPL-3.0-only`). Potato Strike ma byc lekkim sandboxem LAN/BOT do edycji, modowania i przerabiania przez graczy.
 
 Workflow repo:
-- `beta` - wszystkie nowe zmiany, testy, eksperymenty i wersje beta.
-- `main` - pelne wydanie gry po potwierdzeniu.
+- `unreleased` - eksperymentalne pomysly i szkice kolejnego update.
+- `beta` - zmiany gotowe do szerszych testow.
+- `main` - wydania zaakceptowane do publikacji.
 
-## 1.1 BETA Compatibility Pack
+## 1.2 BETA Sandbox Studio
 
-Wersja `1.1 BETA` skupia sie na kompatybilnosci:
+Wersja `1.2 BETA` rozwija Potato Strike w lekka platforme sandbox:
+
+- Studio ma osobny plan misji 2D inspirowany klasycznym workflow Arma 2 oraz bezposredni edytor sceny 3D inspirowany Eden/Arma 3.
+- W 2D sa tryby obiektow, grup, triggerow, waypointow, synchronizacji i markerow pod `F1`-`F6`, zaznaczanie wielu obiektow, prostokat zaznaczenia, kopiowanie, zoom i przesuwanie mapy.
+- W 3D jest prawdziwa kamera perspektywiczna, bezposrednie zaznaczanie i ustawianie obiektow, ruch `WASD`, gora/dol `Q/Z`, obracanie kamery PPM oraz narzedzia `1`-`4`: wybor, przesuwanie, obracanie i skala.
+- Warstwy mozna tworzyc, ukrywac i blokowac. Explorer oraz panel wlasciwosci obsluguja obiekty, jednostki T/CT, grupy, triggery, waypointy, markery, systemy i pickupy.
+- Format map `editorData.version: 2` zachowuje stare `obstacles`, dzieki czemu mapy 1.1 nadal sie wczytuja.
+- Test Studio przekazuje do gry spawny jednostek, trasy botow, pickupy i kod triggerow.
+- Renderer FPS ma poprawiona wysokosc scian, rotacje kolizji, czytelniejsze modele, mgle, teren i lekkie proceduralne materialy bez pobierania duzych tekstur.
+- Biblioteka 3D Studio jest dostarczana lokalnie w `game/vendor/three.min.js`; edytor nie wymaga CDN ani internetu.
+- Szczegoly wydania sa w `PATCH-NOTES-1.2-BETA.md`.
+
+Opcjonalne lekkie prototypy `Aim Lab Bunker`, `Extraction Sweep` i `Micro Royale` sa w `mods/examples/1.2-beta/` jako material do importu i dalszego modowania.
+
+## GitHub Actions Costs
+
+Zeby oszczedzac minuty GitHub Actions, ciezkie buildy APK/FAP/EXE/Linux nie uruchamiaja sie juz na kazdy push. Odpalaja sie recznie albo po tagu `v*`.
+GitHub Pages publikuje gotowy `PotatoStrike.html` jako `index.html` bez `npm ci`.
+Szczegoly sa w `GITHUB-ACTIONS-COST-SAVING.md`.
+
+## Compatibility Pack
+
+Pakiet kompatybilnosci z 1.1 jest dalej utrzymywany i wersjonowany razem z 1.2:
 
 - `phone/android/` zawiera natywna wersje Android WebView ladujaca `PotatoStrike.html`.
 - `phone/flipperzero/` zawiera ultra-mini wersje `Potato Strike Mini` dla Flipper Zero.
-- `.github/workflows/potato-strike-1-1-beta.yml` buduje APK, FAP i paczke `PotatoStrike-1.1-BETA.zip` jako artefakty GitHub Actions.
+- `.github/workflows/potato-strike-1-2-beta.yml` buduje APK, FAP i paczke `PotatoStrike-1.2-BETA.zip` jako artefakty GitHub Actions.
 - `.github/workflows/pages.yml` publikuje jednoplikowa wersje HTML na GitHub Pages, jesli Pages jest wlaczone w repo.
 - `compat/` zawiera launchery i instrukcje dla starszych Windowsow, roznych dystrybucji Linuxa i awaryjnego HTML/server mode.
-- `PATCH-NOTES-1.1-BETA.md` zawiera opis zmian.
+- `PATCH-NOTES-1.1-BETA.md` zachowuje historie pakietu, a `PATCH-NOTES-1.2-BETA.md` opisuje aktualne wydanie.
 
 Android APK buduje sie na GitHubie jako artifact `potato-strike-android-apk`.
 Flipper Zero `.fap` buduje sie na GitHubie osobno dla Official, Momentum i Unleashed firmware.
-Pelna paczka do pobrania buduje sie jako artifact `potato-strike-1.1-beta-folder`.
+Pelna paczka do pobrania buduje sie jako artifact `potato-strike-1.2-beta-folder`.
 Wersja webowa na GitHub Pages jest budowana z `PotatoStrike.html` i publikowana jako `index.html`, wiec po wejsciu na strone otwiera sie gra, a nie README.
 Buildy desktop kompatybilnosci buduja sie jako `potato-strike-windows-compat` oraz `potato-strike-linux-compat`.
 

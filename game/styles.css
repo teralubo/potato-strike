@@ -81,7 +81,7 @@ body {
 #message {
   position: absolute;
   left: 50%;
-  top: 16px;
+  top: 60px;
   transform: translateX(-50%);
   max-width: min(560px, calc(100vw - 28px));
   padding: 8px 12px;
@@ -566,6 +566,16 @@ button:disabled {
     left: 8px;
     right: 8px;
     bottom: 8px;
+  }
+
+  #message {
+    left: 8px;
+    right: 140px;
+    top: 130px;
+    transform: none;
+    max-width: none;
+    padding: 7px 9px;
+    font-size: 12px;
   }
 
   .weapon-card.wide {
