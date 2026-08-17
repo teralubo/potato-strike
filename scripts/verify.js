@@ -123,6 +123,9 @@ if (defaultConfig.settings.hzLimit !== "vsync" || defaultConfig.settings.fastBin
   fail("default config must enable V-Sync and contain Fast Binds");
 }
 if (defaultConfig.settings.botAimMode !== "sights") fail("default BOT RMB aiming mode must use sights");
+if (defaultConfig.settings.crosshairEnabled !== true || defaultConfig.settings.crosshairVersion !== 2 || defaultConfig.settings.crosshairStyle !== "dot") {
+  fail("default crosshair must be the enabled fixed-dot preset");
+}
 if (defaultConfig.settings.gameRules !== "classic" || defaultConfig.serverConfig.aimMode !== "sights" || defaultConfig.serverConfig.enemyMinimap !== false || defaultConfig.serverConfig.svCheats !== false) {
   fail("default game rules, aiming or safe server settings are invalid");
 }
@@ -173,12 +176,14 @@ requireSnippets(gameJs, [
   "openingMove", "botStop", "isAwpScoped", "drawAwpScope", "aimZoom", "mouse.rightDown",
   "gameRulePresets", "applyGameRulePreset", "updateRespawns", "isIronSights", "drawPotatoIronSights", "showStoryHint",
   "openLanLobby", "lanLobbyRequest", "renderLanLobby", "startLanLobbyMatch", "launchLanLobbyMatch", "botAimMode",
-  "freedoomWeaponTextureSources", "freedoomWeaponTexture", "freedoomWeaponTextureKey", "drawFreedoomWeaponTexture",
+  "freedoomWeaponTextureSources", "freedoomWeaponTexture", "freedoomWeaponTextureKey", "drawFreedoomWeaponTexture", "migrateCrosshairSettings", "crosshairEnabled",
+  "drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming)", "if (!isAimActive()) drawCrosshair();", "customEnabled: settings.crosshairCustomEnabled",
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
   'id="fast-bind-key"', 'id="fast-bind-action"', 'id="fast-bind-add"', 'id="fast-bind-enabled"',
   'id="fast-bind-clear"', 'id="fast-bind-count"', 'id="fast-bind-list"',
+  'id="crosshair-enabled"', 'id="crosshair-reset"', 'id="crosshair-paint-canvas"',
   'id="game-rules"', 'id="server-aim-mode"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
   'id="create-lan"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="menu-aim-mode"',
   '<option value="vsync" selected>',

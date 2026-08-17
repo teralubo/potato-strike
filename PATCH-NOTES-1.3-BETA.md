@@ -5,10 +5,19 @@ This beta updates only the lightweight 3D weapon presentation. The 2D renderer a
 ## 3D weapon textures
 
 - Added low-resolution first-person weapon sprites exported from FreEDoom 0.13.0.
+- FreEDoom viewmodels now remain visible while holding RMB/ADS; the sprite is raised toward the sight line instead of switching to the untextured body.
 - Pistols, shotguns, SMGs, rifles, sniper rifles and heavy weapons receive category-appropriate textured viewmodels.
 - ADS, iron sights and AWP scope retain the existing readable procedural model.
 - Knife, grenades and C4 remain unchanged because the source set has no matching replacement that improves gameplay readability.
 - Missing or unreadable PNG files automatically fall back to the previous procedural weapon model.
+
+## Crosshair editor
+
+- The default non-aiming crosshair is now one fixed center dot inspired by the static CS2 setup.
+- Every active RMB aiming mode hides the regular crosshair; AWP keeps its dedicated scope reticle.
+- Settings now include a master crosshair toggle, presets, color, size, gap, thickness, outline and the existing 16x16 multi-color mini-paint.
+- Added reset-to-dot plus full crosshair import/export, including enabled state, preset parameters and painted pixels.
+- Existing profiles migrate to the dot while preserving already-painted custom crosshairs.
 
 ## Lightweight and removable source
 

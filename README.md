@@ -15,7 +15,8 @@ Workflow repo:
 
 - Widok 3D korzysta z lekkich sprite'ow broni wyeksportowanych z FreEDoom 0.13.0; tryb 2D pozostaje bez zmian.
 - Pliki `freedoom1.wad` i `freedoom2.wad` sa potrzebne tylko do ponownego eksportu przez `npm run assets:freedoom`. Nie trafiaja do Git ani paczki i mozna je usunac bez wplywu na gre.
-- Brak lub blad PNG wlacza dotychczasowy proceduralny model broni, a ADS/scope zawsze zachowuja czytelny stary model.
+- Brak lub blad PNG wlacza dotychczasowy proceduralny model broni, a AWP zachowuje dedykowany scope.
+- Teksturowany viewmodel pozostaje widoczny podczas PPM/ADS. Domyslny celownik to jeden staly punkt, ukrywany podczas celowania; w ustawieniach mozna go wylaczyc, zmienic albo narysowac w mini-paint i importowac/eksportowac.
 - Licencja BSD 3-Clause, hash zrodla i mapa lumpow sa w `game/assets/weapons/freedoom/`.
 - Szczegoly: `PATCH-NOTES-1.3-BETA.md`.
 

@@ -115,11 +115,15 @@
             <option value="0">Bez limitu</option>
           </select>
         </label>
+        <label class="check">
+          <input id="crosshair-enabled" type="checkbox" checked>
+          Pokaz celownik
+        </label>
         <label>
           Celownik
           <select id="crosshair-style">
-            <option value="classic" selected>Classic</option>
-            <option value="dot">Dot</option>
+            <option value="dot" selected>Staly punkt</option>
+            <option value="classic">Classic</option>
             <option value="wide">Wide</option>
             <option value="circle">Circle</option>
             <option value="t">T Style</option>
@@ -157,6 +161,7 @@
           <canvas id="crosshair-paint-canvas" width="160" height="160" aria-label="Mini-paint celownika"></canvas>
           <div class="menu-actions left compact-actions">
             <button id="crosshair-paint-clear" type="button" class="secondary">Wyczysc</button>
+            <button id="crosshair-reset" type="button" class="secondary">Reset: punkt</button>
             <button id="crosshair-paint-export" type="button" class="secondary">Export</button>
             <button id="crosshair-paint-import" type="button" class="secondary">Import</button>
             <input id="crosshair-paint-file" class="hidden" type="file" accept="application/json">

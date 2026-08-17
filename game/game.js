@@ -134,6 +134,7 @@ const hud = {
   fastBindClear: $("fast-bind-clear"),
   fastBindList: $("fast-bind-list"),
   crosshairStyle: $("crosshair-style"),
+  crosshairEnabled: $("crosshair-enabled"),
   crosshairColor: $("crosshair-color"),
   crosshairSize: $("crosshair-size"),
   crosshairGap: $("crosshair-gap"),
@@ -143,6 +144,7 @@ const hud = {
   crosshairCustomEnabled: $("crosshair-custom-enabled"),
   crosshairPaintCanvas: $("crosshair-paint-canvas"),
   crosshairPaintClear: $("crosshair-paint-clear"),
+  crosshairReset: $("crosshair-reset"),
   crosshairPaintExport: $("crosshair-paint-export"),
   crosshairPaintImport: $("crosshair-paint-import"),
   crosshairPaintFile: $("crosshair-paint-file"),
@@ -421,7 +423,9 @@ const settings = {
   difficulty: "normal",
   resolution: "auto",
   hzLimit: "vsync",
-  crosshairStyle: "classic",
+  crosshairEnabled: true,
+  crosshairVersion: 2,
+  crosshairStyle: "dot",
   crosshairColor: "#f2f0df",
   crosshairSize: 1,
   crosshairGap: 10,
@@ -648,7 +652,15 @@ const i18n = {
     fastBindActions: "Akcje gry",
     fastBindActionAria: "Akcja Fast Bind",
     crosshairLabel: "Celownik",
+    crosshairEnabledLabel: "Pokaz celownik",
     crosshairColorLabel: "Kolor celownika",
+    crosshairSizeLabel: "Rozmiar celownika",
+    crosshairGapLabel: "Przerwa celownika",
+    crosshairThicknessLabel: "Grubosc celownika",
+    crosshairOutlineLabel: "Outline celownika",
+    crosshairPaintLabel: "Mini-paint celownika",
+    crosshairCustomLabel: "Uzyj narysowanego celownika",
+    crosshairReset: "Reset: punkt",
     nickLabel: "Nick gracza",
     configIdLabel: "ID configu",
     playerIdLabel: "ID gracza",
@@ -753,7 +765,15 @@ const i18n = {
     fastBindActions: "Game actions",
     fastBindActionAria: "Fast Bind action",
     crosshairLabel: "Crosshair",
+    crosshairEnabledLabel: "Show crosshair",
     crosshairColorLabel: "Crosshair color",
+    crosshairSizeLabel: "Crosshair size",
+    crosshairGapLabel: "Crosshair gap",
+    crosshairThicknessLabel: "Crosshair thickness",
+    crosshairOutlineLabel: "Crosshair outline",
+    crosshairPaintLabel: "Crosshair mini-paint",
+    crosshairCustomLabel: "Use painted crosshair",
+    crosshairReset: "Reset: dot",
     nickLabel: "Player nick",
     configIdLabel: "Config ID",
     playerIdLabel: "Player ID",
@@ -1048,7 +1068,15 @@ function applyLanguage() {
   setLabel("resolution", tr("resolutionLabel"));
   setLabel("hz-limit", tr("hzLabel"));
   setLabel("crosshair-style", tr("crosshairLabel"));
+  setLabel("crosshair-enabled", tr("crosshairEnabledLabel"));
   setLabel("crosshair-color", tr("crosshairColorLabel"));
+  setLabel("crosshair-size", tr("crosshairSizeLabel"));
+  setLabel("crosshair-gap", tr("crosshairGapLabel"));
+  setLabel("crosshair-thickness", tr("crosshairThicknessLabel"));
+  setLabel("crosshair-outline", tr("crosshairOutlineLabel"));
+  setLabel("crosshair-paint-color", tr("crosshairPaintLabel"));
+  setLabel("crosshair-custom-enabled", tr("crosshairCustomLabel"));
+  setText("#crosshair-reset", tr("crosshairReset"));
   setLabel("config-nick", tr("nickLabel"));
   setLabel("config-id", tr("configIdLabel"));
   setLabel("config-player-id", tr("playerIdLabel"));
@@ -1095,6 +1123,11 @@ function applyLanguage() {
     setOptionText("graphics-mode", "3d", "3D FPS");
     setOptionText("control-mode", "keyboard", "Keyboard + mouse");
     setOptionText("control-mode", "mobile", "Phone / touch screen");
+    setOptionText("crosshair-style", "dot", "Fixed dot");
+    setOptionText("crosshair-style", "classic", "Classic");
+    setOptionText("crosshair-style", "wide", "Wide");
+    setOptionText("crosshair-style", "circle", "Circle");
+    setOptionText("crosshair-style", "t", "T Style");
     setOptionText("server-aim-mode", "sights", "Weapon sights / scope");
     setOptionText("server-aim-mode", "zoom", "Zoom only + classic crosshair");
     setOptionText("server-aim-mode", "none", "No action");
@@ -1127,6 +1160,11 @@ function applyLanguage() {
     setOptionText("graphics-mode", "3d", "3D FPS");
     setOptionText("control-mode", "keyboard", "Klawiatura + mysz");
     setOptionText("control-mode", "mobile", "Telefon / ekran dotykowy");
+    setOptionText("crosshair-style", "dot", "Staly punkt");
+    setOptionText("crosshair-style", "classic", "Classic");
+    setOptionText("crosshair-style", "wide", "Szeroki");
+    setOptionText("crosshair-style", "circle", "Kolo");
+    setOptionText("crosshair-style", "t", "Styl T");
     setOptionText("server-aim-mode", "sights", "Przyrzady celownicze / scope");
     setOptionText("server-aim-mode", "zoom", "Tylko przyblizenie + klasyczny celownik");
     setOptionText("server-aim-mode", "none", "Brak akcji");
@@ -1558,6 +1596,7 @@ function syncProfileFields() {
     hud.hzLimit.value = "vsync";
   }
   hud.crosshairStyle.value = settings.crosshairStyle;
+  hud.crosshairEnabled.checked = settings.crosshairEnabled !== false;
   hud.crosshairColor.value = settings.crosshairColor;
   hud.crosshairSize.value = String(settings.crosshairSize);
   hud.crosshairGap.value = String(settings.crosshairGap);
@@ -1599,6 +1638,13 @@ function syncMenuAimMode() {
       : "";
 }
 
+function migrateCrosshairSettings(sourceSettings = {}) {
+  if (Number(sourceSettings.crosshairVersion || 0) >= 2) return;
+  settings.crosshairEnabled = true;
+  settings.crosshairVersion = 2;
+  if (!sourceSettings.crosshairCustomEnabled && !sourceSettings.customCrosshair?.length) settings.crosshairStyle = "dot";
+}
+
 function loadConfig() {
   const raw = localStorage.getItem("potatoStrikeConfig");
   if (!raw) {
@@ -1610,6 +1656,7 @@ function loadConfig() {
   try {
     const config = JSON.parse(raw);
     Object.assign(settings, config.settings || {});
+    migrateCrosshairSettings(config.settings || {});
     normalizeFastBinds();
     settings.graphicsMode = normalizeGraphicsMode(settings.graphicsMode);
     Object.assign(bindings, config.bindings || {});
@@ -1655,6 +1702,7 @@ function playerProfiles() {
 
 function applyProfile(profile, preserveIncomingId = true) {
   Object.assign(settings, profile.settings || {});
+  migrateCrosshairSettings(profile.settings || {});
   normalizeFastBinds();
   Object.assign(bindings, profile.bindings || {});
   if (bindings.grenade === bindings.drop) bindings.grenade = "KeyH";
@@ -4830,9 +4878,10 @@ function drawMinimap() {
 }
 
 function drawCrosshair() {
+  if (settings.crosshairEnabled === false) return;
   const weapon = activeWeapon();
   const cx = isPerspectiveMode() ? window.innerWidth / 2 : mouse.x;
-  const cy = isPerspectiveMode() ? window.innerHeight / 2 + camera.pitch * 0.28 : mouse.y;
+  const cy = isPerspectiveMode() ? window.innerHeight / 2 : mouse.y;
   if (settings.crosshairCustomEnabled && settings.customCrosshair?.length) {
     drawCustomCrosshair(cx, cy);
     return;
@@ -4858,10 +4907,10 @@ function drawCrosshair() {
   if (settings.crosshairStyle === "dot") {
     if (settings.crosshairOutline) {
       ctx.fillStyle = "rgba(0,0,0,0.72)";
-      ctx.beginPath(); ctx.arc(cx, cy, 4 * size + 2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, 2 * size + 1.2, 0, Math.PI * 2); ctx.fill();
     }
     ctx.fillStyle = settings.crosshairColor;
-    ctx.beginPath(); ctx.arc(cx, cy, 3 * size, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, 1.6 * size, 0, Math.PI * 2); ctx.fill();
     return;
   }
   if (settings.crosshairStyle === "circle") {
@@ -5171,7 +5220,7 @@ function render3d() {
   else if (isIronSights()) drawPotatoIronSights(w, h);
   drawFpsStatusStrip(w, h);
   drawMinimap();
-  if (!isAwpScoped() && !isIronSights()) drawCrosshair();
+  if (!isAimActive()) drawCrosshair();
 }
 
 function drawAwpScope(w, h) {
@@ -5486,14 +5535,15 @@ function freedoomWeaponTextureKey(weapon) {
   return "chaingun";
 }
 
-function drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop) {
+function drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming = false) {
   const image = freedoomWeaponTexture(freedoomWeaponTextureKey(weapon));
   if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return false;
-  const scale = clamp(Math.min(w / 400, h / 190), 2, 5);
+  const scale = clamp(Math.min(w / 400, h / 190) * (aiming ? 1.06 : 1), 2, 5.2);
   const width = image.naturalWidth * scale;
   const height = image.naturalHeight * scale;
   const x = (w - width) / 2 + sway;
-  const y = h - height + recoilDrop;
+  const aimLift = aiming ? clamp(h * 0.14, 70, 130) : 0;
+  const y = h - height - aimLift + recoilDrop;
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.shadowColor = "rgba(0,0,0,0.38)";
@@ -5599,7 +5649,7 @@ function draw3dWeapon(w, h) {
     ctx.restore();
     return;
   }
-  if (!aiming && drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop)) return;
+  if (drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming)) return;
   const x = w / 2 + (aiming ? (weapon.category === "Pistol" ? -18 : -74) : weapon.category === "Pistol" ? 84 : 44) * scale + sway;
   const y = h - (aiming ? 116 : weapon.category === "Pistol" ? 132 : 150) * scale + recoilDrop;
   const bodyH = (weapon.category === "Pistol" ? 28 : 34) * scale;
@@ -6144,6 +6194,7 @@ hud.fastBindClear.addEventListener("click", () => {
   showMessage(settings.language === "en" ? "All Fast Binds removed" : "Usunieto wszystkie Fast Bind");
 });
 hud.crosshairStyle.addEventListener("change", () => { settings.crosshairStyle = hud.crosshairStyle.value; saveConfig(); });
+hud.crosshairEnabled.addEventListener("change", () => { settings.crosshairEnabled = hud.crosshairEnabled.checked; saveConfig(); });
 hud.crosshairColor.addEventListener("input", () => { settings.crosshairColor = hud.crosshairColor.value; saveConfig(); });
 hud.crosshairSize.addEventListener("input", () => { settings.crosshairSize = Number(hud.crosshairSize.value); saveConfig(); });
 hud.crosshairGap.addEventListener("input", () => { settings.crosshairGap = Number(hud.crosshairGap.value); saveConfig(); });
@@ -6156,15 +6207,48 @@ hud.crosshairPaintClear.addEventListener("click", () => {
   drawCrosshairPaint();
   saveConfig();
 });
-hud.crosshairPaintExport.addEventListener("click", () => downloadJson("potato-crosshair.json", { type: "potato-strike-crosshair", pixels: normalizeCrosshairPixels(settings.customCrosshair) }));
+hud.crosshairReset.addEventListener("click", () => {
+  settings.crosshairEnabled = true;
+  settings.crosshairVersion = 2;
+  settings.crosshairStyle = "dot";
+  settings.crosshairColor = "#f2f0df";
+  settings.crosshairSize = 1;
+  settings.crosshairGap = 10;
+  settings.crosshairThickness = 2;
+  settings.crosshairOutline = true;
+  settings.crosshairCustomEnabled = false;
+  settings.customCrosshair = [];
+  syncProfileFields();
+  saveConfig();
+  showMessage(settings.language === "en" ? "Crosshair reset to fixed dot" : "Celownik: staly punkt");
+});
+hud.crosshairPaintExport.addEventListener("click", () => downloadJson("potato-crosshair.json", {
+  type: "potato-strike-crosshair",
+  enabled: settings.crosshairEnabled !== false,
+  style: settings.crosshairStyle,
+  color: settings.crosshairColor,
+  size: settings.crosshairSize,
+  gap: settings.crosshairGap,
+  thickness: settings.crosshairThickness,
+  outline: settings.crosshairOutline,
+  customEnabled: settings.crosshairCustomEnabled,
+  pixels: normalizeCrosshairPixels(settings.customCrosshair),
+}));
 hud.crosshairPaintImport.addEventListener("click", () => hud.crosshairPaintFile.click());
 hud.crosshairPaintFile.addEventListener("change", async () => {
   const file = hud.crosshairPaintFile.files[0];
   if (!file) return;
   const payload = JSON.parse(await file.text());
+  if (typeof payload.enabled === "boolean") settings.crosshairEnabled = payload.enabled;
+  if (["dot", "classic", "wide", "circle", "t"].includes(payload.style)) settings.crosshairStyle = payload.style;
+  if (/^#[0-9a-f]{6}$/i.test(payload.color || "")) settings.crosshairColor = payload.color;
+  if (Number.isFinite(Number(payload.size))) settings.crosshairSize = clamp(Number(payload.size), 0.6, 2.2);
+  if (Number.isFinite(Number(payload.gap))) settings.crosshairGap = clamp(Number(payload.gap), 0, 24);
+  if (Number.isFinite(Number(payload.thickness))) settings.crosshairThickness = clamp(Number(payload.thickness), 1, 5);
+  if (typeof payload.outline === "boolean") settings.crosshairOutline = payload.outline;
   settings.customCrosshair = normalizeCrosshairPixels(payload.pixels || payload.customCrosshair || payload);
-  settings.crosshairCustomEnabled = true;
-  hud.crosshairCustomEnabled.checked = true;
+  settings.crosshairCustomEnabled = typeof payload.customEnabled === "boolean" ? payload.customEnabled : Boolean(settings.customCrosshair.length);
+  syncProfileFields();
   drawCrosshairPaint();
   saveConfig();
   showMessage("Celownik wgrany");
