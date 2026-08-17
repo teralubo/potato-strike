@@ -26,6 +26,8 @@ Potato Strike 1.2 BETA is the Sandbox Studio and 3D readability update.
 
 ## Game 3D
 
+- Added FPS jumping on `Space` and crouching on `Ctrl`, with gravity, landing, a lower camera and reduced crouch movement speed. The existing `Space` dash remains unchanged in 2D.
+- Corrected desktop mouse pitch and added touch dragging for horizontal and vertical camera control in 3D, plus mobile jump/crouch buttons.
 - Corrected wall projection to use each object's real height and elevation.
 - Added rotation-aware obstacle collision and ray hits.
 - Reworked low-cost wall materials, sky, terrain, fog, characters and shading for clearer enemy/background separation.

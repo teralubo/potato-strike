@@ -25,6 +25,7 @@ body {
   height: 100vh;
   image-rendering: pixelated;
   cursor: crosshair;
+  touch-action: none;
 }
 
 #hud {
@@ -557,6 +558,12 @@ button:disabled {
   gap: 8px;
 }
 
+.mobile-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 190px;
+}
+
 @media (max-width: 640px) {
   #hud {
     padding: 8px;
@@ -588,5 +595,6 @@ button:disabled {
 
   #mobile-controls {
     display: flex;
+    bottom: 76px;
   }
 }

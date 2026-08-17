@@ -132,6 +132,7 @@ requireSnippets(gameJs, [
   "pickupDroppedWeapon", "dropPlayerLoadoutOnDeath", "knifeWeaponId", "toggleWeaponMode", "enterSpectator",
   "takeoverBot", "renderModManager", "sortedMods", "createPlayerProfile", "openStandaloneEditor",
   "normalizeGraphicsMode", "renderGameView", "camera.pitch", "cycleWeapon", "drawCustomCrosshair",
+  "jumpHeight", "verticalVelocity", 'crouch: "ControlLeft"', "mobileLook",
   "obstacleLocalPoint", "pointInMapObstacle", "autoTextureForHit", "drawPotatoWallColumn",
   "const objectHeight = clamp(Number(wall.z || 96)", "const elevation = clamp(Number(wall.elevation || 0)",
   "editorUnitsForSide", "editorWaypointsForUnit", "spawnEditorPickups", "updateEditorTriggers",

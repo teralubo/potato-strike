@@ -32,6 +32,7 @@ body {
   height: 100vh;
   image-rendering: pixelated;
   cursor: crosshair;
+  touch-action: none;
 }
 
 #hud {
@@ -564,6 +565,12 @@ button:disabled {
   gap: 8px;
 }
 
+.mobile-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 190px;
+}
+
 @media (max-width: 640px) {
   #hud {
     padding: 8px;
@@ -595,6 +602,7 @@ button:disabled {
 
   #mobile-controls {
     display: flex;
+    bottom: 76px;
   }
 }
 
@@ -1105,6 +1113,8 @@ button:disabled {
       </div>
       <div class="mobile-actions">
         <button data-touch-action="fire">FIRE</button>
+        <button data-touch-action="dash" title="Skok 3D / dash 2D">JUMP</button>
+        <button data-touch-action="crouch" title="Kucanie 3D">DUCK</button>
         <button data-touch-action="use">E</button>
         <button data-touch-action="reload">R</button>
         <button data-touch-action="grenade">G</button>
@@ -1658,6 +1668,7 @@ const bindings = {
   grenade: "KeyH",
   drop: "KeyG",
   dash: "Space",
+  crouch: "ControlLeft",
   pause: "KeyP",
   console: "Backquote",
   spectatorNext: "ArrowRight",
@@ -1679,7 +1690,8 @@ const actionLabels = {
   network: "LAN / online",
   grenade: "Granat",
   drop: "Wyrzuc bron",
-  dash: "Dash",
+  dash: "Skok 3D / dash 2D",
+  crouch: "Kucanie 3D",
   pause: "Pauza",
   console: "Komendy lobby",
   spectatorNext: "Spectator nastepny",
@@ -1710,7 +1722,7 @@ const i18n = {
     modsTitle: "Mody",
     profileTitle: "profil gracza",
     menuLead: "CS-like dla slabych komputerow: misje, boty, bomba, sklep stron, 2D albo lekkie 3D. Pod I sa bindy, ktore mozna zobaczyc i zmienic.",
-    controlsHelp: "WASD ruch / mysz / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H granat / R reload / B sklep / PPM tryb Glocka / O ustawienia / M misje / I bindy / 1-9 bron / po dead strzalki lub klik zmieniaja teammate",
+    controlsHelp: "WASD ruch / mysz / Spacja skok 3D lub dash 2D / Ctrl kucanie 3D / E uzyj-podloz-rozbroj-podnies bron / G drop broni / H granat / R reload / B sklep / PPM tryb Glocka / O ustawienia / M misje / I bindy / 1-9 bron / po dead strzalki lub klik zmieniaja teammate",
     languageLabel: "Jezyk / Language",
     graphicsLabel: "Tryb grafiki",
     qualityLabel: "Jakosc",
@@ -1784,7 +1796,7 @@ const i18n = {
     modsTitle: "Mods",
     profileTitle: "player profile",
     menuLead: "CS-like for weak computers: missions, bots, bomb mode, side shop, 2D or light 3D. Press I to view and change binds.",
-    controlsHelp: "WASD movement / mouse / E use-plant-defuse-pickup / G drop weapon / H grenade / R reload / B shop / RMB Glock mode / O settings / M missions / I binds / 1-9 weapon / after death arrows or click change teammate",
+    controlsHelp: "WASD movement / mouse / Space jump in 3D or dash in 2D / Ctrl crouch in 3D / E use-plant-defuse-pickup / G drop weapon / H grenade / R reload / B shop / RMB Glock mode / O settings / M missions / I binds / 1-9 weapon / after death arrows or click change teammate",
     languageLabel: "Language / Jezyk",
     graphicsLabel: "Graphics mode",
     qualityLabel: "Quality",
@@ -1853,7 +1865,8 @@ const actionLabelI18n = {
     teams: "Teams",
     network: "LAN / online",
     grenade: "Grenade",
-    dash: "Dash",
+    dash: "3D jump / 2D dash",
+    crouch: "3D crouch",
     pause: "Pause",
     console: "Lobby commands",
     spectatorNext: "Spectator next",
@@ -1903,6 +1916,11 @@ const player = {
   money: 800,
   speed: 250,
   dash: 0,
+  jumpHeight: 0,
+  verticalVelocity: 0,
+  jumpLatch: false,
+  crouched: false,
+  eyeHeight: 58,
   invuln: 0,
   angle: 0,
   weaponId: 0,
@@ -1929,6 +1947,7 @@ const keys = new Set();
 const touchActions = new Set();
 const mouse = { x: 0, y: 0, down: false, clicked: false };
 const camera = { x: 0, y: 0, shake: 0, pitch: 0 };
+const mobileLook = { pointerId: null, x: 0, y: 0 };
 let last = performance.now();
 let waitingForBind = "";
 const editor = { active: false, selectedMission: "", selectedObject: null };
@@ -2404,6 +2423,8 @@ function syncProfileFields() {
   hud.masterVolume.value = String(settings.masterVolume);
   hud.footstepVolume.value = String(settings.footstepVolume);
   hud.serverAudio.checked = settings.serverAudio;
+  hud.controlMode.value = settings.controlMode;
+  hud.mobileControls.classList.toggle("hidden", settings.controlMode !== "mobile");
   drawCrosshairPaint();
 }
 
@@ -3487,6 +3508,11 @@ function resetRoundPositions() {
   player.y = spawn.y;
   player.angle = angleTo(player.x, player.y, state.map.w / 2, state.map.h / 2);
   camera.pitch = 0;
+  player.jumpHeight = 0;
+  player.verticalVelocity = 0;
+  player.jumpLatch = false;
+  player.crouched = false;
+  player.eyeHeight = 58;
   player.hp = 100;
   player.armor = Math.min(player.armor, 100);
   player.alive = true;
@@ -4167,12 +4193,38 @@ function updatePlayer(dt) {
   const len = Math.hypot(forward, strafe) || 1;
   const walking = keys.has("ShiftLeft") || keys.has("ShiftRight") || state.phase === "freeze";
   let speed = player.speed * (walking ? 0.58 : 1);
-  if (actionDown("dash") && player.dash <= 0 && state.phase === "live" && (forward || strafe)) player.dash = 0.18;
-  if (player.dash > 0) {
-    speed *= 2.2;
-    player.dash -= dt;
+  if (isPerspectiveMode()) {
+    const wantsJump = actionDown("dash");
+    if (wantsJump && !player.jumpLatch && player.jumpHeight <= 0 && state.phase === "live") {
+      player.jumpHeight = 0.01;
+      player.verticalVelocity = 245;
+      player.jumpLatch = true;
+    }
+    if (!wantsJump) player.jumpLatch = false;
+    player.verticalVelocity -= 720 * dt;
+    player.jumpHeight += player.verticalVelocity * dt;
+    if (player.jumpHeight <= 0) {
+      player.jumpHeight = 0;
+      player.verticalVelocity = 0;
+    }
+    player.crouched = actionDown("crouch");
+    const targetEyeHeight = player.crouched ? 38 : 58;
+    player.eyeHeight += (targetEyeHeight - player.eyeHeight) * clamp(dt * 14, 0, 1);
+    if (player.crouched) speed *= 0.54;
+    player.dash = 0;
+  } else {
+    player.jumpHeight = 0;
+    player.verticalVelocity = 0;
+    player.jumpLatch = false;
+    player.crouched = false;
+    player.eyeHeight = 58;
+    if (actionDown("dash") && player.dash <= 0 && state.phase === "live" && (forward || strafe)) player.dash = 0.18;
+    if (player.dash > 0) {
+      speed *= 2.2;
+      player.dash -= dt;
+    }
   }
-  player.speedFactor = Math.hypot(forward, strafe) * (walking ? 0.25 : 1);
+  player.speedFactor = Math.hypot(forward, strafe) * (walking ? 0.25 : player.crouched ? 0.54 : 1);
   if (isPerspectiveMode()) {
     const vx = Math.cos(player.angle) * forward * speed + Math.cos(player.angle + Math.PI / 2) * strafe * speed;
     const vy = Math.sin(player.angle) * forward * speed + Math.sin(player.angle + Math.PI / 2) * strafe * speed;
@@ -4181,7 +4233,7 @@ function updatePlayer(dt) {
     moveEntity(player, (strafe / len) * speed, (-forward / len) * speed, dt);
     player.angle = angleTo(player.x, player.y, mouse.x + camera.x, mouse.y + camera.y);
   }
-  maybeStep(player, Boolean(forward || strafe), walking);
+  maybeStep(player, Boolean(forward || strafe), walking || player.crouched);
   const weapon = activeWeapon();
   weapon.cooldown = Math.max(0, weapon.cooldown - dt);
   if (weapon.reloading > 0) {
@@ -4289,6 +4341,10 @@ function enterSpectator() {
   state.spectator.takeoverLatch = true;
   mouse.down = false;
   mouse.clicked = false;
+  player.jumpHeight = 0;
+  player.verticalVelocity = 0;
+  player.crouched = false;
+  player.eyeHeight = 58;
   const target = currentSpectatorTarget();
   if (!target) {
     endRound(state.enemyTeam, "twoja druzyna wyeliminowana");
@@ -4313,6 +4369,11 @@ function takeoverBot(bot) {
   player.hp = clamp(bot.hp, 1, 100);
   player.alive = true;
   player.invuln = 0.35;
+  player.jumpHeight = 0;
+  player.verticalVelocity = 0;
+  player.jumpLatch = false;
+  player.crouched = false;
+  player.eyeHeight = 58;
   allies.splice(index, 1);
   leaveSpectator();
   renderTeams();
@@ -5031,7 +5092,7 @@ function render3d() {
     const wall = hitInfo.hit || { texture: "concrete", material: "concrete", z: 160, elevation: 0 };
     const objectHeight = clamp(Number(wall.z || 96), 12, 512);
     const elevation = clamp(Number(wall.elevation || 0), 0, 1024);
-    const eyeHeight = 58;
+    const eyeHeight = player.eyeHeight + player.jumpHeight;
     const projection = h * 1.08;
     const top = horizon - ((elevation + objectHeight - eyeHeight) * projection) / Math.max(1, d) + camera.shake;
     const bottom = horizon - ((elevation - eyeHeight) * projection) / Math.max(1, d) + camera.shake;
@@ -5055,7 +5116,7 @@ function render3d() {
     const col = clamp(Math.floor(sx / colW), 0, depth.length - 1);
     if (s.d > depth[col] + 45) continue;
     const size = clamp((h * 96) / s.d, 14, 180);
-    const actorY = horizon + clamp((h * 58) / Math.max(1, s.d), 2, 220) - size * 0.62;
+    const actorY = horizon + clamp((h * (player.eyeHeight + player.jumpHeight)) / Math.max(1, s.d), 2, 260) - size * 0.62;
     draw3dCharacter(sx, actorY, size, s.color, s.bot.hostile);
   }
   draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon);
@@ -5127,7 +5188,7 @@ function projectWorldToFps(wx, wy, fov, depth, colW, horizon, verticalOffset = 0
   if (d > depth[col] + occlusionPad) return null;
   return {
     x: sx,
-    y: horizon + clamp((window.innerHeight * (190 + verticalOffset)) / Math.max(1, d), -160, 160),
+    y: horizon + clamp((window.innerHeight * (190 + verticalOffset + (player.eyeHeight + player.jumpHeight - 58) * 3.2)) / Math.max(1, d), -200, 220),
     d,
     scale: clamp(window.innerHeight / Math.max(1, d), 0.08, 2.4),
   };
@@ -5564,7 +5625,7 @@ window.addEventListener("keydown", (event) => {
     renderBinds();
     return;
   }
-  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev, "Tab"].includes(event.code)) event.preventDefault();
+  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.crouch, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev, "Tab"].includes(event.code)) event.preventDefault();
   keys.add(event.code);
   if (event.code === "Escape") closePanels();
   if (event.code === "Tab" && showStoryObjective()) return;
@@ -5592,7 +5653,7 @@ canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
     if (isPerspectiveMode()) {
       player.angle += event.movementX * 0.0032 * settings.sensitivity;
-      const pitchDirection = settings.invertY ? -1 : 1;
+      const pitchDirection = settings.invertY ? 1 : -1;
       camera.pitch = clamp(camera.pitch + event.movementY * 0.72 * settings.sensitivity * settings.pitchSensitivity * pitchDirection, -window.innerHeight * 0.36, window.innerHeight * 0.36);
       mouse.x = window.innerWidth / 2;
       mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
@@ -5606,6 +5667,30 @@ canvas.addEventListener("mousemove", (event) => {
     mouse.y = event.clientY - rect.top;
   }
 });
+canvas.addEventListener("pointerdown", (event) => {
+  if (event.pointerType !== "touch" || !isPerspectiveMode() || state.overlayOpen) return;
+  mobileLook.pointerId = event.pointerId;
+  mobileLook.x = event.clientX;
+  mobileLook.y = event.clientY;
+  canvas.setPointerCapture?.(event.pointerId);
+  event.preventDefault();
+});
+canvas.addEventListener("pointermove", (event) => {
+  if (event.pointerType !== "touch" || event.pointerId !== mobileLook.pointerId || !isPerspectiveMode()) return;
+  const dx = event.clientX - mobileLook.x;
+  const dy = event.clientY - mobileLook.y;
+  player.angle += dx * 0.0064 * settings.sensitivity;
+  const pitchDirection = settings.invertY ? 1 : -1;
+  camera.pitch = clamp(camera.pitch + dy * 1.44 * settings.sensitivity * settings.pitchSensitivity * pitchDirection, -window.innerHeight * 0.36, window.innerHeight * 0.36);
+  mobileLook.x = event.clientX;
+  mobileLook.y = event.clientY;
+  event.preventDefault();
+});
+const stopMobileLook = (event) => {
+  if (event.pointerId === mobileLook.pointerId) mobileLook.pointerId = null;
+};
+canvas.addEventListener("pointerup", stopMobileLook);
+canvas.addEventListener("pointercancel", stopMobileLook);
 canvas.addEventListener("mousedown", async (event) => {
   if (editMapAt(event)) return;
   if (state.overlayOpen) return;
@@ -5817,6 +5902,7 @@ hud.controlMode.addEventListener("change", () => {
   settings.controlMode = hud.controlMode.value;
   hud.mobileControls.classList.toggle("hidden", settings.controlMode !== "mobile");
   showMessage(settings.controlMode === "mobile" ? "Sterowanie telefonem wlaczone" : "Sterowanie klawiatura");
+  saveConfig();
 });
 hud.matchSize.addEventListener("change", () => {
   settings.matchSize = Number(hud.matchSize.value);
