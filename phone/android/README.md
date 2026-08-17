@@ -2,15 +2,15 @@
 
 ## Najprosciej
 
-1. Pobierz paczke `potato-strike-1.2-final-folder` z GitHub Actions.
-2. Rozpakuj `PotatoStrike-1.2-FINAL.zip`.
+1. Pobierz paczke `potato-strike-1.3-final-folder` z GitHub Actions.
+2. Rozpakuj `PotatoStrike-1.3-FINAL.zip`.
 3. Wejdz na telefonie do folderu:
 
 ```text
 phone/android/
 ```
 
-4. Kliknij `PotatoStrike-1.2-FINAL.apk`.
+4. Kliknij `PotatoStrike-1.3-FINAL-PATCH-1.1.apk`.
 5. Jesli Android zapyta, pozwol na instalacje z tego zrodla.
 6. Otworz aplikacje `Potato Strike`.
 
@@ -42,5 +42,5 @@ phone/android/app/build/outputs/apk/debug/app-debug.apk
 GitHub Actions kopiuje go do prostszej nazwy:
 
 ```text
-phone/android/PotatoStrike-1.2-FINAL.apk
+phone/android/PotatoStrike-1.3-FINAL-PATCH-1.1.apk
 ```

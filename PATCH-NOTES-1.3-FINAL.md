@@ -1,5 +1,17 @@
 # Potato Strike 1.3 FINAL
 
+Aktualny patch: `1.1`.
+
+Strona gry: [https://teralubo.itch.io/potato-strike](https://teralubo.itch.io/potato-strike)
+
+## Patch 1.1 - kompatybilnosc
+
+- Android: uniwersalny APK dla Androida 5.0+ z pelna gra i sterowaniem dotykowym.
+- Windows: portable x64/ia32 oraz jednoplikowy HTML jako lekka droga dla Windows 7/8.
+- Linux: AppImage, deb, rpm, tar.gz, `linux-unpacked` oraz launchery portable/server.
+- Flipper Zero: bardzo mala natywna gra `Potato Strike Mini` jako osobne `.fap` dla Official, Momentum i Unleashed.
+- Gotowe binaria sa budowane recznie lub przez tag w workflow `Potato Strike 1.3 FINAL Patch 1.1 Compatibility Builds`.
+
 Potato Strike 1.3 FINAL stabilizuje lekki tryb FPS 3D bez usuwania widoku 2D, Studio, modow, botow ani LAN.
 
 ## Najwazniejsze zmiany

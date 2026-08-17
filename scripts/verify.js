@@ -86,6 +86,9 @@ requireFiles([
   "phone/android/app/src/main/assets/PotatoStrike.html", "phone/flipperzero/README.md",
   "phone/flipperzero/application.fam", "phone/flipperzero/potato_strike_mini.c",
   "phone/flipperzero/build-flipper.ps1", "phone/flipperzero/build-variants.ps1",
+  "phone/flipperzero/PotatoStrikeMini-1.3-FINAL-PATCH-1.1-official.fap",
+  "phone/flipperzero/PotatoStrikeMini-1.3-FINAL-PATCH-1.1-momentum.fap",
+  "phone/flipperzero/PotatoStrikeMini-1.3-FINAL-PATCH-1.1-unleashed.fap",
   "compat/README.md", "compat/windows/PotatoStrike-Windows-Legacy.cmd",
   "compat/linux/PotatoStrike-Linux-Portable.sh", "compat/linux/PotatoStrike-Linux-Server.sh",
   "compat/macos/PotatoStrike-macOS.command", "logs/.gitkeep",
@@ -96,6 +99,18 @@ if (fs.existsSync(".github/workflows/potato-strike-1-1-beta.yml")) fail("Obsolet
 
 const vendorSize = fs.statSync("game/vendor/three.min.js").size;
 if (vendorSize < 100000 || vendorSize > 1200000) fail(`Unexpected Studio 3D vendor size: ${vendorSize} bytes`);
+
+for (const firmware of ["official", "momentum", "unleashed"]) {
+  const file = `phone/flipperzero/PotatoStrikeMini-1.3-FINAL-PATCH-1.1-${firmware}.fap`;
+  const data = fs.readFileSync(file);
+  if (data.subarray(0, 4).toString("hex") !== "7f454c46") fail(`Invalid FAP ELF header: ${file}`);
+  if (data.length > 65536) fail(`Flipper FAP exceeds the 64 KiB patch budget: ${file}`);
+}
+
+const androidGradle = fs.readFileSync("phone/android/app/build.gradle", "utf8");
+if (!androidGradle.includes("minSdk 21") || !androidGradle.includes('versionName "1.3-final-patch-1.1"')) {
+  fail("Android Patch 1.1 compatibility target is invalid");
+}
 
 for (const file of ["package.json", ...jsonFiles("configs"), ...jsonFiles("mods"), ...jsonFiles("DEV-tools")]) {
   try {
@@ -192,7 +207,7 @@ requireSnippets(gameHtml, [
   'id="game-rules"', 'id="server-aim-mode"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
   'id="create-lan"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="menu-aim-mode"',
   'id="server-bot-difficulty"', 'id="server-buytime"', 'id="server-team-damage"',
-  'id="release-version"', 'V1.3-FINAL PATCH: 1.0',
+  'id="release-version"', 'V1.3-FINAL PATCH: 1.1',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
 
@@ -230,10 +245,10 @@ requireSnippets(editorCss, ["#studio-viewport-3d", ".studio-viewport-toolbar", "
 
 const workflow = fs.readFileSync(".github/workflows/potato-strike-1-2-beta.yml", "utf8");
 requireSnippets(workflow, [
-  "Potato Strike 1.3 FINAL Compatibility Builds", "workflow_dispatch", "tags:", '"v*"', "concurrency:",
-  "build:win:compat", "build:linux:compat", "PotatoStrike-1.3-FINAL.apk",
-  "PotatoStrikeMini-1.3-FINAL-official.fap", "PotatoStrikeMini-1.3-FINAL-momentum.fap",
-  "PotatoStrikeMini-1.3-FINAL-unleashed.fap", "PotatoStrike-1.3-FINAL.zip", "potato-strike-1.3-final-folder",
+  "Potato Strike 1.3 FINAL Patch 1.1 Compatibility Builds", "workflow_dispatch", "tags:", '"v*"', "concurrency:",
+  "build:win:compat", "build:linux:compat", "PotatoStrike-1.3-FINAL-PATCH-1.1.apk",
+  "PotatoStrikeMini-1.3-FINAL-PATCH-1.1-official.fap", "PotatoStrikeMini-1.3-FINAL-PATCH-1.1-momentum.fap",
+  "PotatoStrikeMini-1.3-FINAL-PATCH-1.1-unleashed.fap", "PotatoStrike-1.3-FINAL.zip", "potato-strike-1.3-final-folder",
   "PotatoStrike-1.3-BETA-FINAL.zip", "potato-strike-1.3-beta-final-compressed",
 ], "1.3 compatibility workflow feature");
 
@@ -247,7 +262,7 @@ for (const forbidden of ["npm ci", "npm run build:single", "actions/setup-node"]
 }
 
 const packageScript = fs.readFileSync("scripts/package-compat.js", "utf8");
-requireSnippets(packageScript, ["PotatoStrike-1.3-FINAL", "PATCH-NOTES-1.3-FINAL.md", "PotatoStrike-1.3-FINAL.apk"], "release packager feature");
+requireSnippets(packageScript, ["PotatoStrike-1.3-FINAL", "PATCH-NOTES-1.3-FINAL.md", "PotatoStrike-1.3-FINAL-PATCH-1.1.apk"], "release packager feature");
 const betaPackageScript = fs.readFileSync("scripts/package-beta-final.js", "utf8");
 requireSnippets(betaPackageScript, ["PotatoStrike-1.3-BETA-FINAL", "PATCH-NOTES-1.3-BETA-FINAL.md", "CompressionLevel Optimal", "mods", "game"], "compressed beta packager feature");
 

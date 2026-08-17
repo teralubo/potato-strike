@@ -2601,7 +2601,7 @@ function executeOwnerCommand(source) {
   if (command === "help" || command === "cmdlist") return logCommand(`commands: ${consoleCommands.join(", ")}`);
   if (command === "cvarlist") return logCommand(`cvars: ${Object.keys(consoleCvars).join(", ")}`);
   if (command === "status") return logCommand(`${serverSettings.hostname} | owner ${state.lobbyOwnerId} | ${state.gameMode} | ${state.map.name} | T ${state.score.T}:${state.score.CT} CT | bots ${bots.length + allies.length}`);
-  if (command === "version") return logCommand("Potato Strike 1.2 FINAL / console protocol 1");
+  if (command === "version") return logCommand("Potato Strike 1.3 FINAL Patch 1.1 / console protocol 1");
   if (command === "echo") return logCommand(parts.join(" "));
   if (command === "clear") { hud.commandLog.innerHTML = ""; return; }
   if (command === "pause") { setPaused(true); return logCommand("paused"); }

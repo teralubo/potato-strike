@@ -64,16 +64,17 @@ copyDir(path.join(root, "mods"), path.join(releaseDir, "mods"));
 copyDir(path.join(root, "DEV-tools"), path.join(releaseDir, "DEV-tools"));
 copyDir(path.join(root, "compat"), path.join(releaseDir, "compat"));
 copyDir(path.join(root, "phone"), path.join(releaseDir, "phone"), (from, entry) => {
-  return entry.isDirectory() && ["build", ".gradle", "dist"].includes(entry.name);
+  if (entry.isDirectory()) return ["build", ".gradle", "dist", ".vscode"].includes(entry.name);
+  return entry.isFile() && entry.name === "potato_strike_mini.fap";
 });
 
 const apk = path.join(root, "phone", "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk");
-if (fs.existsSync(apk)) copyFile(apk, path.join(releaseDir, "phone", "android", "PotatoStrike-1.3-FINAL.apk"));
+if (fs.existsSync(apk)) copyFile(apk, path.join(releaseDir, "phone", "android", "PotatoStrike-1.3-FINAL-PATCH-1.1.apk"));
 
 const flipperDist = path.join(root, "phone", "flipperzero", "dist");
 if (fs.existsSync(flipperDist)) {
   for (const file of fs.readdirSync(flipperDist)) {
-    if (file.endsWith(".fap")) copyFile(path.join(flipperDist, file), path.join(releaseDir, "phone", "flipperzero", file));
+    if (file.endsWith(".fap") && file !== "potato_strike_mini.fap") copyFile(path.join(flipperDist, file), path.join(releaseDir, "phone", "flipperzero", file));
   }
 }
 

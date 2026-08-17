@@ -1,8 +1,21 @@
 # Changelog
 
-## 1.3 FINAL - Patch 1.0
+## 1.3 FINAL - Patch 1.1
 
-Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.0`.
+Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.1`.
+
+### Patch 1.1 - Platform compatibility
+
+- Added an Android 5.0+ universal APK target (`minSdk 21`) that embeds the current self-contained game and requires no npm installation on the device.
+- Updated the Android wrapper to version `1.3-final-patch-1.1` and synchronized the same runtime used by browser and desktop builds.
+- Retained portable Windows x64 and ia32 builds for supported systems and documented the one-file HTML fallback for Windows 7/8 and other legacy installations.
+- Retained Linux AppImage, deb, rpm, tar.gz and unpacked builds, plus portable HTML and local-server launchers for systems affected by FUSE or glibc incompatibility.
+- Added three firmware-specific Potato Strike Mini FAP outputs: Official, Momentum and Unleashed.
+- Kept the Flipper version native and extremely small: monochrome 128x64 rendering, one enemy, one projectile, fixed-size input queue, no textures, HTML, editor, network layer or dynamic game assets.
+- Updated the complete compatibility ZIP to collect APK, all FAP variants, Windows builds and Linux builds into platform-specific folders.
+- Kept expensive compatibility Actions manual/tag-only so ordinary pushes do not consume build minutes.
+- Added the official itch.io game link: [teralubo.itch.io/potato-strike](https://teralubo.itch.io/potato-strike).
+- Rebuilt the one-file HTML, Android asset, full compatibility ZIP and compressed beta ZIP.
 
 ### Patch 1.0 - Combat, economy and server rules
 

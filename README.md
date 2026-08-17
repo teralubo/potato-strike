@@ -4,6 +4,8 @@ Lekki CS-like sandbox w HTML Canvas. Dziala bez serwera przez otwarcie `PotatoSt
 
 Repozytorium gry: [teralubo/potato-strike](https://github.com/teralubo/potato-strike)
 
+Strona gry na itch.io: [teralubo.itch.io/potato-strike](https://teralubo.itch.io/potato-strike)
+
 Licencja: GNU GPL 3.0 (`GPL-3.0-only`). Potato Strike ma byc lekkim sandboxem LAN/BOT do edycji, modowania i przerabiania przez graczy.
 
 Workflow repo:
@@ -11,7 +13,13 @@ Workflow repo:
 - `beta` - zmiany gotowe do szerszych testow.
 - `main` - wydania zaakceptowane do publikacji.
 
-## 1.3 FINAL
+## 1.3 FINAL - Patch 1.1
+
+- Android 5.0+ otrzymuje uniwersalny APK z dotykowym sterowaniem i wbudowanym jednoplikowym runtime gry.
+- Linux ma AppImage, deb, rpm, tar.gz, katalog portable oraz awaryjne launchery HTML/local-server.
+- Windows ma portable x64/ia32; Windows 7/8 korzysta z lekkiego launchera HTML i kompatybilnej przegladarki.
+- Flipper Zero otrzymuje osobna, natywna `Potato Strike Mini` w wariantach FAP dla Official, Momentum i Unleashed firmware.
+- Szczegoly: `PATCH-NOTES-1.3-FINAL.md` oraz `CHANGELOG.md`.
 
 - Widok 3D korzysta z lekkich sprite'ow broni wyeksportowanych z FreEDoom 0.13.0; tryb 2D pozostaje bez zmian.
 - Pliki `freedoom1.wad` i `freedoom2.wad` sa potrzebne tylko do ponownego eksportu przez `npm run assets:freedoom`. Nie trafiaja do Git ani paczki i mozna je usunac bez wplywu na gre.
