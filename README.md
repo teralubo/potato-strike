@@ -11,9 +11,9 @@ Workflow repo:
 - `beta` - zmiany gotowe do szerszych testow.
 - `main` - wydania zaakceptowane do publikacji.
 
-## 1.2 BETA Sandbox Studio
+## 1.2 FINAL Sandbox Studio
 
-Wersja `1.2 BETA` rozwija Potato Strike w lekka platforme sandbox:
+Wersja `1.2 FINAL` rozwija Potato Strike w lekka platforme sandbox:
 
 - Studio ma osobny plan misji 2D inspirowany klasycznym workflow Arma 2 oraz bezposredni edytor sceny 3D inspirowany Eden/Arma 3.
 - W 2D sa tryby obiektow, grup, triggerow, waypointow, synchronizacji i markerow pod `F1`-`F6`, zaznaczanie wielu obiektow, prostokat zaznaczenia, kopiowanie, zoom i przesuwanie mapy.
@@ -22,8 +22,10 @@ Wersja `1.2 BETA` rozwija Potato Strike w lekka platforme sandbox:
 - Format map `editorData.version: 2` zachowuje stare `obstacles`, dzieki czemu mapy 1.1 nadal sie wczytuja.
 - Test Studio przekazuje do gry spawny jednostek, trasy botow, pickupy i kod triggerow.
 - Renderer FPS ma poprawiona wysokosc scian, rotacje kolizji, czytelniejsze modele, mgle, teren i lekkie proceduralne materialy bez pobierania duzych tekstur.
+- Tryb 3D ma skok, kucanie, kamere gora/dol oraz granaty wybierane z ekwipunku, rzucane po puszczeniu LPM i zsynchronizowany jump-throw.
+- Foldery w `mods/` sa kategoriami menedzera modow. Domyslny, wylaczony mod `mods/default/fps_info` pokazuje maly licznik FPS.
 - Biblioteka 3D Studio jest dostarczana lokalnie w `game/vendor/three.min.js`; edytor nie wymaga CDN ani internetu.
-- Szczegoly wydania sa w `PATCH-NOTES-1.2-BETA.md`.
+- Szczegoly wydania sa w `PATCH-NOTES-1.2-FINAL.md`.
 
 Opcjonalne lekkie prototypy `Aim Lab Bunker`, `Extraction Sweep` i `Micro Royale` sa w `mods/examples/1.2-beta/` jako material do importu i dalszego modowania.
 
@@ -39,14 +41,14 @@ Pakiet kompatybilnosci z 1.1 jest dalej utrzymywany i wersjonowany razem z 1.2:
 
 - `phone/android/` zawiera natywna wersje Android WebView ladujaca `PotatoStrike.html`.
 - `phone/flipperzero/` zawiera ultra-mini wersje `Potato Strike Mini` dla Flipper Zero.
-- `.github/workflows/potato-strike-1-2-beta.yml` buduje APK, FAP i paczke `PotatoStrike-1.2-BETA.zip` jako artefakty GitHub Actions.
+- `.github/workflows/potato-strike-1-2-beta.yml` buduje APK, FAP i paczki kompatybilnosci jako artefakty GitHub Actions.
 - `.github/workflows/pages.yml` publikuje jednoplikowa wersje HTML na GitHub Pages, jesli Pages jest wlaczone w repo.
 - `compat/` zawiera launchery i instrukcje dla starszych Windowsow, roznych dystrybucji Linuxa i awaryjnego HTML/server mode.
-- `PATCH-NOTES-1.1-BETA.md` zachowuje historie pakietu, a `PATCH-NOTES-1.2-BETA.md` opisuje aktualne wydanie.
+- `PATCH-NOTES-1.1-BETA.md` i `PATCH-NOTES-1.2-BETA.md` zachowuja historie, a `PATCH-NOTES-1.2-FINAL.md` opisuje aktualne wydanie.
 
 Android APK buduje sie na GitHubie jako artifact `potato-strike-android-apk`.
 Flipper Zero `.fap` buduje sie na GitHubie osobno dla Official, Momentum i Unleashed firmware.
-Pelna paczka do pobrania buduje sie jako artifact `potato-strike-1.2-beta-folder`.
+Pelna paczka lokalna to `PotatoStrike-1.2-FINAL.zip`. Odchudzona paczka galezi beta to `PotatoStrike-1.2-BETA-FINAL.zip`.
 Wersja webowa na GitHub Pages jest budowana z `PotatoStrike.html` i publikowana jako `index.html`, wiec po wejsciu na strone otwiera sie gra, a nie README.
 Buildy desktop kompatybilnosci buduja sie jako `potato-strike-windows-compat` oraz `potato-strike-linux-compat`.
 
@@ -54,6 +56,7 @@ Lokalne przygotowanie paczki:
 
 ```powershell
 npm run package:compat
+npm run package:beta-final
 ```
 
 Jesli lokalnie nie masz Android SDK/Gradle albo `ufbt`, skorzystaj z GitHub Actions.

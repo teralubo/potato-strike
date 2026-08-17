@@ -79,6 +79,35 @@ function modsDir() {
   return dir;
 }
 
+function listModManifests() {
+  const root = modsDir();
+  const manifests = [];
+  const visit = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const target = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        visit(target);
+        continue;
+      }
+      if (!entry.isFile() || entry.name.toLowerCase() !== "mod.json") continue;
+      try {
+        const relative = path.relative(root, target);
+        const segments = relative.split(path.sep);
+        const mod = JSON.parse(fs.readFileSync(target, "utf8"));
+        manifests.push({
+          ...mod,
+          category: segments.length > 2 ? segments[0] : mod.category || "custom",
+          sourcePath: relative.replace(/\\/g, "/"),
+        });
+      } catch (error) {
+        writeLog("mods", `Cannot load ${target}`, error?.stack || error?.message || String(error));
+      }
+    }
+  };
+  visit(root);
+  return manifests;
+}
+
 function safeConfigName(name) {
   return String(name || "potato-strike-config")
     .replace(/[^a-z0-9_.-]/gi, "-")
@@ -303,14 +332,18 @@ ipcMain.handle("config:list", () => {
 });
 
 ipcMain.handle("mod:save", (_event, payload) => {
-  const file = `${safeConfigName(payload?.name || "mod")}.json`;
-  const target = path.join(modsDir(), file);
+  const mod = payload?.mod || {};
+  const category = safeConfigName(mod.category || "custom");
+  const modId = safeConfigName(mod.id || payload?.name || "mod");
+  const targetDir = path.join(modsDir(), category, modId);
+  fs.mkdirSync(targetDir, { recursive: true });
+  const target = path.join(targetDir, "mod.json");
   fs.writeFileSync(target, JSON.stringify(payload?.mod || {}, null, 2));
   return { ok: true, path: target };
 });
 
 ipcMain.handle("mod:list", () => {
-  return fs.readdirSync(modsDir()).filter((file) => file.endsWith(".json") || file.endsWith(".js"));
+  return listModManifests();
 });
 
 app.on("window-all-closed", () => {

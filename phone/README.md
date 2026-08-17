@@ -1,4 +1,4 @@
-# Potato Strike 1.2 BETA Phone Pack
+# Potato Strike 1.2 FINAL Phone Pack
 
 This folder contains compatibility builds and build instructions.
 
@@ -16,9 +16,9 @@ Build on GitHub:
 
 1. Push to `beta`.
 2. Open GitHub Actions.
-3. Run or wait for `Potato Strike 1.2 BETA Compatibility Builds`.
-4. Download the `potato-strike-android-apk` artifact or the complete `potato-strike-1.2-beta-folder` zip.
-5. In the complete zip, click `phone/android/PotatoStrike-1.2-BETA.apk` on Android and install it.
+3. Run or wait for `Potato Strike 1.2 FINAL Compatibility Builds`.
+4. Download the `potato-strike-android-apk` artifact or the complete `potato-strike-1.2-final-folder` zip.
+5. In the complete zip, click `phone/android/PotatoStrike-1.2-FINAL.apk` on Android and install it.
 
 Build locally if Android SDK and Gradle are installed:
 
@@ -42,11 +42,11 @@ Build on GitHub:
 
 1. Push to `beta`.
 2. Open GitHub Actions.
-3. Download the matching Flipper artifact or the complete `potato-strike-1.2-beta-folder` zip.
+3. Download the matching Flipper artifact or the complete `potato-strike-1.2-final-folder` zip.
 4. In the complete zip, copy the matching file from `phone/flipperzero/` to the Flipper Zero SD card:
-   - `PotatoStrikeMini-1.2-BETA-official.fap`
-   - `PotatoStrikeMini-1.2-BETA-momentum.fap`
-   - `PotatoStrikeMini-1.2-BETA-unleashed.fap`
+   - `PotatoStrikeMini-1.2-FINAL-official.fap`
+   - `PotatoStrikeMini-1.2-FINAL-momentum.fap`
+   - `PotatoStrikeMini-1.2-FINAL-unleashed.fap`
 
 Build locally if `ufbt` is installed:
 

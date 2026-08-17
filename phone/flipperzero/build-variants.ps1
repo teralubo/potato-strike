@@ -1,9 +1,9 @@
 $ErrorActionPreference = "Stop"
 
 $variants = @(
-  @{ Name = "official"; Index = "https://update.flipperzero.one/firmware/directory.json"; Output = "PotatoStrikeMini-1.2-BETA-official.fap" },
-  @{ Name = "momentum"; Index = "https://up.momentum-fw.dev/firmware/directory.json"; Output = "PotatoStrikeMini-1.2-BETA-momentum.fap" },
-  @{ Name = "unleashed"; Index = "https://up.unleashedflip.com/directory.json"; Output = "PotatoStrikeMini-1.2-BETA-unleashed.fap" }
+  @{ Name = "official"; Index = "https://update.flipperzero.one/firmware/directory.json"; Output = "PotatoStrikeMini-1.2-FINAL-official.fap" },
+  @{ Name = "momentum"; Index = "https://up.momentum-fw.dev/firmware/directory.json"; Output = "PotatoStrikeMini-1.2-FINAL-momentum.fap" },
+  @{ Name = "unleashed"; Index = "https://up.unleashedflip.com/directory.json"; Output = "PotatoStrikeMini-1.2-FINAL-unleashed.fap" }
 )
 
 New-Item -ItemType Directory -Force -Path "dist" | Out-Null

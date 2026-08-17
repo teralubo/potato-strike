@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " PotatoStrikeAndroid/1.2-beta");
+        settings.setUserAgentString(settings.getUserAgentString() + " PotatoStrikeAndroid/1.2-final");
 
         webView.setWebViewClient(new WebViewClient());
         webView.loadUrl("file:///android_asset/PotatoStrike.html");

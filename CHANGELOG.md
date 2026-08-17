@@ -1,9 +1,11 @@
 # Changelog
 
-## 1.2 BETA
+## 1.2 FINAL
 
 Sandbox Studio and 3D readability update.
 
+- Added folder-based mod categories and the removable/restorable `default/fps_info` mod, disabled by default.
+- Added grenade inventory slots, hold/release throwing, 3D arc physics, competitive purchase limits and synchronized jump-throws.
 - Replaced the fixed isometric Studio preview with a direct, persistent WebGL scene editor and a software fallback.
 - Added separate 2D mission-plan and 3D scene workflows, including object/group/trigger/waypoint/sync/marker modes, transform tools, layers, history and multi-selection.
 - Added local Three.js vendor build so Studio 3D works offline without a CDN.
