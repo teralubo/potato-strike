@@ -10,7 +10,7 @@
     "difficulty": "normal",
     "language": "pl",
     "resolution": "auto",
-    "hzLimit": 60,
+    "hzLimit": "vsync",
     "crosshairStyle": "classic",
     "crosshairColor": "#f2f0df",
     "crosshairSize": 1,
@@ -33,7 +33,8 @@
     "fillMode": "bots",
     "controlMode": "keyboard",
     "showMinimap": true,
-    "autoReload": true
+    "autoReload": true,
+    "fastBinds": []
   },
   "bindings": {
     "forward": "KeyW",

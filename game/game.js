@@ -104,6 +104,10 @@ const hud = {
   difficulty: $("difficulty"),
   resolution: $("resolution"),
   hzLimit: $("hz-limit"),
+  fastBindKey: $("fast-bind-key"),
+  fastBindAction: $("fast-bind-action"),
+  fastBindAdd: $("fast-bind-add"),
+  fastBindList: $("fast-bind-list"),
   crosshairStyle: $("crosshair-style"),
   crosshairColor: $("crosshair-color"),
   crosshairSize: $("crosshair-size"),
@@ -387,7 +391,7 @@ const settings = {
   quality: "medium",
   difficulty: "normal",
   resolution: "auto",
-  hzLimit: 60,
+  hzLimit: "vsync",
   crosshairStyle: "classic",
   crosshairColor: "#f2f0df",
   crosshairSize: 1,
@@ -416,6 +420,7 @@ const settings = {
   controlMode: "keyboard",
   showMinimap: true,
   autoReload: true,
+  fastBinds: [],
 };
 
 const simple3dTextures = {
@@ -513,6 +518,18 @@ const i18n = {
     botDifficultyLabel: "Poziom botow",
     resolutionLabel: "Rozdzielczosc",
     hzLabel: "Hz / FPS cap",
+    fastBindTitle: "Fast Bind",
+    fastBindHelp: "Przypisz klawisz do szybkiego zakupu lub akcji. Zakupy nadal wymagaja buy time, pieniedzy i zgodnej strony.",
+    fastBindSetKey: "Ustaw klawisz",
+    fastBindAdd: "Dodaj",
+    fastBindRemove: "Usun",
+    fastBindEmpty: "Brak Fast Bind. Ustaw klawisz i wybierz akcje.",
+    fastBindPress: "Nacisnij klawisz...",
+    fastBindBuyWeapons: "Kup bron",
+    fastBindBuyGrenades: "Kup granat",
+    fastBindBuyGear: "Kup ekwipunek",
+    fastBindActions: "Akcje gry",
+    fastBindActionAria: "Akcja Fast Bind",
     crosshairLabel: "Celownik",
     crosshairColorLabel: "Kolor celownika",
     nickLabel: "Nick gracza",
@@ -587,6 +604,18 @@ const i18n = {
     botDifficultyLabel: "Bot difficulty",
     resolutionLabel: "Resolution",
     hzLabel: "Hz / FPS cap",
+    fastBindTitle: "Fast Bind",
+    fastBindHelp: "Assign a key to a quick purchase or action. Purchases still require buy time, money and the correct side.",
+    fastBindSetKey: "Set key",
+    fastBindAdd: "Add",
+    fastBindRemove: "Remove",
+    fastBindEmpty: "No Fast Binds. Set a key and choose an action.",
+    fastBindPress: "Press a key...",
+    fastBindBuyWeapons: "Buy weapon",
+    fastBindBuyGrenades: "Buy grenade",
+    fastBindBuyGear: "Buy gear",
+    fastBindActions: "Game actions",
+    fastBindActionAria: "Fast Bind action",
     crosshairLabel: "Crosshair",
     crosshairColorLabel: "Crosshair color",
     nickLabel: "Player nick",
@@ -649,6 +678,7 @@ const actionLabelI18n = {
     teams: "Teams",
     network: "LAN / online",
     grenade: "Grenade",
+    drop: "Drop weapon",
     dash: "3D jump / 2D dash",
     crouch: "3D crouch",
     pause: "Pause",
@@ -740,6 +770,8 @@ const mobileLook = { pointerId: null, x: 0, y: 0 };
 const runtimeStats = { fps: 0, frames: 0, sampleStarted: performance.now() };
 let last = performance.now();
 let waitingForBind = "";
+let waitingForFastBind = false;
+let pendingFastBindKey = "";
 const editor = { active: false, selectedMission: "", selectedObject: null };
 
 function makeWeapons() {
@@ -836,6 +868,10 @@ function applyLanguage() {
   setText("#shop-panel h2", tr("shopTitle"));
   setText("#shop-panel .muted", tr("shop").toLowerCase());
   setText("#settings-panel h2", tr("settingsTitle"));
+  setText("#fast-bind-title", tr("fastBindTitle"));
+  setText("#fast-bind-help", tr("fastBindHelp"));
+  setText("#fast-bind-add", tr("fastBindAdd"));
+  hud.fastBindAction?.setAttribute("aria-label", tr("fastBindActionAria"));
   setText("#missions-panel h2", tr("missionsTitle"));
   setText("#binds-panel h2", tr("bindsTitle"));
   setText("#teams-panel h2", tr("teamsTitle"));
@@ -879,6 +915,8 @@ function applyLanguage() {
   setLabel("menu-map", tr("mapLabel"));
   setLabel("menu-graphics", tr("menuGraphicsLabel"));
   if (settings.language === "en") {
+    setOptionText("hz-limit", "vsync", "V-Sync (recommended)");
+    setOptionText("hz-limit", "0", "Unlimited");
     setOptionText("menu-mode", "offline", "Offline bots");
     setOptionText("menu-mode", "story", "Story mode");
     setOptionText("menu-mode", "lan", "LAN");
@@ -896,6 +934,8 @@ function applyLanguage() {
     setOptionText("control-mode", "keyboard", "Keyboard + mouse");
     setOptionText("control-mode", "mobile", "Phone / touch screen");
   } else {
+    setOptionText("hz-limit", "vsync", "V-Sync (zalecane)");
+    setOptionText("hz-limit", "0", "Bez limitu");
     setOptionText("menu-mode", "offline", "BOTY offline");
     setOptionText("menu-mode", "story", "Tryb fabularny");
     setOptionText("menu-mode", "lan", "LAN");
@@ -923,6 +963,8 @@ function applyLanguage() {
   if (autoReload) autoReload.lastChild.textContent = `\n          ${tr("autoReloadLabel")}\n        `;
   renderShop();
   renderBinds();
+  renderFastBindOptions();
+  renderFastBinds();
   renderMissions();
   renderTeams();
   renderModManager();
@@ -949,6 +991,113 @@ function codeName(code) {
   if (code.startsWith("Key")) return code.slice(3);
   if (code.startsWith("Digit")) return code.slice(5);
   return code;
+}
+
+function fastBindActionEntries() {
+  const entries = [];
+  for (const weapon of weaponCatalog.filter((item) => !item.melee)) {
+    entries.push({ group: tr("fastBindBuyWeapons"), value: `buy:weapon:${weaponCatalog.indexOf(weapon)}`, label: `${weapon.category}: ${weapon.name} ($${weapon.price})` });
+  }
+  for (const grenade of grenadeCatalog) {
+    entries.push({ group: tr("fastBindBuyGrenades"), value: `buy:grenade:${grenadeCatalog.indexOf(grenade)}`, label: `${grenade.name} ($${grenade.price})` });
+  }
+  for (const gear of equipmentCatalog) {
+    entries.push({ group: tr("fastBindBuyGear"), value: `buy:equipment:${equipmentCatalog.indexOf(gear)}`, label: `${gear.name} ($${gear.price})` });
+  }
+  entries.push(
+    { group: tr("fastBindActions"), value: "action:shop", label: tr("shop") },
+    { group: tr("fastBindActions"), value: "action:reload", label: bindLabel("reload") },
+    { group: tr("fastBindActions"), value: "action:grenade", label: bindLabel("grenade") },
+    { group: tr("fastBindActions"), value: "action:drop", label: bindLabel("drop") },
+  );
+  for (let slot = 1; slot <= 10; slot += 1) {
+    entries.push({ group: tr("fastBindActions"), value: `action:slot:${slot}`, label: `Slot ${slot}` });
+  }
+  return entries;
+}
+
+function normalizeFastBinds(value = settings.fastBinds) {
+  const allowed = new Set(fastBindActionEntries().map((entry) => entry.value));
+  const byKey = new Map();
+  for (const bind of Array.isArray(value) ? value : []) {
+    if (!bind || typeof bind.key !== "string" || !allowed.has(bind.action)) continue;
+    byKey.set(bind.key, { key: bind.key, action: bind.action });
+  }
+  settings.fastBinds = [...byKey.values()];
+  return settings.fastBinds;
+}
+
+function fastBindActionLabel(action) {
+  return fastBindActionEntries().find((entry) => entry.value === action)?.label || action;
+}
+
+function renderFastBindOptions() {
+  if (!hud.fastBindAction) return;
+  const selected = hud.fastBindAction.value;
+  hud.fastBindAction.innerHTML = "";
+  const groups = new Map();
+  for (const entry of fastBindActionEntries()) {
+    if (!groups.has(entry.group)) {
+      const group = document.createElement("optgroup");
+      group.label = entry.group;
+      groups.set(entry.group, group);
+      hud.fastBindAction.appendChild(group);
+    }
+    const option = document.createElement("option");
+    option.value = entry.value;
+    option.textContent = entry.label;
+    groups.get(entry.group).appendChild(option);
+  }
+  if ([...hud.fastBindAction.options].some((option) => option.value === selected)) hud.fastBindAction.value = selected;
+}
+
+function renderFastBinds() {
+  if (!hud.fastBindList || !hud.fastBindKey) return;
+  normalizeFastBinds();
+  hud.fastBindKey.textContent = waitingForFastBind ? tr("fastBindPress") : pendingFastBindKey ? codeName(pendingFastBindKey) : tr("fastBindSetKey");
+  hud.fastBindList.innerHTML = "";
+  if (!settings.fastBinds.length) {
+    const empty = document.createElement("div");
+    empty.className = "panel-note";
+    empty.textContent = tr("fastBindEmpty");
+    hud.fastBindList.appendChild(empty);
+    return;
+  }
+  for (const bind of settings.fastBinds) {
+    const item = document.createElement("div");
+    item.className = "fast-bind-item";
+    const key = document.createElement("span");
+    key.className = "tag";
+    key.textContent = codeName(bind.key);
+    const label = document.createElement("span");
+    label.textContent = fastBindActionLabel(bind.action);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "secondary";
+    remove.textContent = tr("fastBindRemove");
+    remove.addEventListener("click", () => {
+      settings.fastBinds = settings.fastBinds.filter((entry) => entry.key !== bind.key);
+      saveConfig();
+      renderFastBinds();
+    });
+    item.append(key, label, remove);
+    hud.fastBindList.appendChild(item);
+  }
+}
+
+function executeFastBind(action) {
+  if (action.startsWith("buy:")) {
+    if (!state.running) return showMessage(settings.language === "en" ? "Start a match before buying" : "Uruchom mecz przed zakupem");
+    const [, type, rawId] = action.split(":");
+    buyItem(type, Number(rawId));
+    return;
+  }
+  if (action === "action:shop") return togglePanel(hud.shopPanel);
+  if (!state.running) return;
+  if (action === "action:reload") return reload();
+  if (action === "action:grenade") return selectNextGrenade();
+  if (action === "action:drop") return dropActiveWeapon();
+  if (action.startsWith("action:slot:")) equipHotkey(Number(action.slice("action:slot:".length)));
 }
 
 const audio = {
@@ -1199,6 +1348,10 @@ function syncProfileFields() {
   hud.languageSelect.value = settings.language;
   hud.resolution.value = settings.resolution;
   hud.hzLimit.value = String(settings.hzLimit);
+  if (!hud.hzLimit.value) {
+    settings.hzLimit = "vsync";
+    hud.hzLimit.value = "vsync";
+  }
   hud.crosshairStyle.value = settings.crosshairStyle;
   hud.crosshairColor.value = settings.crosshairColor;
   hud.crosshairSize.value = String(settings.crosshairSize);
@@ -1216,6 +1369,9 @@ function syncProfileFields() {
   hud.serverAudio.checked = settings.serverAudio;
   hud.controlMode.value = settings.controlMode;
   hud.mobileControls.classList.toggle("hidden", settings.controlMode !== "mobile");
+  normalizeFastBinds();
+  renderFastBindOptions();
+  renderFastBinds();
   drawCrosshairPaint();
 }
 
@@ -1230,6 +1386,7 @@ function loadConfig() {
   try {
     const config = JSON.parse(raw);
     Object.assign(settings, config.settings || {});
+    normalizeFastBinds();
     settings.graphicsMode = normalizeGraphicsMode(settings.graphicsMode);
     Object.assign(bindings, config.bindings || {});
     if (bindings.grenade === bindings.drop) bindings.grenade = "KeyH";
@@ -1274,6 +1431,7 @@ function playerProfiles() {
 
 function applyProfile(profile, preserveIncomingId = true) {
   Object.assign(settings, profile.settings || {});
+  normalizeFastBinds();
   Object.assign(bindings, profile.bindings || {});
   if (bindings.grenade === bindings.drop) bindings.grenade = "KeyH";
   settings.configId = profile.configId || settings.configId || `cfg-${Date.now().toString(36)}`;
@@ -4531,13 +4689,17 @@ function updateEditorTriggers(dt) {
 }
 
 function tick(now) {
-  const target = settings.hzLimit ? 1000 / settings.hzLimit : settings.perfLimit === "eco" ? 1000 / 30 : settings.perfLimit === "balanced" ? 1000 / 60 : 0;
-  if (target && now - last < target) {
+  const selectedCap = String(settings.hzLimit ?? "vsync");
+  const vsyncCap = settings.perfLimit === "eco" ? 30 : settings.perfLimit === "balanced" ? 60 : 0;
+  const fpsCap = selectedCap === "vsync" ? vsyncCap : Math.max(0, Number(selectedCap) || 0);
+  const target = fpsCap ? 1000 / fpsCap : 0;
+  const elapsed = now - last;
+  if (target && elapsed + 0.25 < target) {
     requestAnimationFrame(tick);
     return;
   }
-  const dt = Math.min(0.033, (now - last) / 1000 || 0);
-  last = now;
+  const dt = Math.min(0.033, elapsed / 1000 || 0);
+  last = target ? now - (elapsed % target) : now;
   runtimeStats.frames += 1;
   const fpsElapsed = now - runtimeStats.sampleStarted;
   if (fpsElapsed >= 500) {
@@ -4593,6 +4755,7 @@ function togglePanel(panel) {
 
 function closePanels() {
   state.overlayOpen = false;
+  waitingForFastBind = false;
   hud.playerMenu?.classList.add("hidden");
   hud.shopPanel.classList.add("hidden");
   hud.settingsPanel.classList.add("hidden");
@@ -4648,12 +4811,29 @@ function downloadLauncher() {
 
 window.addEventListener("resize", resize);
 window.addEventListener("keydown", (event) => {
+  if (waitingForFastBind) {
+    event.preventDefault();
+    waitingForFastBind = false;
+    pendingFastBindKey = event.code === "Escape" ? "" : event.code;
+    renderFastBinds();
+    return;
+  }
   if (waitingForBind) {
     event.preventDefault();
     bindings[waitingForBind] = event.code;
     showMessage(`Bind ustawiony: ${actionLabels[waitingForBind]} = ${codeName(event.code)}`);
     waitingForBind = "";
+    saveConfig();
     renderBinds();
+    return;
+  }
+  const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(event.target?.tagName);
+  const fastBind = !event.repeat && !typing && !state.overlayOpen
+    ? normalizeFastBinds().find((bind) => bind.key === event.code)
+    : null;
+  if (fastBind) {
+    event.preventDefault();
+    executeFastBind(fastBind.action);
     return;
   }
   if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.crouch, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev, "Tab"].includes(event.code)) event.preventDefault();
@@ -4865,7 +5045,21 @@ hud.languageSelect.addEventListener("change", () => {
 });
 hud.difficulty.addEventListener("change", () => { settings.difficulty = hud.difficulty.value; });
 hud.resolution.addEventListener("change", () => { settings.resolution = hud.resolution.value; resize(); saveConfig(); });
-hud.hzLimit.addEventListener("change", () => { settings.hzLimit = Number(hud.hzLimit.value); saveConfig(); });
+hud.hzLimit.addEventListener("change", () => { settings.hzLimit = hud.hzLimit.value; saveConfig(); });
+hud.fastBindKey.addEventListener("click", () => {
+  waitingForFastBind = true;
+  renderFastBinds();
+});
+hud.fastBindAdd.addEventListener("click", () => {
+  if (!pendingFastBindKey) return showMessage(tr("fastBindPress"));
+  const action = hud.fastBindAction.value;
+  settings.fastBinds = normalizeFastBinds().filter((bind) => bind.key !== pendingFastBindKey);
+  settings.fastBinds.push({ key: pendingFastBindKey, action });
+  showMessage(`Fast Bind: ${codeName(pendingFastBindKey)} = ${fastBindActionLabel(action)}`);
+  pendingFastBindKey = "";
+  saveConfig();
+  renderFastBinds();
+});
 hud.crosshairStyle.addEventListener("change", () => { settings.crosshairStyle = hud.crosshairStyle.value; saveConfig(); });
 hud.crosshairColor.addEventListener("input", () => { settings.crosshairColor = hud.crosshairColor.value; saveConfig(); });
 hud.crosshairSize.addEventListener("input", () => { settings.crosshairSize = Number(hud.crosshairSize.value); saveConfig(); });
@@ -4936,7 +5130,7 @@ hud.soundEnabled.addEventListener("change", () => { settings.soundEnabled = hud.
 hud.masterVolume.addEventListener("input", () => { settings.masterVolume = Number(hud.masterVolume.value); saveConfig(); });
 hud.footstepVolume.addEventListener("input", () => { settings.footstepVolume = Number(hud.footstepVolume.value); saveConfig(); });
 hud.serverAudio.addEventListener("change", () => { settings.serverAudio = hud.serverAudio.checked; saveConfig(); });
-hud.perfLimit.addEventListener("change", () => { settings.perfLimit = hud.perfLimit.value; });
+hud.perfLimit.addEventListener("change", () => { settings.perfLimit = hud.perfLimit.value; saveConfig(); });
 hud.botCount.addEventListener("input", () => { settings.botCount = Number(hud.botCount.value); });
 hud.controlMode.addEventListener("change", () => {
   settings.controlMode = hud.controlMode.value;

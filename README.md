@@ -24,6 +24,8 @@ Wersja `1.2 FINAL` rozwija Potato Strike w lekka platforme sandbox:
 - Renderer FPS ma poprawiona wysokosc scian, rotacje kolizji, czytelniejsze modele, mgle, teren i lekkie proceduralne materialy bez pobierania duzych tekstur.
 - Tryb 3D ma skok, kucanie, kamere gora/dol oraz granaty wybierane z ekwipunku, rzucane po puszczeniu LPM i zsynchronizowany jump-throw.
 - Foldery w `mods/` sa kategoriami menedzera modow. Domyslny, wylaczony mod `mods/default/fps_info` pokazuje maly licznik FPS.
+- Ustawienia zawieraja zapisywane w profilu `Fast Bind`, np. `F` do zakupu wybranej broni, granatu lub ekwipunku. Skroty respektuja pieniadze, buy time i ograniczenia stron.
+- Domyslny V-Sync laczy odswiezanie z ekranem i presetem wydajnosci; nadal mozna wybrac reczny limit 30/60/120 lub maksymalna szybkosc przegladarki.
 - Biblioteka 3D Studio jest dostarczana lokalnie w `game/vendor/three.min.js`; edytor nie wymaga CDN ani internetu.
 - Szczegoly wydania sa w `PATCH-NOTES-1.2-FINAL.md`.
 

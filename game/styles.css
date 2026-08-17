@@ -536,6 +536,68 @@ button:disabled {
   min-width: 120px;
 }
 
+.fast-bind-card {
+  margin-top: 14px;
+  border-top: 1px solid rgba(242, 240, 223, 0.16);
+  padding-top: 12px;
+}
+
+.fast-bind-card .panel-note {
+  margin: 5px 0 10px;
+}
+
+.fast-bind-controls {
+  display: grid;
+  grid-template-columns: minmax(130px, auto) minmax(220px, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.fast-bind-controls select {
+  min-width: 0;
+  border: 1px solid rgba(242, 240, 223, 0.2);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #171b17;
+  color: #f2f0df;
+}
+
+.fast-bind-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.fast-bind-item {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(242, 240, 223, 0.14);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(242, 240, 223, 0.055);
+}
+
+.fast-bind-item .tag {
+  text-align: center;
+}
+
+@media (max-width: 620px) {
+  .fast-bind-controls {
+    grid-template-columns: 1fr auto;
+  }
+
+  .fast-bind-controls select {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .fast-bind-item {
+    grid-template-columns: 58px minmax(0, 1fr) auto;
+  }
+}
+
 #mobile-controls {
   position: absolute;
   inset: auto 12px 12px 12px;
