@@ -11,6 +11,15 @@ Workflow repo:
 - `beta` - zmiany gotowe do szerszych testow.
 - `main` - wydania zaakceptowane do publikacji.
 
+## 1.3 FINAL
+
+- Widok 3D korzysta z lekkich sprite'ow broni wyeksportowanych z FreEDoom 0.13.0; tryb 2D pozostaje bez zmian.
+- Pliki `freedoom1.wad` i `freedoom2.wad` sa potrzebne tylko do ponownego eksportu przez `npm run assets:freedoom`. Nie trafiaja do Git ani paczki i mozna je usunac bez wplywu na gre.
+- Brak lub blad PNG wlacza dotychczasowy proceduralny model broni, a AWP zachowuje dedykowany scope.
+- Teksturowany viewmodel pozostaje widoczny podczas PPM/ADS. Domyslny celownik to jeden staly punkt, ukrywany podczas celowania; w ustawieniach mozna go wylaczyc, zmienic albo narysowac w mini-paint i importowac/eksportowac.
+- Licencja BSD 3-Clause, hash zrodla i mapa lumpow sa w `game/assets/weapons/freedoom/`.
+- Szczegoly: `PATCH-NOTES-1.3-FINAL.md`.
+
 ## 1.2 FINAL Sandbox Studio
 
 Wersja `1.2 FINAL` rozwija Potato Strike w lekka platforme sandbox:
@@ -45,26 +54,20 @@ Szczegoly sa w `GITHUB-ACTIONS-COST-SAVING.md`.
 
 ## Compatibility Pack
 
-Pakiet kompatybilnosci z 1.1 jest dalej utrzymywany i wersjonowany razem z 1.2:
+Pakiet kompatybilnosci z 1.1 jest dalej utrzymywany i wersjonowany razem z 1.3:
 
 - `phone/android/` zawiera natywna wersje Android WebView ladujaca `PotatoStrike.html`.
 - `phone/flipperzero/` zawiera ultra-mini wersje `Potato Strike Mini` dla Flipper Zero.
-- `.github/workflows/potato-strike-1-2-beta.yml` buduje APK, FAP i paczki kompatybilnosci jako artefakty GitHub Actions.
+- `.github/workflows/potato-strike-1-2-beta.yml` buduje APK, FAP i paczki kompatybilnosci 1.3 jako artefakty GitHub Actions.
 - `.github/workflows/pages.yml` publikuje jednoplikowa wersje HTML na GitHub Pages, jesli Pages jest wlaczone w repo.
 - `compat/` zawiera launchery i instrukcje dla starszych Windowsow, roznych dystrybucji Linuxa i awaryjnego HTML/server mode.
-- `PATCH-NOTES-1.1-BETA.md` i `PATCH-NOTES-1.2-BETA.md` zachowuja historie, a `PATCH-NOTES-1.2-FINAL.md` opisuje aktualne wydanie.
+- Starsze patch notes zachowuja historie, a `PATCH-NOTES-1.3-FINAL.md` opisuje aktualne wydanie.
 
 Android APK buduje sie na GitHubie jako artifact `potato-strike-android-apk`.
 Flipper Zero `.fap` buduje sie na GitHubie osobno dla Official, Momentum i Unleashed firmware.
-Pelna paczka lokalna to `PotatoStrike-1.2-FINAL.zip`. Odchudzona paczka galezi beta to `PotatoStrike-1.2-BETA-FINAL.zip`.
+Pelna paczka lokalna to `PotatoStrike-1.3-FINAL.zip`. Odchudzona paczka galezi beta z tym samym runtime to `PotatoStrike-1.3-BETA-FINAL.zip`.
 Wersja webowa na GitHub Pages jest budowana z `PotatoStrike.html` i publikowana jako `index.html`, wiec po wejsciu na strone otwiera sie gra, a nie README.
-Buildy desktop kompatybilnosci buduja sie jako `potato-strike-Bindoj-compat` oraz `potato-strike-linux-compat`.
-
-## GitHub Actions Costs
-
-Zeby oszczedzac minuty GitHub Actions, ciezkie buildy APK/FAP/EXE/Linux nie uruchamiaja sie juz na kazdy push. Odpalaja sie recznie albo po tagu `v*`.
-GitHub Pages publikuje gotowy `PotatoStrike.html` jako `index.html` bez `npm ci`.
-Szczegoly sa w `GITHUB-ACTIONS-COST-SAVING.md`.
+Buildy desktop kompatybilnosci buduja sie jako `potato-strike-windows-compat` oraz `potato-strike-linux-compat`.
 
 Lokalne przygotowanie paczki:
 
@@ -159,4 +162,4 @@ Offline z botami jest grywalny. LAN ma poczekalnie, roster, przekazywanie dowodc
 `server.js` ma lekki lokalny serwer, heartbeat pokoi LAN, stan poczekalni, wybor dowodcy i autoryzowany server config. Prawdziwa synchronizacja pozycji i strzelania gracz kontra gracz nadal wymaga podpiecia klienta do pelnego stanu serwera.
 
 ## README MADE BY AI
-## MESSAGE FROM TERALUBO: this game started as a light version of cs and end as a sandbox
+## MESSAGE FROM TERALUBO: play

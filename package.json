@@ -1,6 +1,6 @@
 {
   "name": "potato-strike",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Lightweight CS-like Potato Strike prototype.",
   "license": "GPL-3.0-only",
@@ -10,6 +10,7 @@
     "verify": "node scripts/verify.js",
     "build:editor-vendor": "esbuild DEV-tools/three-vendor-entry.js --bundle --minify --format=iife --target=es2020 --legal-comments=none --outfile=game/vendor/three.min.js && node scripts/clean-editor-vendor.js",
     "build:single": "node scripts/build-single-html.js",
+    "assets:freedoom": "node DEV-tools/extract-freedoom-weapons.js",
     "package:offline": "node scripts/package-offline.js",
     "phone:sync": "node scripts/sync-phone-assets.js",
     "package:compat": "node scripts/package-compat.js",
@@ -40,6 +41,7 @@
       "game/editor.js",
       "game/vendor/three.min.js",
       "game/vendor/THREE-LICENSE.txt",
+      "game/assets/**/*",
       "main.js",
       "preload.js",
       "configs/default-config.json",

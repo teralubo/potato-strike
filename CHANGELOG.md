@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.3 FINAL
+
+Final 3D weapon texture, FPS controls and CS-style buying update.
+
+- Added tiny FreEDoom 0.13.0 weapon viewmodel PNGs to the 3D renderer without changing 2D weapons.
+- Added distinct cached FreEDoom-based texture variants and silhouette details for every built-in firearm.
+- Added full FPS mouse look in 3D with horizontal yaw, vertical pitch and a stable 70-degree up/down range during ADS.
+- Added CS-style team buy zones, round-start buy-time enforcement and clear shop/HUD availability feedback.
+- Added potato-friendly FPS controls for precise mouse, ADS/scope sensitivity, raw input, acceleration, FOV and viewmodel movement.
+- Kept textured viewmodels visible during RMB/ADS and added a fixed default center dot that hides while aiming.
+- Expanded the existing crosshair mini-paint with a master toggle, reset-to-dot and full settings import/export.
+- Added a dependency-free WAD/PLAYPAL/Doom Patch extraction tool and reproducible source manifest.
+- Embedded weapon PNGs into the one-file HTML and included standalone assets in desktop packages.
+- Kept procedural weapon rendering as the automatic missing-asset fallback and as the ADS/scope view.
+- Excluded the original WAD files from Git and release packages; the runtime does not read them.
+- Added BSD 3-Clause attribution and license files beside the exported assets.
+
 ## 1.2 FINAL
 
 Sandbox Studio and 3D readability update.
@@ -34,7 +51,6 @@ Sandbox Studio and 3D readability update.
 
 Compatibility update focused on portable builds.
 
-- Optimized GitHub Actions cost usage by moving heavy compatibility builds to manual/tag-only runs and making Pages publish the committed HTML without npm install.
 - Added `phone/android`, a lightweight Android WebView wrapper for the one-file Potato Strike HTML build.
 - Added Android GitHub Actions build for `PotatoStrike-1.1-BETA-debug.apk`.
 - Added `phone/flipperzero`, a tiny Flipper Zero mini-game version designed for low RAM and the 128x64 monochrome screen.

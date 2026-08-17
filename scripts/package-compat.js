@@ -3,7 +3,7 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const root = process.cwd();
-const releaseName = "PotatoStrike-1.2-FINAL";
+const releaseName = "PotatoStrike-1.3-FINAL";
 const distDir = path.join(root, "dist");
 const releaseDir = path.join(distDir, releaseName);
 const zipPath = path.join(root, `${releaseName}.zip`);
@@ -47,6 +47,7 @@ for (const file of [
   "LICENSE",
   "CHANGELOG.md",
   "PATCH-NOTES-1.2-FINAL.md",
+  "PATCH-NOTES-1.3-FINAL.md",
   "package.json",
   "package-lock.json",
   "main.js",
@@ -67,7 +68,7 @@ copyDir(path.join(root, "phone"), path.join(releaseDir, "phone"), (from, entry) 
 });
 
 const apk = path.join(root, "phone", "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk");
-if (fs.existsSync(apk)) copyFile(apk, path.join(releaseDir, "phone", "android", "PotatoStrike-1.2-FINAL.apk"));
+if (fs.existsSync(apk)) copyFile(apk, path.join(releaseDir, "phone", "android", "PotatoStrike-1.3-FINAL.apk"));
 
 const flipperDist = path.join(root, "phone", "flipperzero", "dist");
 if (fs.existsSync(flipperDist)) {

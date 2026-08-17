@@ -784,6 +784,7 @@ button:disabled {
         <div class="pill" id="health">HP 100</div>
         <div class="pill" id="armor">ARMOR 0</div>
         <div class="pill" id="money">$800</div>
+        <div class="pill hidden" id="buy-zone-pill">BUY ZONE</div>
         <div class="pill" id="round">R 1/32</div>
         <div class="pill" id="score">T 0 : 0 CT</div>
         <div class="pill" id="timer">1:55</div>
@@ -883,11 +884,15 @@ button:disabled {
             <option value="0">Bez limitu</option>
           </select>
         </label>
+        <label class="check">
+          <input id="crosshair-enabled" type="checkbox" checked>
+          Pokaz celownik
+        </label>
         <label>
           Celownik
           <select id="crosshair-style">
-            <option value="classic" selected>Classic</option>
-            <option value="dot">Dot</option>
+            <option value="dot" selected>Staly punkt</option>
+            <option value="classic">Classic</option>
             <option value="wide">Wide</option>
             <option value="circle">Circle</option>
             <option value="t">T Style</option>
@@ -925,6 +930,7 @@ button:disabled {
           <canvas id="crosshair-paint-canvas" width="160" height="160" aria-label="Mini-paint celownika"></canvas>
           <div class="menu-actions left compact-actions">
             <button id="crosshair-paint-clear" type="button" class="secondary">Wyczysc</button>
+            <button id="crosshair-reset" type="button" class="secondary">Reset: punkt</button>
             <button id="crosshair-paint-export" type="button" class="secondary">Export</button>
             <button id="crosshair-paint-import" type="button" class="secondary">Import</button>
             <input id="crosshair-paint-file" class="hidden" type="file" accept="application/json">
@@ -944,11 +950,35 @@ button:disabled {
         </label>
         <label>
           Czuleosc myszy
-          <input id="sensitivity" type="range" min="0.4" max="2.4" step="0.1" value="1">
+          <input id="sensitivity" type="number" min="0.1" max="8" step="0.05" value="1">
         </label>
         <label>
           Kamera gora/dol
           <input id="pitch-sensitivity" type="range" min="0.35" max="2.4" step="0.05" value="1">
+        </label>
+        <label>
+          Czuleosc ADS / lunety
+          <input id="zoom-sensitivity" type="range" min="0.2" max="1.5" step="0.01" value="0.68">
+        </label>
+        <label>
+          Pole widzenia 3D
+          <input id="field-of-view" type="range" min="70" max="110" step="1" value="90">
+        </label>
+        <label class="check">
+          <input id="raw-mouse-input" type="checkbox" checked>
+          Raw mouse input
+        </label>
+        <label class="check">
+          <input id="mouse-acceleration" type="checkbox">
+          Akceleracja myszy
+        </label>
+        <label>
+          Sila akceleracji
+          <input id="mouse-acceleration-amount" type="range" min="0" max="1" step="0.05" value="0.25">
+        </label>
+        <label>
+          Ruch modelu broni
+          <input id="view-bob" type="range" min="0" max="1" step="0.05" value="0.65">
         </label>
         <label class="check">
           <input id="invert-y" type="checkbox">
@@ -1524,6 +1554,7 @@ const hud = {
   health: $("health"),
   armor: $("armor"),
   money: $("money"),
+  buyZone: $("buy-zone-pill"),
   round: $("round"),
   score: $("score"),
   timer: $("timer"),
@@ -1635,6 +1666,7 @@ const hud = {
   fastBindClear: $("fast-bind-clear"),
   fastBindList: $("fast-bind-list"),
   crosshairStyle: $("crosshair-style"),
+  crosshairEnabled: $("crosshair-enabled"),
   crosshairColor: $("crosshair-color"),
   crosshairSize: $("crosshair-size"),
   crosshairGap: $("crosshair-gap"),
@@ -1644,6 +1676,7 @@ const hud = {
   crosshairCustomEnabled: $("crosshair-custom-enabled"),
   crosshairPaintCanvas: $("crosshair-paint-canvas"),
   crosshairPaintClear: $("crosshair-paint-clear"),
+  crosshairReset: $("crosshair-reset"),
   crosshairPaintExport: $("crosshair-paint-export"),
   crosshairPaintImport: $("crosshair-paint-import"),
   crosshairPaintFile: $("crosshair-paint-file"),
@@ -1658,6 +1691,12 @@ const hud = {
   configFile: $("config-file"),
   sensitivity: $("sensitivity"),
   pitchSensitivity: $("pitch-sensitivity"),
+  zoomSensitivity: $("zoom-sensitivity"),
+  fieldOfView: $("field-of-view"),
+  rawMouseInput: $("raw-mouse-input"),
+  mouseAcceleration: $("mouse-acceleration"),
+  mouseAccelerationAmount: $("mouse-acceleration-amount"),
+  viewBob: $("view-bob"),
   invertY: $("invert-y"),
   screenShake: $("screen-shake"),
   soundEnabled: $("sound-enabled"),
@@ -1922,7 +1961,9 @@ const settings = {
   difficulty: "normal",
   resolution: "auto",
   hzLimit: "vsync",
-  crosshairStyle: "classic",
+  crosshairEnabled: true,
+  crosshairVersion: 2,
+  crosshairStyle: "dot",
   crosshairColor: "#f2f0df",
   crosshairSize: 1,
   crosshairGap: 10,
@@ -1937,6 +1978,12 @@ const settings = {
   playerId: "",
   sensitivity: 1,
   pitchSensitivity: 1,
+  zoomSensitivity: 0.68,
+  fieldOfView: 90,
+  rawMouseInput: true,
+  mouseAcceleration: false,
+  mouseAccelerationAmount: 0.25,
+  viewBob: 0.65,
   invertY: false,
   screenShake: 0.8,
   soundEnabled: true,
@@ -2149,11 +2196,27 @@ const i18n = {
     fastBindActions: "Akcje gry",
     fastBindActionAria: "Akcja Fast Bind",
     crosshairLabel: "Celownik",
+    crosshairEnabledLabel: "Pokaz celownik",
     crosshairColorLabel: "Kolor celownika",
+    crosshairSizeLabel: "Rozmiar celownika",
+    crosshairGapLabel: "Przerwa celownika",
+    crosshairThicknessLabel: "Grubosc celownika",
+    crosshairOutlineLabel: "Outline celownika",
+    crosshairPaintLabel: "Mini-paint celownika",
+    crosshairCustomLabel: "Uzyj narysowanego celownika",
+    crosshairReset: "Reset: punkt",
+    sensitivityLabel: "Czuleosc myszy",
+    pitchSensitivityLabel: "Kamera gora/dol",
+    zoomSensitivityLabel: "Czuleosc ADS / lunety",
+    fieldOfViewLabel: "Pole widzenia 3D",
+    rawMouseLabel: "Raw mouse input",
+    mouseAccelerationLabel: "Akceleracja myszy",
+    mouseAccelerationAmountLabel: "Sila akceleracji",
+    viewBobLabel: "Ruch modelu broni",
+    invertYLabel: "Odwroc mysz Y",
     nickLabel: "Nick gracza",
     configIdLabel: "ID configu",
     playerIdLabel: "ID gracza",
-    sensitivityLabel: "Czuleosc myszy",
     shakeLabel: "Screen shake",
     soundLabel: "Dzwieki gry",
     volumeLabel: "Glosnosc",
@@ -2254,11 +2317,27 @@ const i18n = {
     fastBindActions: "Game actions",
     fastBindActionAria: "Fast Bind action",
     crosshairLabel: "Crosshair",
+    crosshairEnabledLabel: "Show crosshair",
     crosshairColorLabel: "Crosshair color",
+    crosshairSizeLabel: "Crosshair size",
+    crosshairGapLabel: "Crosshair gap",
+    crosshairThicknessLabel: "Crosshair thickness",
+    crosshairOutlineLabel: "Crosshair outline",
+    crosshairPaintLabel: "Crosshair mini-paint",
+    crosshairCustomLabel: "Use painted crosshair",
+    crosshairReset: "Reset: dot",
+    sensitivityLabel: "Mouse sensitivity",
+    pitchSensitivityLabel: "Vertical sensitivity",
+    zoomSensitivityLabel: "ADS / scope sensitivity",
+    fieldOfViewLabel: "3D field of view",
+    rawMouseLabel: "Raw mouse input",
+    mouseAccelerationLabel: "Mouse acceleration",
+    mouseAccelerationAmountLabel: "Acceleration amount",
+    viewBobLabel: "Weapon view movement",
+    invertYLabel: "Invert mouse Y",
     nickLabel: "Player nick",
     configIdLabel: "Config ID",
     playerIdLabel: "Player ID",
-    sensitivityLabel: "Mouse sensitivity",
     shakeLabel: "Screen shake",
     soundLabel: "Game sounds",
     volumeLabel: "Volume",
@@ -2347,6 +2426,33 @@ function isPerspectiveMode() {
   return settings.graphicsMode === "3d";
 }
 
+const MAX_CAMERA_PITCH = Math.PI * 0.3889;
+
+function updatePerspectiveLook(deltaX, deltaY, sensitivityScale = 1) {
+  const speed = Math.hypot(deltaX, deltaY);
+  const acceleration = settings.mouseAcceleration ? 1 + Math.min(1.5, speed / 40) * settings.mouseAccelerationAmount : 1;
+  const sensitivity = settings.sensitivity * sensitivityScale * acceleration;
+  player.angle += deltaX * 0.0032 * sensitivity;
+  const pitchDirection = settings.invertY ? -1 : 1;
+  camera.pitch = clamp(
+    camera.pitch - deltaY * 0.00235 * sensitivity * settings.pitchSensitivity * pitchDirection,
+    -MAX_CAMERA_PITCH,
+    MAX_CAMERA_PITCH,
+  );
+  mouse.x = window.innerWidth / 2;
+  mouse.y = window.innerHeight / 2;
+}
+
+async function requestGamePointerLock() {
+  if (document.pointerLockElement === canvas) return;
+  try {
+    if (settings.rawMouseInput) await canvas.requestPointerLock({ unadjustedMovement: true });
+    else await canvas.requestPointerLock();
+  } catch {
+    try { await canvas.requestPointerLock(); } catch { /* Pointer lock remains optional. */ }
+  }
+}
+
 function renderGameView() {
   if (settings.graphicsMode === "3d") render3d();
   else render2d();
@@ -2358,7 +2464,7 @@ function setGraphicsMode(mode) {
   if (hud.graphicsMode) hud.graphicsMode.value = settings.graphicsMode;
   if (hud.menuGraphics) hud.menuGraphics.value = settings.graphicsMode;
   mouse.x = isPerspectiveMode() ? window.innerWidth / 2 : mouse.x;
-  mouse.y = isPerspectiveMode() ? window.innerHeight / 2 + camera.pitch * 0.28 : mouse.y;
+  mouse.y = isPerspectiveMode() ? window.innerHeight / 2 : mouse.y;
 }
 
 const player = {
@@ -2549,11 +2655,27 @@ function applyLanguage() {
   setLabel("resolution", tr("resolutionLabel"));
   setLabel("hz-limit", tr("hzLabel"));
   setLabel("crosshair-style", tr("crosshairLabel"));
+  setLabel("crosshair-enabled", tr("crosshairEnabledLabel"));
   setLabel("crosshair-color", tr("crosshairColorLabel"));
+  setLabel("crosshair-size", tr("crosshairSizeLabel"));
+  setLabel("crosshair-gap", tr("crosshairGapLabel"));
+  setLabel("crosshair-thickness", tr("crosshairThicknessLabel"));
+  setLabel("crosshair-outline", tr("crosshairOutlineLabel"));
+  setLabel("sensitivity", tr("sensitivityLabel"));
+  setLabel("pitch-sensitivity", tr("pitchSensitivityLabel"));
+  setLabel("zoom-sensitivity", tr("zoomSensitivityLabel"));
+  setLabel("field-of-view", tr("fieldOfViewLabel"));
+  setLabel("raw-mouse-input", tr("rawMouseLabel"));
+  setLabel("mouse-acceleration", tr("mouseAccelerationLabel"));
+  setLabel("mouse-acceleration-amount", tr("mouseAccelerationAmountLabel"));
+  setLabel("view-bob", tr("viewBobLabel"));
+  setLabel("invert-y", tr("invertYLabel"));
+  setLabel("crosshair-paint-color", tr("crosshairPaintLabel"));
+  setLabel("crosshair-custom-enabled", tr("crosshairCustomLabel"));
+  setText("#crosshair-reset", tr("crosshairReset"));
   setLabel("config-nick", tr("nickLabel"));
   setLabel("config-id", tr("configIdLabel"));
   setLabel("config-player-id", tr("playerIdLabel"));
-  setLabel("sensitivity", tr("sensitivityLabel"));
   setLabel("screen-shake", tr("shakeLabel"));
   setLabel("master-volume", tr("volumeLabel"));
   setLabel("footstep-volume", tr("footstepsLabel"));
@@ -2596,6 +2718,11 @@ function applyLanguage() {
     setOptionText("graphics-mode", "3d", "3D FPS");
     setOptionText("control-mode", "keyboard", "Keyboard + mouse");
     setOptionText("control-mode", "mobile", "Phone / touch screen");
+    setOptionText("crosshair-style", "dot", "Fixed dot");
+    setOptionText("crosshair-style", "classic", "Classic");
+    setOptionText("crosshair-style", "wide", "Wide");
+    setOptionText("crosshair-style", "circle", "Circle");
+    setOptionText("crosshair-style", "t", "T Style");
     setOptionText("server-aim-mode", "sights", "Weapon sights / scope");
     setOptionText("server-aim-mode", "zoom", "Zoom only + classic crosshair");
     setOptionText("server-aim-mode", "none", "No action");
@@ -2628,6 +2755,11 @@ function applyLanguage() {
     setOptionText("graphics-mode", "3d", "3D FPS");
     setOptionText("control-mode", "keyboard", "Klawiatura + mysz");
     setOptionText("control-mode", "mobile", "Telefon / ekran dotykowy");
+    setOptionText("crosshair-style", "dot", "Staly punkt");
+    setOptionText("crosshair-style", "classic", "Classic");
+    setOptionText("crosshair-style", "wide", "Szeroki");
+    setOptionText("crosshair-style", "circle", "Kolo");
+    setOptionText("crosshair-style", "t", "Styl T");
     setOptionText("server-aim-mode", "sights", "Przyrzady celownicze / scope");
     setOptionText("server-aim-mode", "zoom", "Tylko przyblizenie + klasyczny celownik");
     setOptionText("server-aim-mode", "none", "Brak akcji");
@@ -3059,6 +3191,7 @@ function syncProfileFields() {
     hud.hzLimit.value = "vsync";
   }
   hud.crosshairStyle.value = settings.crosshairStyle;
+  hud.crosshairEnabled.checked = settings.crosshairEnabled !== false;
   hud.crosshairColor.value = settings.crosshairColor;
   hud.crosshairSize.value = String(settings.crosshairSize);
   hud.crosshairGap.value = String(settings.crosshairGap);
@@ -3068,6 +3201,12 @@ function syncProfileFields() {
   hud.crosshairPaintColor.value = settings.crosshairPaintColor || settings.crosshairColor;
   hud.sensitivity.value = String(settings.sensitivity);
   hud.pitchSensitivity.value = String(settings.pitchSensitivity);
+  hud.zoomSensitivity.value = String(settings.zoomSensitivity);
+  hud.fieldOfView.value = String(settings.fieldOfView);
+  hud.rawMouseInput.checked = settings.rawMouseInput !== false;
+  hud.mouseAcceleration.checked = Boolean(settings.mouseAcceleration);
+  hud.mouseAccelerationAmount.value = String(settings.mouseAccelerationAmount);
+  hud.viewBob.value = String(settings.viewBob);
   hud.invertY.checked = settings.invertY;
   hud.soundEnabled.checked = settings.soundEnabled;
   hud.masterVolume.value = String(settings.masterVolume);
@@ -3100,6 +3239,13 @@ function syncMenuAimMode() {
       : "";
 }
 
+function migrateCrosshairSettings(sourceSettings = {}) {
+  if (Number(sourceSettings.crosshairVersion || 0) >= 2) return;
+  settings.crosshairEnabled = true;
+  settings.crosshairVersion = 2;
+  if (!sourceSettings.crosshairCustomEnabled && !sourceSettings.customCrosshair?.length) settings.crosshairStyle = "dot";
+}
+
 function loadConfig() {
   const raw = localStorage.getItem("potatoStrikeConfig");
   if (!raw) {
@@ -3111,6 +3257,7 @@ function loadConfig() {
   try {
     const config = JSON.parse(raw);
     Object.assign(settings, config.settings || {});
+    migrateCrosshairSettings(config.settings || {});
     normalizeFastBinds();
     settings.graphicsMode = normalizeGraphicsMode(settings.graphicsMode);
     Object.assign(bindings, config.bindings || {});
@@ -3156,6 +3303,7 @@ function playerProfiles() {
 
 function applyProfile(profile, preserveIncomingId = true) {
   Object.assign(settings, profile.settings || {});
+  migrateCrosshairSettings(profile.settings || {});
   normalizeFastBinds();
   Object.assign(bindings, profile.bindings || {});
   if (bindings.grenade === bindings.drop) bindings.grenade = "KeyH";
@@ -3525,7 +3673,7 @@ function launchLanLobbyMatch(payload) {
   closePanels();
   state.running = true;
   mouse.x = window.innerWidth / 2;
-  mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
+  mouse.y = window.innerHeight / 2;
   newMatch({ preserveLobbyOwner: true });
   renderGameView();
   hud.menu.classList.add("hidden");
@@ -4317,6 +4465,16 @@ function inSite(siteKey, x = player.x, y = player.y) {
   return site && dist(x, y, site.x, site.y) <= site.r;
 }
 
+function buyZoneForTeam(team = state.team) {
+  return state.map.buyZones?.[team] || { ...(team === "T" ? state.map.tSpawn : state.map.ctSpawn), r: 220 };
+}
+
+function inBuyZone(team = state.team, x = player.x, y = player.y) {
+  if (isRespawnMode()) return true;
+  const zone = buyZoneForTeam(team);
+  return Boolean(zone) && dist(x, y, zone.x, zone.y) <= zone.r;
+}
+
 function currentSite(x = player.x, y = player.y) {
   if (inSite("A", x, y)) return "A";
   if (inSite("B", x, y)) return "B";
@@ -4337,6 +4495,11 @@ function normalizeMap(rawMap, fallback = maps.custom) {
   });
   map.tSpawn = point(source.tSpawn, fallback.tSpawn || { x: 180, y: map.h - 180 });
   map.ctSpawn = point(source.ctSpawn, fallback.ctSpawn || { x: map.w - 180, y: 180 });
+  const buyZone = (value, spawn) => ({ ...point(value, spawn), r: clamp(Number(value?.r) || 220, 96, 520) });
+  map.buyZones = {
+    T: buyZone(source.buyZones?.T, map.tSpawn),
+    CT: buyZone(source.buyZones?.CT, map.ctSpawn),
+  };
   map.sites = {
     A: { ...point(source.sites?.A, fallback.sites?.A || { x: map.w * 0.72, y: map.h * 0.72 }), r: clamp(Number(source.sites?.A?.r) || 115, 48, 260) },
     B: { ...point(source.sites?.B, fallback.sites?.B || { x: map.w * 0.3, y: map.h * 0.28 }), r: clamp(Number(source.sites?.B?.r) || 110, 48, 260) },
@@ -4485,8 +4648,10 @@ function editMapAt(event) {
     state.map.sites.B = { x: p.x, y: p.y, r: 110 };
   } else if (tool === "tSpawn") {
     state.map.tSpawn = { x: p.x, y: p.y };
+    state.map.buyZones.T = { x: p.x, y: p.y, r: state.map.buyZones.T?.r || 220 };
   } else if (tool === "ctSpawn") {
     state.map.ctSpawn = { x: p.x, y: p.y };
+    state.map.buyZones.CT = { x: p.x, y: p.y, r: state.map.buyZones.CT?.r || 220 };
   } else if (tool === "delete") {
     state.map.obstacles = state.map.obstacles.filter((o) => !rectCircleHit(o, p.x, p.y, 12));
     editor.selectedObject = null;
@@ -5207,6 +5372,7 @@ function useKey(dt) {
 
 function updateRoundRules(dt) {
   if (state.phase === "freeze") {
+    state.buyTime = Math.max(0, state.buyTime - dt);
     state.freezeTime -= dt;
     if (state.freezeTime <= 0) {
       state.phase = "live";
@@ -5301,11 +5467,13 @@ function buyItem(type, id) {
 }
 
 function canBuyNow() {
-  return state.phase === "freeze" || (state.phase === "live" && state.buyTime > 0);
+  return (state.phase === "freeze" || state.phase === "live") && state.buyTime > 0 && inBuyZone();
 }
 
 function buyBlockMessage() {
-  return "Czas kupowania minal";
+  if (!inBuyZone()) return settings.language === "en" ? "Return to your buy zone" : "Wroc do swojej strefy kupowania";
+  if (state.buyTime <= 0) return settings.language === "en" ? "Buy time has ended" : "Czas kupowania minal";
+  return settings.language === "en" ? "Buying unavailable" : "Kupowanie niedostepne";
 }
 
 function weaponDropData(weapon, x = player.x, y = player.y) {
@@ -6135,7 +6303,7 @@ function renderShop() {
   const buyingOpen = canBuyNow();
   const status = document.createElement("div");
   status.className = `shop-status${buyingOpen ? "" : " closed"}`;
-  status.innerHTML = `<strong>${player.money}</strong><span>${buyingOpen ? `Buy time ${state.phase === "freeze" ? Math.ceil(state.freezeTime) : Math.ceil(state.buyTime)}s` : buyBlockMessage()}</span>`;
+  status.innerHTML = `<strong>${player.money}</strong><span>${buyingOpen ? `Buy time ${Math.ceil(state.buyTime)}s / ${settings.language === "en" ? "buy zone" : "strefa kupowania"}` : buyBlockMessage()}</span>`;
   hud.shopList.appendChild(status);
   const sectionOrder = ["Pistol", "SMG", "Rifle", "Sniper", "Heavy"];
   for (const category of sectionOrder) {
@@ -6195,6 +6363,7 @@ function renderShop() {
 function drawMap2d() {
   ctx.fillStyle = "#293629";
   ctx.fillRect(-camera.x, -camera.y, state.map.w, state.map.h);
+  drawBuyZones2d();
   if (settings.quality !== "low") {
     ctx.strokeStyle = "#2e3a2d";
     for (let x = 0; x < state.map.w; x += 80) {
@@ -6331,9 +6500,10 @@ function drawMinimap() {
 }
 
 function drawCrosshair() {
+  if (settings.crosshairEnabled === false) return;
   const weapon = activeWeapon();
   const cx = isPerspectiveMode() ? window.innerWidth / 2 : mouse.x;
-  const cy = isPerspectiveMode() ? window.innerHeight / 2 + camera.pitch * 0.28 : mouse.y;
+  const cy = isPerspectiveMode() ? window.innerHeight / 2 : mouse.y;
   if (settings.crosshairCustomEnabled && settings.customCrosshair?.length) {
     drawCustomCrosshair(cx, cy);
     return;
@@ -6359,10 +6529,10 @@ function drawCrosshair() {
   if (settings.crosshairStyle === "dot") {
     if (settings.crosshairOutline) {
       ctx.fillStyle = "rgba(0,0,0,0.72)";
-      ctx.beginPath(); ctx.arc(cx, cy, 4 * size + 2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, 2 * size + 1.2, 0, Math.PI * 2); ctx.fill();
     }
     ctx.fillStyle = settings.crosshairColor;
-    ctx.beginPath(); ctx.arc(cx, cy, 3 * size, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, 1.6 * size, 0, Math.PI * 2); ctx.fill();
     return;
   }
   if (settings.crosshairStyle === "circle") {
@@ -6615,7 +6785,8 @@ function render3d() {
   camera.shake *= 0.88;
   const w = window.innerWidth, h = window.innerHeight;
   ctx.imageSmoothingEnabled = true;
-  const horizon = clamp(h * 0.52 + camera.pitch * 0.3, h * 0.26, h * 0.74);
+  // Pitch is an angle, so every projected object follows the same FPS camera.
+  const horizon = clamp(h * 0.52 + Math.tan(camera.pitch) * h * 0.38, -h * 0.55, h * 1.55);
   const skyColor = state.map.meta?.skyColor || state.map.meta?.ambientColor || "#61777f";
   const sky = ctx.createLinearGradient(0, 0, 0, horizon);
   sky.addColorStop(0, shadeHex(skyColor, 28));
@@ -6625,7 +6796,7 @@ function render3d() {
   ctx.fillRect(0, 0, w, horizon);
   draw3dTerrain(w, h, horizon);
   const zoom = aimZoom();
-  const fov = (Math.PI / 2.9) / zoom;
+  const fov = ((clamp(Number(settings.fieldOfView) || 90, 70, 110) * Math.PI) / 180) / zoom;
   const cols = settings.quality === "low" ? 160 : settings.quality === "high" ? 480 : 320;
   const colW = w / cols;
   const depth = [];
@@ -6667,12 +6838,13 @@ function render3d() {
   }
   draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon);
   draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
+  draw3dBuyZoneMarker(w, h, fov, depth, colW, horizon);
   draw3dWeapon(w, h);
   if (isAwpScoped()) drawAwpScope(w, h);
   else if (isIronSights()) drawPotatoIronSights(w, h);
   drawFpsStatusStrip(w, h);
   drawMinimap();
-  if (!isAwpScoped() && !isIronSights()) drawCrosshair();
+  if (!isAimActive()) drawCrosshair();
 }
 
 function drawAwpScope(w, h) {
@@ -6954,6 +7126,225 @@ function weaponViewModel(weapon) {
   };
 }
 
+function draw3dBuyZoneMarker(w, h, fov, depth, colW, horizon) {
+  const zone = buyZoneForTeam();
+  if (inBuyZone()) {
+    ctx.save();
+    ctx.strokeStyle = state.team === "T" ? "rgba(215,189,98,0.68)" : "rgba(108,165,198,0.68)";
+    ctx.fillStyle = state.team === "T" ? "rgba(215,189,98,0.055)" : "rgba(108,165,198,0.055)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([12, 9]);
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h * 0.82, w * 0.34, h * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#f2f0df";
+    ctx.font = "800 12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(`${state.team} BUY ZONE`, w / 2, h * 0.69);
+    ctx.restore();
+    return;
+  }
+  const p = projectWorldToFps(zone.x, zone.y, fov, depth, colW, horizon, -30, zone.r);
+  if (!p || dist(player.x, player.y, zone.x, zone.y) > zone.r * 2.4) return;
+  const radius = clamp((h * zone.r * 0.42) / Math.max(1, p.d), 18, 180);
+  ctx.save();
+  ctx.strokeStyle = state.team === "T" ? "rgba(215,189,98,0.82)" : "rgba(108,165,198,0.82)";
+  ctx.fillStyle = state.team === "T" ? "rgba(215,189,98,0.09)" : "rgba(108,165,198,0.09)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([10, 7]);
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y, radius, radius * 0.28, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#f2f0df";
+  ctx.font = "800 12px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(`${state.team} BUY ZONE`, p.x, p.y - 12);
+  ctx.restore();
+}
+
+function drawBuyZones2d() {
+  for (const team of ["T", "CT"]) {
+    const zone = buyZoneForTeam(team);
+    ctx.save();
+    ctx.fillStyle = team === "T" ? "rgba(215,189,98,0.10)" : "rgba(108,165,198,0.10)";
+    ctx.strokeStyle = team === "T" ? "rgba(215,189,98,0.72)" : "rgba(108,165,198,0.72)";
+    ctx.lineWidth = team === state.team ? 4 : 2;
+    ctx.setLineDash([12, 8]);
+    ctx.beginPath();
+    ctx.arc(zone.x - camera.x, zone.y - camera.y, zone.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#f2f0df";
+    ctx.font = "800 13px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(`${team} BUY`, zone.x - camera.x, zone.y - camera.y + 5);
+    ctx.restore();
+  }
+}
+
+const freedoomWeaponTextureSources = Object.freeze({
+  pistol: "data:image/png;base64,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",
+  shotgun: "data:image/png;base64,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",
+  "super-shotgun": "data:image/png;base64,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",
+  chaingun: "data:image/png;base64,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",
+  launcher: "data:image/png;base64,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",
+  plasma: "data:image/png;base64,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",
+  bfg: "data:image/png;base64,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",
+});
+const freedoomWeaponTextures = new Map();
+const freedoomWeaponVariants = new Map();
+function freedoomWeaponTexture(name) {
+  if (!name) return null;
+  if (freedoomWeaponTextures.has(name)) return freedoomWeaponTextures.get(name);
+  const source = freedoomWeaponTextureSources[name];
+  if (!source) return null;
+  const image = new Image();
+  image.decoding = "async";
+  image.src = source;
+  freedoomWeaponTextures.set(name, image);
+  return image;
+}
+
+const freedoomWeaponProfiles = Object.freeze({
+  "Glock-18": { key: "pistol", accent: "#c8a96a" },
+  "USP-S": { key: "pistol", accent: "#7693a2", detail: "suppressor", scale: 0.96 },
+  P2000: { key: "pistol", accent: "#6f9fa8", detail: "compact" },
+  P250: { key: "pistol", accent: "#8f9b91", scale: 1.03 },
+  "Five-SeveN": { key: "pistol", accent: "#688ba6", detail: "long-barrel" },
+  "Tec-9": { key: "pistol", accent: "#b97648", detail: "magazine", scale: 1.08 },
+  "CZ75-Auto": { key: "chaingun", accent: "#85877e", detail: "compact", scale: 0.76 },
+  "Dual Berettas": { key: "pistol", accent: "#b89558", detail: "dual", scale: 0.82 },
+  "Desert Eagle": { key: "launcher", accent: "#c3a24e", detail: "compact", scale: 0.78 },
+  "R8 Revolver": { key: "shotgun", accent: "#a36d42", detail: "compact", scale: 0.78 },
+  "MAC-10": { key: "chaingun", accent: "#b86f40", detail: "compact", scale: 0.84 },
+  MP9: { key: "chaingun", accent: "#718aa8", detail: "compact", scale: 0.88 },
+  MP7: { key: "plasma", accent: "#667988", detail: "compact", scale: 0.76 },
+  "MP5-SD": { key: "pistol", accent: "#607d73", detail: "suppressor", scale: 1.18 },
+  "UMP-45": { key: "shotgun", accent: "#738365", detail: "magazine", scale: 0.96 },
+  P90: { key: "bfg", accent: "#a49f55", detail: "compact", scale: 0.72 },
+  "PP-Bizon": { key: "launcher", accent: "#9b834c", detail: "drum", scale: 0.86 },
+  "Galil AR": { key: "chaingun", accent: "#9f6c35", detail: "magazine" },
+  FAMAS: { key: "plasma", accent: "#667e57", detail: "compact", scale: 0.92 },
+  "AK-47": { key: "chaingun", accent: "#b66f2f", detail: "wood", scale: 1.06 },
+  M4A4: { key: "plasma", accent: "#66889a", detail: "long-barrel", scale: 0.96 },
+  "M4A1-S": { key: "plasma", accent: "#879187", detail: "suppressor", scale: 0.94 },
+  "SG 553": { key: "bfg", accent: "#92703b", detail: "scope", scale: 0.82 },
+  AUG: { key: "bfg", accent: "#65848a", detail: "scope", scale: 0.84 },
+  "SSG 08": { key: "launcher", accent: "#788553", detail: "scope", scale: 1.02 },
+  AWP: { key: "launcher", accent: "#4f7049", detail: "large-scope", scale: 1.1 },
+  G3SG1: { key: "bfg", accent: "#8f713c", detail: "large-scope", scale: 0.9 },
+  "SCAR-20": { key: "plasma", accent: "#607d8b", detail: "large-scope", scale: 0.96 },
+  Nova: { key: "shotgun", accent: "#a8894c", detail: "long-barrel" },
+  XM1014: { key: "super-shotgun", accent: "#9b694d", detail: "magazine" },
+  "MAG-7": { key: "shotgun", accent: "#697b68", detail: "compact", scale: 0.92 },
+  "Sawed-Off": { key: "super-shotgun", accent: "#9c5e31", detail: "compact", scale: 0.9 },
+  M249: { key: "bfg", accent: "#687b55", detail: "magazine", scale: 1.08 },
+  Negev: { key: "bfg", accent: "#8e7945", detail: "drum", scale: 1.12 },
+});
+
+function freedoomWeaponTextureProfile(weapon) {
+  if (!weapon || weapon.melee) return null;
+  return freedoomWeaponProfiles[weapon.name] || { key: "chaingun", accent: weapon.color || "#8d9688" };
+}
+
+function freedoomWeaponTextureKey(weapon) {
+  return freedoomWeaponTextureProfile(weapon)?.key || "";
+}
+
+function drawWeaponVariantDetail(vctx, profile, width, top, height) {
+  const center = width / 2;
+  vctx.fillStyle = profile.accent || "#8d9688";
+  vctx.strokeStyle = "rgba(15,18,16,0.86)";
+  vctx.lineWidth = 2;
+  if (profile.detail === "suppressor") {
+    vctx.fillRect(center - 5, 1, 10, top + 18);
+    vctx.strokeRect(center - 5, 1, 10, top + 18);
+  } else if (profile.detail === "long-barrel") {
+    vctx.fillRect(center - 3, 4, 6, top + 13);
+    vctx.strokeRect(center - 3, 4, 6, top + 13);
+  } else if (["scope", "large-scope"].includes(profile.detail)) {
+    const scopeW = profile.detail === "large-scope" ? 30 : 22;
+    vctx.fillRect(center - scopeW / 2, top + height * 0.16, scopeW, 10);
+    vctx.strokeRect(center - scopeW / 2, top + height * 0.16, scopeW, 10);
+    vctx.fillRect(center - 3, top + height * 0.12, 6, 8);
+  } else if (profile.detail === "magazine") {
+    vctx.fillRect(center + width * 0.08, top + height * 0.58, 10, Math.max(16, height * 0.28));
+    vctx.strokeRect(center + width * 0.08, top + height * 0.58, 10, Math.max(16, height * 0.28));
+  } else if (profile.detail === "drum") {
+    vctx.beginPath();
+    vctx.arc(center + width * 0.1, top + height * 0.67, Math.max(8, width * 0.1), 0, Math.PI * 2);
+    vctx.fill();
+    vctx.stroke();
+  } else if (profile.detail === "wood") {
+    vctx.fillStyle = "rgba(128,70,30,0.78)";
+    vctx.fillRect(center - width * 0.28, top + height * 0.55, width * 0.56, Math.max(6, height * 0.09));
+  } else if (profile.detail === "compact") {
+    vctx.fillStyle = "rgba(20,24,22,0.42)";
+    vctx.fillRect(center - width * 0.22, top + height * 0.72, width * 0.44, Math.max(5, height * 0.08));
+  }
+}
+
+function freedoomWeaponVariant(weapon) {
+  const profile = freedoomWeaponTextureProfile(weapon);
+  if (!profile) return null;
+  const image = freedoomWeaponTexture(profile.key);
+  if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return null;
+  if (freedoomWeaponVariants.has(weapon.name)) return freedoomWeaponVariants.get(weapon.name);
+  const dual = profile.detail === "dual";
+  const top = 26;
+  const width = image.naturalWidth * (dual ? 2 : 1) + 28;
+  const height = image.naturalHeight + top + 8;
+  const texture = document.createElement("canvas");
+  texture.width = width;
+  texture.height = height;
+  const vctx = texture.getContext("2d");
+  vctx.imageSmoothingEnabled = false;
+  if (dual) {
+    vctx.drawImage(image, 2, top + 6);
+    vctx.drawImage(image, image.naturalWidth - 2, top);
+  } else {
+    vctx.drawImage(image, (width - image.naturalWidth) / 2, top);
+  }
+  vctx.globalCompositeOperation = "source-atop";
+  vctx.globalAlpha = 0.52;
+  vctx.fillStyle = profile.accent || weapon.color || "#8d9688";
+  vctx.fillRect(0, 0, width, height);
+  vctx.globalAlpha = 1;
+  vctx.globalCompositeOperation = "source-over";
+  drawWeaponVariantDetail(vctx, profile, width, top, image.naturalHeight);
+  vctx.globalAlpha = 0.78;
+  vctx.fillStyle = profile.accent || weapon.color || "#8d9688";
+  vctx.fillRect(width * 0.38, top + image.naturalHeight * 0.48, width * 0.24, 3);
+  vctx.globalAlpha = 1;
+  freedoomWeaponVariants.set(weapon.name, texture);
+  return texture;
+}
+
+function drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming = false) {
+  const profile = freedoomWeaponTextureProfile(weapon);
+  const image = freedoomWeaponVariant(weapon);
+  if (!image?.width || !image?.height) return false;
+  const scale = clamp(Math.min(w / 400, h / 190) * (aiming ? 1.06 : 1) * (profile.scale || 1), 1.65, 5.2);
+  const width = image.width * scale;
+  const height = image.height * scale;
+  const x = (w - width) / 2 + sway;
+  const aimLift = aiming ? clamp(h * 0.14, 70, 130) : 0;
+  const y = h - height - aimLift + recoilDrop;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.shadowColor = "rgba(0,0,0,0.38)";
+  ctx.shadowBlur = 8 * scale;
+  ctx.drawImage(image, Math.round(x), Math.round(y), Math.round(width), Math.round(height));
+  ctx.restore();
+  drawWeaponMuzzleFlash(w / 2 - 3 * scale + sway, y + 5 * scale, scale * 0.8);
+  return true;
+}
+
 function drawWeaponPart(x, y, w, h, color, stroke = "rgba(17,18,12,0.72)") {
   ctx.fillStyle = color;
   ctx.fillRect(x, y, w, h);
@@ -7024,7 +7415,7 @@ function draw3dWeapon(w, h) {
   const model = weaponViewModel(weapon);
   const aiming = isIronSights();
   const scale = clamp(w / 1280, 0.78, 1.15);
-  const sway = Math.sin(performance.now() / 140) * player.speedFactor * (aiming ? 2.5 : 10);
+  const sway = Math.sin(performance.now() / 140) * player.speedFactor * (aiming ? 2.5 : 10) * settings.viewBob;
   const recoilDrop = camera.shake * 1.8;
   if (model.knife) {
     const x = w / 2 + 86 * scale + sway;
@@ -7049,6 +7440,7 @@ function draw3dWeapon(w, h) {
     ctx.restore();
     return;
   }
+  if (drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming)) return;
   const x = w / 2 + (aiming ? (weapon.category === "Pistol" ? -18 : -74) : weapon.category === "Pistol" ? 84 : 44) * scale + sway;
   const y = h - (aiming ? 116 : weapon.category === "Pistol" ? 132 : 150) * scale + recoilDrop;
   const bodyH = (weapon.category === "Pistol" ? 28 : 34) * scale;
@@ -7080,6 +7472,9 @@ function updateHud() {
   hud.health.textContent = spectated ? `OBS HP ${Math.ceil(spectated.hp)}` : `HP ${Math.ceil(player.hp)}`;
   hud.armor.textContent = `${tr("armor")} ${Math.ceil(player.armor)}${player.helmet ? " +H" : ""}${player.defuseKit ? " KIT" : ""}${player.zeus ? " ZEUS" : ""}`;
   hud.money.textContent = `${player.money}`;
+  const buyingOpen = canBuyNow();
+  hud.buyZone.classList.toggle("hidden", !buyingOpen);
+  hud.buyZone.textContent = `${settings.language === "en" ? "BUY ZONE" : "STREFA KUPNA"} ${Math.ceil(state.buyTime)}s`;
   hud.round.textContent = `R ${state.round}/32`;
   hud.score.textContent = isRespawnMode() ? `FRAGS ${state.fragScore.player} : ${state.fragScore.enemy}` : `T ${state.score.T} : ${state.score.CT} CT`;
   const time = state.phase === "freeze" ? state.freezeTime : state.roundTime;
@@ -7335,12 +7730,8 @@ window.addEventListener("keyup", (event) => keys.delete(event.code));
 canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
     if (isPerspectiveMode()) {
-      const aimSensitivity = isAwpScoped() ? 0.42 : isAimActive() ? 0.68 : 1;
-      player.angle += event.movementX * 0.0032 * settings.sensitivity * aimSensitivity;
-      const pitchDirection = settings.invertY ? 1 : -1;
-      camera.pitch = clamp(camera.pitch + event.movementY * 0.72 * settings.sensitivity * settings.pitchSensitivity * pitchDirection * aimSensitivity, -window.innerHeight * 0.36, window.innerHeight * 0.36);
-      mouse.x = window.innerWidth / 2;
-      mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
+      const aimSensitivity = isAwpScoped() ? settings.zoomSensitivity * 0.62 : isAimActive() ? settings.zoomSensitivity : 1;
+      updatePerspectiveLook(event.movementX, event.movementY, aimSensitivity);
     } else {
       mouse.x = clamp(mouse.x + event.movementX, 0, window.innerWidth);
       mouse.y = clamp(mouse.y + event.movementY, 0, window.innerHeight);
@@ -7363,9 +7754,7 @@ canvas.addEventListener("pointermove", (event) => {
   if (event.pointerType !== "touch" || event.pointerId !== mobileLook.pointerId || !isPerspectiveMode()) return;
   const dx = event.clientX - mobileLook.x;
   const dy = event.clientY - mobileLook.y;
-  player.angle += dx * 0.0064 * settings.sensitivity;
-  const pitchDirection = settings.invertY ? 1 : -1;
-  camera.pitch = clamp(camera.pitch + dy * 1.44 * settings.sensitivity * settings.pitchSensitivity * pitchDirection, -window.innerHeight * 0.36, window.innerHeight * 0.36);
+  updatePerspectiveLook(dx * 2, dy * 2);
   mobileLook.x = event.clientX;
   mobileLook.y = event.clientY;
   event.preventDefault();
@@ -7387,7 +7776,7 @@ canvas.addEventListener("mousedown", async (event) => {
   if (event.button === 2) {
     if (canHoldAim()) {
       mouse.rightDown = true;
-      try { await canvas.requestPointerLock(); } catch { /* optional */ }
+      await requestGamePointerLock();
     } else toggleWeaponMode();
     event.preventDefault();
     return;
@@ -7399,7 +7788,7 @@ canvas.addEventListener("mousedown", async (event) => {
   }
   mouse.down = true;
   mouse.clicked = true;
-  try { await canvas.requestPointerLock(); } catch { /* optional */ }
+  await requestGamePointerLock();
 });
 canvas.addEventListener("contextmenu", (event) => {
   if ((state.running && !state.overlayOpen) || (state.spectator.active && !player.alive)) event.preventDefault();
@@ -7530,7 +7919,7 @@ hud.start.addEventListener("click", async () => {
     closePanels();
     state.running = true;
     mouse.x = window.innerWidth / 2;
-    mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
+    mouse.y = window.innerHeight / 2;
     newMatch();
     renderGameView();
     hud.menu.classList.add("hidden");
@@ -7538,7 +7927,7 @@ hud.start.addEventListener("click", async () => {
       hud.networkStatus.textContent = `${state.gameMode.toUpperCase()} jest przygotowany w menu. Aktualny build gra lokalnie z botami, dopoki nie zostanie podpiety serwer.`;
       showMessage(`${state.gameMode.toUpperCase()}: fallback do botow`);
     }
-    try { await canvas.requestPointerLock(); } catch { /* optional */ }
+    await requestGamePointerLock();
   } catch (error) {
     showFatalError(error, "startu gry");
   }
@@ -7593,6 +7982,7 @@ hud.fastBindClear.addEventListener("click", () => {
   showMessage(settings.language === "en" ? "All Fast Binds removed" : "Usunieto wszystkie Fast Bind");
 });
 hud.crosshairStyle.addEventListener("change", () => { settings.crosshairStyle = hud.crosshairStyle.value; saveConfig(); });
+hud.crosshairEnabled.addEventListener("change", () => { settings.crosshairEnabled = hud.crosshairEnabled.checked; saveConfig(); });
 hud.crosshairColor.addEventListener("input", () => { settings.crosshairColor = hud.crosshairColor.value; saveConfig(); });
 hud.crosshairSize.addEventListener("input", () => { settings.crosshairSize = Number(hud.crosshairSize.value); saveConfig(); });
 hud.crosshairGap.addEventListener("input", () => { settings.crosshairGap = Number(hud.crosshairGap.value); saveConfig(); });
@@ -7605,15 +7995,48 @@ hud.crosshairPaintClear.addEventListener("click", () => {
   drawCrosshairPaint();
   saveConfig();
 });
-hud.crosshairPaintExport.addEventListener("click", () => downloadJson("potato-crosshair.json", { type: "potato-strike-crosshair", pixels: normalizeCrosshairPixels(settings.customCrosshair) }));
+hud.crosshairReset.addEventListener("click", () => {
+  settings.crosshairEnabled = true;
+  settings.crosshairVersion = 2;
+  settings.crosshairStyle = "dot";
+  settings.crosshairColor = "#f2f0df";
+  settings.crosshairSize = 1;
+  settings.crosshairGap = 10;
+  settings.crosshairThickness = 2;
+  settings.crosshairOutline = true;
+  settings.crosshairCustomEnabled = false;
+  settings.customCrosshair = [];
+  syncProfileFields();
+  saveConfig();
+  showMessage(settings.language === "en" ? "Crosshair reset to fixed dot" : "Celownik: staly punkt");
+});
+hud.crosshairPaintExport.addEventListener("click", () => downloadJson("potato-crosshair.json", {
+  type: "potato-strike-crosshair",
+  enabled: settings.crosshairEnabled !== false,
+  style: settings.crosshairStyle,
+  color: settings.crosshairColor,
+  size: settings.crosshairSize,
+  gap: settings.crosshairGap,
+  thickness: settings.crosshairThickness,
+  outline: settings.crosshairOutline,
+  customEnabled: settings.crosshairCustomEnabled,
+  pixels: normalizeCrosshairPixels(settings.customCrosshair),
+}));
 hud.crosshairPaintImport.addEventListener("click", () => hud.crosshairPaintFile.click());
 hud.crosshairPaintFile.addEventListener("change", async () => {
   const file = hud.crosshairPaintFile.files[0];
   if (!file) return;
   const payload = JSON.parse(await file.text());
+  if (typeof payload.enabled === "boolean") settings.crosshairEnabled = payload.enabled;
+  if (["dot", "classic", "wide", "circle", "t"].includes(payload.style)) settings.crosshairStyle = payload.style;
+  if (/^#[0-9a-f]{6}$/i.test(payload.color || "")) settings.crosshairColor = payload.color;
+  if (Number.isFinite(Number(payload.size))) settings.crosshairSize = clamp(Number(payload.size), 0.6, 2.2);
+  if (Number.isFinite(Number(payload.gap))) settings.crosshairGap = clamp(Number(payload.gap), 0, 24);
+  if (Number.isFinite(Number(payload.thickness))) settings.crosshairThickness = clamp(Number(payload.thickness), 1, 5);
+  if (typeof payload.outline === "boolean") settings.crosshairOutline = payload.outline;
   settings.customCrosshair = normalizeCrosshairPixels(payload.pixels || payload.customCrosshair || payload);
-  settings.crosshairCustomEnabled = true;
-  hud.crosshairCustomEnabled.checked = true;
+  settings.crosshairCustomEnabled = typeof payload.customEnabled === "boolean" ? payload.customEnabled : Boolean(settings.customCrosshair.length);
+  syncProfileFields();
   drawCrosshairPaint();
   saveConfig();
   showMessage("Celownik wgrany");
@@ -7654,8 +8077,14 @@ hud.profileFile.addEventListener("change", async () => {
   applyProfile(JSON.parse(await file.text()), true);
   showMessage("Profil zaimportowany");
 });
-hud.sensitivity.addEventListener("input", () => { settings.sensitivity = Number(hud.sensitivity.value); });
+hud.sensitivity.addEventListener("input", () => { settings.sensitivity = clamp(Number(hud.sensitivity.value) || 1, 0.1, 8); saveConfig(); });
 hud.pitchSensitivity.addEventListener("input", () => { settings.pitchSensitivity = Number(hud.pitchSensitivity.value); saveConfig(); });
+hud.zoomSensitivity.addEventListener("input", () => { settings.zoomSensitivity = Number(hud.zoomSensitivity.value); saveConfig(); });
+hud.fieldOfView.addEventListener("input", () => { settings.fieldOfView = Number(hud.fieldOfView.value); saveConfig(); });
+hud.rawMouseInput.addEventListener("change", () => { settings.rawMouseInput = hud.rawMouseInput.checked; saveConfig(); });
+hud.mouseAcceleration.addEventListener("change", () => { settings.mouseAcceleration = hud.mouseAcceleration.checked; saveConfig(); });
+hud.mouseAccelerationAmount.addEventListener("input", () => { settings.mouseAccelerationAmount = Number(hud.mouseAccelerationAmount.value); saveConfig(); });
+hud.viewBob.addEventListener("input", () => { settings.viewBob = Number(hud.viewBob.value); saveConfig(); });
 hud.invertY.addEventListener("change", () => { settings.invertY = hud.invertY.checked; saveConfig(); });
 hud.screenShake.addEventListener("input", () => { settings.screenShake = Number(hud.screenShake.value); });
 hud.soundEnabled.addEventListener("change", () => { settings.soundEnabled = hud.soundEnabled.checked; if (settings.soundEnabled) ensureAudio(); saveConfig(); });

@@ -1,0 +1,72 @@
+{
+  "source": "freedoom2.wad",
+  "sourceVersion": "0.13.0",
+  "sourceSha256": "a8772e088847032510d97ba2312406a6998f21cbab44d4ff10696faa9c0ecd4b",
+  "license": "BSD-3-Clause",
+  "generatedBy": "DEV-tools/extract-freedoom-weapons.js",
+  "sprites": [
+    {
+      "name": "punch",
+      "file": "punch.png",
+      "lump": "PUNGA0",
+      "width": 96,
+      "height": 46
+    },
+    {
+      "name": "pistol",
+      "file": "pistol.png",
+      "lump": "PISGA0",
+      "width": 82,
+      "height": 92
+    },
+    {
+      "name": "shotgun",
+      "file": "shotgun.png",
+      "lump": "SHTGA0",
+      "width": 67,
+      "height": 62
+    },
+    {
+      "name": "super-shotgun",
+      "file": "super-shotgun.png",
+      "lump": "SHT2A0",
+      "width": 74,
+      "height": 50
+    },
+    {
+      "name": "chaingun",
+      "file": "chaingun.png",
+      "lump": "CHGGA0",
+      "width": 106,
+      "height": 51
+    },
+    {
+      "name": "launcher",
+      "file": "launcher.png",
+      "lump": "MISGA0",
+      "width": 99,
+      "height": 64
+    },
+    {
+      "name": "saw",
+      "file": "saw.png",
+      "lump": "SAWGA0",
+      "width": 96,
+      "height": 132
+    },
+    {
+      "name": "plasma",
+      "file": "plasma.png",
+      "lump": "PLSGA0",
+      "width": 126,
+      "height": 76
+    },
+    {
+      "name": "bfg",
+      "file": "bfg.png",
+      "lump": "BFGGA0",
+      "width": 130,
+      "height": 74
+    }
+  ]
+}
