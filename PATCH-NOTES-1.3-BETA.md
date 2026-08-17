@@ -2,6 +2,12 @@
 
 This beta updates only the lightweight 3D weapon presentation. The 2D renderer and its weapons are unchanged.
 
+## FPS camera
+
+- Mouse look now rotates the 3D camera both left-right and up-down, including during ADS and AWP scope use.
+- Vertical look has a stable range of about 70 degrees and respects pitch sensitivity, aim sensitivity and inverted Y settings.
+- Walls, terrain, players, dropped equipment and mission markers share the same vertical projection around the fixed center aim point.
+
 ## 3D weapon textures
 
 - Added low-resolution first-person weapon sprites exported from FreEDoom 0.13.0.

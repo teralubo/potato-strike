@@ -5,6 +5,7 @@
 3D weapon texture update.
 
 - Added tiny FreEDoom 0.13.0 weapon viewmodel PNGs to the 3D renderer without changing 2D weapons.
+- Added full FPS mouse look in 3D with horizontal yaw, vertical pitch and a stable 70-degree up/down range during ADS.
 - Kept textured viewmodels visible during RMB/ADS and added a fixed default center dot that hides while aiming.
 - Expanded the existing crosshair mini-paint with a master toggle, reset-to-dot and full settings import/export.
 - Added a dependency-free WAD/PLAYPAL/Doom Patch extraction tool and reproducible source manifest.

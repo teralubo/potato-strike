@@ -866,6 +866,21 @@ function isPerspectiveMode() {
   return settings.graphicsMode === "3d";
 }
 
+const MAX_CAMERA_PITCH = Math.PI * 0.3889;
+
+function updatePerspectiveLook(deltaX, deltaY, sensitivityScale = 1) {
+  const sensitivity = settings.sensitivity * sensitivityScale;
+  player.angle += deltaX * 0.0032 * sensitivity;
+  const pitchDirection = settings.invertY ? -1 : 1;
+  camera.pitch = clamp(
+    camera.pitch - deltaY * 0.00235 * sensitivity * settings.pitchSensitivity * pitchDirection,
+    -MAX_CAMERA_PITCH,
+    MAX_CAMERA_PITCH,
+  );
+  mouse.x = window.innerWidth / 2;
+  mouse.y = window.innerHeight / 2;
+}
+
 function renderGameView() {
   if (settings.graphicsMode === "3d") render3d();
   else render2d();
@@ -877,7 +892,7 @@ function setGraphicsMode(mode) {
   if (hud.graphicsMode) hud.graphicsMode.value = settings.graphicsMode;
   if (hud.menuGraphics) hud.menuGraphics.value = settings.graphicsMode;
   mouse.x = isPerspectiveMode() ? window.innerWidth / 2 : mouse.x;
-  mouse.y = isPerspectiveMode() ? window.innerHeight / 2 + camera.pitch * 0.28 : mouse.y;
+  mouse.y = isPerspectiveMode() ? window.innerHeight / 2 : mouse.y;
 }
 
 const player = {
@@ -2072,7 +2087,7 @@ function launchLanLobbyMatch(payload) {
   closePanels();
   state.running = true;
   mouse.x = window.innerWidth / 2;
-  mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
+  mouse.y = window.innerHeight / 2;
   newMatch({ preserveLobbyOwner: true });
   renderGameView();
   hud.menu.classList.add("hidden");
@@ -5163,7 +5178,8 @@ function render3d() {
   camera.shake *= 0.88;
   const w = window.innerWidth, h = window.innerHeight;
   ctx.imageSmoothingEnabled = true;
-  const horizon = clamp(h * 0.52 + camera.pitch * 0.3, h * 0.26, h * 0.74);
+  // Pitch is an angle, so every projected object follows the same FPS camera.
+  const horizon = clamp(h * 0.52 + Math.tan(camera.pitch) * h * 0.38, -h * 0.55, h * 1.55);
   const skyColor = state.map.meta?.skyColor || state.map.meta?.ambientColor || "#61777f";
   const sky = ctx.createLinearGradient(0, 0, 0, horizon);
   sky.addColorStop(0, shadeHex(skyColor, 28));
@@ -5937,11 +5953,7 @@ canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
     if (isPerspectiveMode()) {
       const aimSensitivity = isAwpScoped() ? 0.42 : isAimActive() ? 0.68 : 1;
-      player.angle += event.movementX * 0.0032 * settings.sensitivity * aimSensitivity;
-      const pitchDirection = settings.invertY ? 1 : -1;
-      camera.pitch = clamp(camera.pitch + event.movementY * 0.72 * settings.sensitivity * settings.pitchSensitivity * pitchDirection * aimSensitivity, -window.innerHeight * 0.36, window.innerHeight * 0.36);
-      mouse.x = window.innerWidth / 2;
-      mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
+      updatePerspectiveLook(event.movementX, event.movementY, aimSensitivity);
     } else {
       mouse.x = clamp(mouse.x + event.movementX, 0, window.innerWidth);
       mouse.y = clamp(mouse.y + event.movementY, 0, window.innerHeight);
@@ -5964,9 +5976,7 @@ canvas.addEventListener("pointermove", (event) => {
   if (event.pointerType !== "touch" || event.pointerId !== mobileLook.pointerId || !isPerspectiveMode()) return;
   const dx = event.clientX - mobileLook.x;
   const dy = event.clientY - mobileLook.y;
-  player.angle += dx * 0.0064 * settings.sensitivity;
-  const pitchDirection = settings.invertY ? 1 : -1;
-  camera.pitch = clamp(camera.pitch + dy * 1.44 * settings.sensitivity * settings.pitchSensitivity * pitchDirection, -window.innerHeight * 0.36, window.innerHeight * 0.36);
+  updatePerspectiveLook(dx * 2, dy * 2);
   mobileLook.x = event.clientX;
   mobileLook.y = event.clientY;
   event.preventDefault();
@@ -6131,7 +6141,7 @@ hud.start.addEventListener("click", async () => {
     closePanels();
     state.running = true;
     mouse.x = window.innerWidth / 2;
-    mouse.y = window.innerHeight / 2 + camera.pitch * 0.28;
+    mouse.y = window.innerHeight / 2;
     newMatch();
     renderGameView();
     hud.menu.classList.add("hidden");

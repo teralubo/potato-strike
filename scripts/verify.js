@@ -163,7 +163,7 @@ requireSnippets(gameJs, [
   "makeBotLoadout", "botRoundBudget", "chooseAffordableWeapon", "equipmentCatalog", "dropActiveWeapon",
   "pickupDroppedWeapon", "dropPlayerLoadoutOnDeath", "knifeWeaponId", "toggleWeaponMode", "enterSpectator",
   "takeoverBot", "renderModManager", "sortedMods", "createPlayerProfile", "openStandaloneEditor",
-  "normalizeGraphicsMode", "renderGameView", "camera.pitch", "cycleWeapon", "drawCustomCrosshair",
+  "normalizeGraphicsMode", "renderGameView", "camera.pitch", "updatePerspectiveLook", "MAX_CAMERA_PITCH", "cycleWeapon", "drawCustomCrosshair",
   "jumpHeight", "verticalVelocity", 'crouch: "ControlLeft"', "mobileLook",
   "bundledDefaultMods", "installBundledDefaultMods", "loadNativeMods", "drawEnabledModOverlays",
   "selectedGrenade", "beginGrenadeAim", "releaseGrenadeAim", "jumpThrowQueued", "totalGrenades",
