@@ -15,10 +15,11 @@ Workflow repo:
 
 ## V1.4 FINAL PATCH-1.1
 
-- Nowy tryb `Edytor + Sandbox` laczy widok mapy z powietrza z kamera gracza w jednym, wspoldzielonym swiecie.
-- `P` otwiera menu trybu, a `PRZELACZ` zmienia widok bez kasowania obiektow i pozycji gracza.
+- Zwykly `Sandbox` ma opcjonalny edytor mapy z gory pod `P`; nie jest to osobny tryb gry.
+- `PRZELACZ` zmienia widok bez tworzenia nowej mapy, kasowania obiektow ani zmiany pozycji gracza.
+- W edytorze Sandboxa `Q` obraca obiekt pod mysza o 15 stopni w lewo, a `E` o 15 stopni w prawo.
 - Edytor map obsluguje teraz osobny eksport/import plikow `*.potato-map.json`.
-- Studio nadal dziala osobno i zachowuje narzedzia 2D/3D inspirowane edytorami Arma: encje, grupy, triggery, waypointy, synchronizacje, markery, warstwy i transformacje.
+- Studio nadal dziala osobno i zachowuje narzedzia 2D/3D inspirowane edytorami Arma: encje, grupy, triggery, waypointy, synchronizacje, markery, warstwy i transformacje. `Testuj` uruchamia prosty test treningowy 1v1 z latwym botem.
 
 ## 1.3 FINAL - Patch 1.4
 

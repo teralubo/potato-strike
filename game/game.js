@@ -1106,11 +1106,11 @@ let pendingFastBindKey = "";
 const editor = { active: false, selectedMission: "", selectedObject: null, hybridView: "sandbox", previousGraphicsMode: "2d" };
 
 function isSandboxMode(mode = state.gameMode) {
-  return mode === "sandbox" || mode === "editor-sandbox";
+  return mode === "sandbox";
 }
 
 function isHybridMode() {
-  return state.gameMode === "editor-sandbox";
+  return state.gameMode === "sandbox";
 }
 
 function makeWeapons() {
@@ -2650,6 +2650,13 @@ function loadStudioTestMap() {
     hud.menuGraphics.value = normalizeGraphicsMode(testMap.meta?.testGraphics || "2d");
     hud.menuMode.value = "offline";
     if (testMap.meta?.matchSize) hud.matchSize.value = String(testMap.meta.matchSize);
+    if (testMap.meta?.simpleTest) {
+      hud.gameRules.value = "training";
+      hud.matchSize.value = "1";
+      hud.difficulty.value = "1";
+      hud.teamDifficulty.value = "1";
+      settings.difficulty = 1;
+    }
     hud.menu.classList.add("hidden");
     closePanels();
     state.running = true;
@@ -3520,7 +3527,7 @@ function renderSandboxWorldSummary() {
   hud.sandboxWorldSwitch?.classList.toggle("hidden", !hybrid);
   hud.hybridMapExport?.classList.toggle("hidden", !hybrid);
   hud.hybridMapImport?.classList.toggle("hidden", !hybrid);
-  if (hud.sandboxWorldSwitch) hud.sandboxWorldSwitch.textContent = `PRZELACZ: ${editor.hybridView === "editor" ? "SANDBOX" : "EDYTOR"}`;
+  if (hud.sandboxWorldSwitch) hud.sandboxWorldSwitch.textContent = `PRZELACZ: ${editor.hybridView === "editor" ? "SANDBOX" : "EDYTOR MAPY"}`;
   const spawned = state.map?.obstacles?.filter((object) => !object.sandboxBoundary).length || 0;
   const rows = [
     [settings.language === "en" ? "World" : "Swiat", `${sandbox.widthMeters} x ${sandbox.heightMeters} m`],
@@ -3611,6 +3618,10 @@ function switchHybridView(target = editor.hybridView === "editor" ? "sandbox" : 
     closePanels();
     state.overlayOpen = true;
     hud.editorPanel.classList.remove("hidden");
+    for (const control of [hud.editorNew, hud.editorRandom, hud.editorLoad]) {
+      control.disabled = true;
+      control.title = "W Sandbox edytujesz aktualny swiat; ta opcja nie tworzy ani nie podmienia mapy";
+    }
     renderSavedMissions();
     renderEditorProperties();
     document.exitPointerLock?.();
@@ -3619,10 +3630,31 @@ function switchHybridView(target = editor.hybridView === "editor" ? "sandbox" : 
     editor.hybridView = "sandbox";
     editor.active = false;
     closePanels();
+    for (const control of [hud.editorNew, hud.editorRandom, hud.editorLoad]) {
+      control.disabled = false;
+      control.title = "";
+    }
     setGraphicsMode(editor.previousGraphicsMode || "2d");
     showMessage("SANDBOX: kamera gracza / P: menu przelaczania");
     if (isPerspectiveMode()) requestGamePointerLock();
   }
+}
+
+function rotateEditorObjectUnderCursor(direction) {
+  if (!editor.active || editor.hybridView !== "editor" || !state.map) return false;
+  const x = mouse.x + camera.x;
+  const y = mouse.y + camera.y;
+  const object = [...state.map.obstacles].reverse().find((item) => item.visible !== false && rectCircleHit(item, x, y, 6));
+  if (!object || object.locked || object.sandboxBoundary) {
+    showMessage("Najedz mysza na obiekt do obrotu");
+    return true;
+  }
+  object.rot = ((Number(object.rot || 0) + direction * 15) % 360 + 360) % 360;
+  editor.selectedObject = object.id || `${object.x}-${object.y}`;
+  renderEditorProperties();
+  render2d();
+  showMessage(`Obrot ${direction < 0 ? "w lewo" : "w prawo"}: ${object.rot} stopni`);
+  return true;
 }
 
 async function importSandboxWorldFile() {
@@ -7039,6 +7071,11 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(event.target?.tagName);
+  if (!typing && state.running && editor.active && editor.hybridView === "editor" && (event.code === "KeyQ" || event.code === "KeyE")) {
+    event.preventDefault();
+    rotateEditorObjectUnderCursor(event.code === "KeyQ" ? -1 : 1);
+    return;
+  }
   const fastBinds = !event.repeat && !typing && !state.overlayOpen && settings.fastBindsEnabled !== false
     ? normalizeFastBinds().filter((bind) => bind.enabled && bind.key === event.code)
     : [];

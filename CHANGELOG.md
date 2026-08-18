@@ -2,8 +2,11 @@
 
 ## V1.4 FINAL PATCH-1.1
 
-- Added `Editor + Sandbox`, a shared-world mode connecting the aerial map editor with the direct player camera.
+- Integrated the optional aerial map editor directly into regular Sandbox instead of exposing a second game mode.
 - Added the `P` switch menu; `PRZELACZ` moves between editor and sandbox views without rebuilding the world.
+- Prevented New, Random and Load from replacing the active Sandbox map while using its editor.
+- Added cursor-targeted object rotation: `Q` rotates left and `E` rotates right in 15-degree steps.
+- Changed Studio `Testuj` to a simple Training 1v1 launch with an easy bot.
 - Added dedicated `potato-strike-map` JSON export/import in both the in-game editor and the hybrid menu.
 - Preserved separate Editor and Sandbox modes and the existing Arma-inspired 2D/3D Studio workflow.
 - Added complete developer documentation in `DEV-tools/docs.txt`.

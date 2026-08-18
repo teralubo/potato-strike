@@ -15,9 +15,9 @@ Edytor i Sandbox pozostaja niezaleznymi trybami. Edytor Studio oferuje widok
 2D oraz 3D, obiekty, grupy, triggery, waypointy, polaczenia synchronizacji,
 markery, warstwy, transformacje move/rotate/scale, undo/redo i explorer.
 
-Tryb "Edytor + Sandbox" ma wartosc menu `editor-sandbox`. Funkcja
-isSandboxMode() zapewnia mu mechanike Sandboxa. Funkcja isHybridMode()
-odroznia go od zwyklego Sandboxa. Oba widoki pracuja na tym samym state.map.
+Opcjonalny edytor Sandboxa jest czescia trybu `sandbox`; nie ma osobnej wartosci
+gameMode. Funkcje isSandboxMode() i isHybridMode() wskazuja aktywny Sandbox.
+Oba widoki pracuja na tym samym state.map.
 
 3. PRZELACZANIE W TRYBIE EDYTOR + SANDBOX
 ------------------------------------------
@@ -26,6 +26,8 @@ switchHybridView(). Widok editor:
 - zapamietuje ustawienie grafiki,
 - ustawia render 2D i kamere nad aktualna pozycja gracza,
 - aktywuje narzedzia edytora oraz panel wlasciwosci.
+- blokuje Nowa, Losowa i Zaladuj, aby nie podmienic aktywnej mapy Sandboxa.
+- Q/E obraca obiekt pod kursorem o 15 stopni w lewo/prawo.
 
 Widok sandbox:
 - zamyka panel edytora,
@@ -89,6 +91,9 @@ Import JSON nie wykonuje kodu. normalizeMap() zachowuje zgodnosc starszych
 map. Tryb hybrydowy uzywa isSandboxMode(), dlatego zmiany mechaniki Sandboxa
 powinny korzystac z tego helpera zamiast porownania gameMode === "sandbox".
 Limity liczby NPC, broni i wymiary swiata sa zachowane podczas importu swiata.
+
+Przycisk Testuj w Studio zapisuje simpleTest: true i uruchamia preset Training
+1v1 z poziomem trudnosci 1. Nie zmienia ustawien zapisanych dla normalnej mapy.
 
 9. CHECKLISTA PATCHA
 --------------------

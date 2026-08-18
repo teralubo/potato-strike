@@ -2060,8 +2060,18 @@ async function saveMod() {
 
 async function testMap() {
   saveMap();
-  localStorage.setItem("potatoStrikeStudioTestMap", JSON.stringify({ ...map, meta: { ...(map.meta || {}), testGraphics: ui.testGraphics.value } }));
-  status("Uruchamiam test mapy");
+  const simpleTestMap = {
+    ...map,
+    meta: {
+      ...(map.meta || {}),
+      gameMode: "training",
+      matchSize: 1,
+      simpleTest: true,
+      testGraphics: ui.testGraphics.value,
+    },
+  };
+  localStorage.setItem("potatoStrikeStudioTestMap", JSON.stringify(simpleTestMap));
+  status("Uruchamiam prosty test 1v1");
   if (window.potatoNative?.testMap) await window.potatoNative.testMap();
   else window.open("index.html?studioTest=1", "_blank");
 }
