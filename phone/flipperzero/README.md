@@ -7,9 +7,9 @@
 3. Wybierz plik pod swoj firmware:
 
 ```text
-PotatoStrikeMini-1.3-FINAL-PATCH-1.1-official.fap   - oficjalny firmware Flipper Zero
-PotatoStrikeMini-1.3-FINAL-PATCH-1.1-momentum.fap   - Momentum Firmware
-PotatoStrikeMini-1.3-FINAL-PATCH-1.1-unleashed.fap  - Unleashed Firmware
+PotatoStrikeMini-1.3-FINAL-PATCH-1.3-official.fap   - oficjalny firmware Flipper Zero
+PotatoStrikeMini-1.3-FINAL-PATCH-1.3-momentum.fap   - Momentum Firmware
+PotatoStrikeMini-1.3-FINAL-PATCH-1.3-unleashed.fap  - Unleashed Firmware
 ```
 
 4. Skopiuj wybrany plik z `phone/flipperzero/` na karte SD Flipper Zero do:
@@ -28,7 +28,7 @@ potato-strike-flipperzero-momentum-fap
 potato-strike-flipperzero-unleashed-fap
 ```
 
-This is a tiny native Flipper Zero mini-game for the Potato Strike 1.3 FINAL Patch 1.1 compatibility pack.
+This is a tiny native Flipper Zero mini-game for the Potato Strike 1.3 FINAL Patch 1.3 compatibility pack.
 
 It is intentionally minimal:
 
@@ -65,9 +65,9 @@ To build all supported firmware variants locally:
 This script creates:
 
 ```text
-dist/PotatoStrikeMini-1.3-FINAL-PATCH-1.1-official.fap
-dist/PotatoStrikeMini-1.3-FINAL-PATCH-1.1-momentum.fap
-dist/PotatoStrikeMini-1.3-FINAL-PATCH-1.1-unleashed.fap
+dist/PotatoStrikeMini-1.3-FINAL-PATCH-1.3-official.fap
+dist/PotatoStrikeMini-1.3-FINAL-PATCH-1.3-momentum.fap
+dist/PotatoStrikeMini-1.3-FINAL-PATCH-1.3-unleashed.fap
 ```
 
 ## Firmware variants

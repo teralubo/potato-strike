@@ -1,4 +1,6 @@
-# Potato Strike 1.3 BETA FINAL
+# Potato Strike 1.3 BETA FINAL - Patch 1.3
+
+Skompresowana galaz `beta` zawiera ten sam runtime LAN Patch 1.3: osobne tworzenie/dolaczanie, konfiguracje hosta, roster graczy, lokalne sloty, transfer dowodcy, kick, ban i unban. Usuniete sa jedynie ciezsze materialy developerskie.
 
 Zawiera poprawki 1.3 FINAL: czytelne modele broni 2D, AWP one-shot, 50% obrazen teammate, scisle buy-zone/buy-time, skale botow `0-5` i rozszerzone ustawienia dowodcy LAN.
 

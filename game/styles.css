@@ -656,6 +656,17 @@ button:disabled {
   align-items: stretch;
 }
 
+.lan-player-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.lan-player-actions { display: flex; gap: 6px; }
+.lan-player-actions button { padding: 6px 8px; }
+.lan-ban-section { display: grid; gap: 8px; margin-top: 14px; }
+
 .fast-bind-controls select {
   min-width: 0;
   border: 1px solid rgba(242, 240, 223, 0.2);

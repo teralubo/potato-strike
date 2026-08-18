@@ -37,11 +37,16 @@ const hud = {
   menu: $("menu"),
   start: $("start"),
   createLan: $("create-lan"),
+  joinLan: $("join-lan"),
   lanLobbyPanel: $("lan-lobby-panel"),
   lanLobbyRoom: $("lan-lobby-room"),
   lanLobbyStatus: $("lan-lobby-status"),
   lanLobbyOwner: $("lan-lobby-owner"),
   lanLobbyPlayers: $("lan-lobby-players"),
+  lanLobbyBans: $("lan-lobby-bans"),
+  lanAddPlayerName: $("lan-add-player-name"),
+  lanAddPlayerTeam: $("lan-add-player-team"),
+  lanLobbyAddPlayer: $("lan-lobby-add-player"),
   lanTransferTarget: $("lan-transfer-target"),
   lanLobbyStart: $("lan-lobby-start"),
   lanLobbyTransfer: $("lan-lobby-transfer"),
@@ -109,6 +114,8 @@ const hud = {
   networkPanel: $("network-panel"),
   networkStatus: $("network-status"),
   serverHostname: $("server-hostname"),
+  serverHost: $("server-host"),
+  serverJoin: $("server-join"),
   serverMaxplayers: $("server-maxplayers"),
   serverBotDifficulty: $("server-bot-difficulty"),
   serverBuyTime: $("server-buytime"),
@@ -507,6 +514,7 @@ const lobbySession = {
   hosting: false,
   room: "",
   players: [],
+  bans: [],
   status: "waiting",
   startedAt: 0,
   lastPoll: 0,
@@ -2061,12 +2069,17 @@ async function lanLobbyRequest(action, extra = {}) {
       ...extra,
     }),
   });
-  if (!response.ok) throw new Error((await response.text()) || `HTTP ${response.status}`);
+  if (!response.ok) {
+    const error = new Error((await response.text()) || `HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
   return response.json();
 }
 
 function renderLanLobby(payload = {}) {
   lobbySession.players = Array.isArray(payload.players) ? payload.players : lobbySession.players;
+  lobbySession.bans = Array.isArray(payload.bans) ? payload.bans : lobbySession.bans;
   lobbySession.status = payload.status || lobbySession.status;
   lobbySession.startedAt = Number(payload.startedAt) || lobbySession.startedAt;
   state.lobbyOwnerId = payload.ownerId || state.lobbyOwnerId;
@@ -2084,13 +2097,45 @@ function renderLanLobby(payload = {}) {
     const row = document.createElement("div");
     row.className = "lan-player-row";
     const name = document.createElement("strong");
-    name.textContent = entry.name || "Potato";
+    name.textContent = `${entry.name || "Potato"} / ${entry.playerId}`;
     const role = document.createElement("span");
     role.className = "tag";
     role.textContent = entry.playerId === state.lobbyOwnerId ? (settings.language === "en" ? "COMMANDER" : "DOWODCA") : (entry.team || "T");
     row.append(name, role);
+    if (isLobbyCommander() && entry.playerId !== state.lobbyOwnerId) {
+      const actions = document.createElement("div");
+      actions.className = "lan-player-actions";
+      for (const [action, label] of [["kick", "Kick"], ["ban", "Ban"]]) {
+        const button = document.createElement("button");
+        button.className = "secondary";
+        button.textContent = label;
+        button.addEventListener("click", () => manageLanPlayer(action, entry.playerId, entry.name));
+        actions.appendChild(button);
+      }
+      row.appendChild(actions);
+    }
     hud.lanLobbyPlayers.appendChild(row);
   }
+  hud.lanLobbyBans.innerHTML = "";
+  for (const entry of lobbySession.bans) {
+    const row = document.createElement("div");
+    row.className = "lan-player-row";
+    const name = document.createElement("strong");
+    name.textContent = entry.name || entry.playerId;
+    const id = document.createElement("span");
+    id.className = "tag";
+    id.textContent = entry.playerId;
+    row.append(name, id);
+    if (isLobbyCommander()) {
+      const button = document.createElement("button");
+      button.className = "secondary";
+      button.textContent = "Unban";
+      button.addEventListener("click", () => manageLanPlayer("unban", entry.playerId, entry.name));
+      row.appendChild(button);
+    }
+    hud.lanLobbyBans.appendChild(row);
+  }
+  if (!lobbySession.bans.length) hud.lanLobbyBans.textContent = settings.language === "en" ? "No bans" : "Brak banow";
   hud.lanTransferTarget.innerHTML = "";
   for (const entry of lobbySession.players.filter((playerEntry) => playerEntry.playerId !== settings.playerId)) {
     const option = document.createElement("option");
@@ -2101,7 +2146,31 @@ function renderLanLobby(payload = {}) {
   const commander = isLobbyCommander();
   hud.lanLobbyStart.disabled = !commander || lobbySession.status === "started";
   hud.lanLobbyTransfer.disabled = !commander || !hud.lanTransferTarget.options.length;
+  hud.lanLobbyAddPlayer.disabled = !commander;
   syncServerControls();
+}
+
+async function manageLanPlayer(action, targetId, targetName = "") {
+  if (!isLobbyCommander()) return showMessage("Tylko dowodca moze zarzadzac graczami");
+  try {
+    renderLanLobby(await lanLobbyRequest(action, { targetId, targetName }));
+    showMessage(`LAN: ${action} ${targetName || targetId}`);
+  } catch (error) {
+    showMessage(`LAN: ${error.message}`);
+  }
+}
+
+function openLanSetup(hosting) {
+  if (!lobbySession.active) {
+    state.lobbyOwnerId = "";
+    networkSync.ownerId = "";
+  }
+  lobbySession.hosting = hosting;
+  hud.serverHost.classList.toggle("hidden", !hosting);
+  hud.serverJoin.classList.toggle("hidden", hosting);
+  syncServerControls();
+  togglePanel(hud.networkPanel);
+  setTimeout(() => (hosting ? hud.serverHostname : hud.lanRoom).focus(), 0);
 }
 
 async function openLanLobby(hosting) {
@@ -2144,8 +2213,15 @@ async function pollLanLobby(force = false) {
     const payload = await lanLobbyRequest("join");
     renderLanLobby(payload);
     if (payload.status === "started" && Number(payload.startedAt) > 0) launchLanLobbyMatch(payload);
-  } catch {
+  } catch (error) {
     networkSync.connected = false;
+    if (error.status === 403) {
+      lobbySession.active = false;
+      closePanels();
+      hud.menu.classList.remove("hidden");
+      showMessage(`LAN: ${error.message}`);
+      return;
+    }
     hud.lanLobbyStatus.textContent = settings.language === "en" ? "Server unavailable" : "Serwer niedostepny";
   }
 }
@@ -2601,7 +2677,7 @@ function executeOwnerCommand(source) {
   if (command === "help" || command === "cmdlist") return logCommand(`commands: ${consoleCommands.join(", ")}`);
   if (command === "cvarlist") return logCommand(`cvars: ${Object.keys(consoleCvars).join(", ")}`);
   if (command === "status") return logCommand(`${serverSettings.hostname} | owner ${state.lobbyOwnerId} | ${state.gameMode} | ${state.map.name} | T ${state.score.T}:${state.score.CT} CT | bots ${bots.length + allies.length}`);
-  if (command === "version") return logCommand("Potato Strike 1.3 FINAL Patch 1.1 / console protocol 1");
+  if (command === "version") return logCommand("Potato Strike 1.3 FINAL Patch 1.3 / console protocol 2");
   if (command === "echo") return logCommand(parts.join(" "));
   if (command === "clear") { hud.commandLog.innerHTML = ""; return; }
   if (command === "pause") { setPaused(true); return logCommand("paused"); }
@@ -6395,8 +6471,25 @@ hud.openNetwork.addEventListener("click", () => {
   syncServerControls();
   togglePanel(hud.networkPanel);
 });
-hud.createLan.addEventListener("click", () => openLanLobby(true));
+hud.createLan.addEventListener("click", () => openLanSetup(true));
+hud.joinLan.addEventListener("click", () => openLanSetup(false));
+hud.serverHost.addEventListener("click", async () => {
+  applyServerConfig(serverConfigFromControls(), { quiet: true });
+  await openLanLobby(true);
+});
+hud.serverJoin.addEventListener("click", () => openLanLobby(false));
 hud.lanLobbyStart.addEventListener("click", startLanLobbyMatch);
+hud.lanLobbyAddPlayer.addEventListener("click", async () => {
+  const name = hud.lanAddPlayerName.value.trim();
+  if (!name) return showMessage("Wpisz nick gracza LAN");
+  const targetId = `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  try {
+    renderLanLobby(await lanLobbyRequest("add", { targetId, targetName: name, targetTeam: hud.lanAddPlayerTeam.value }));
+    hud.lanAddPlayerName.value = "";
+  } catch (error) {
+    showMessage(`LAN: ${error.message}`);
+  }
+});
 hud.lanLobbyTransfer.addEventListener("click", async () => {
   const targetId = hud.lanTransferTarget.value;
   if (!targetId) return;

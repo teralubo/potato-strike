@@ -10,7 +10,7 @@
 phone/android/
 ```
 
-4. Kliknij `PotatoStrike-1.3-FINAL-PATCH-1.1.apk`.
+4. Kliknij `PotatoStrike-1.3-FINAL-PATCH-1.3.apk`.
 5. Jesli Android zapyta, pozwol na instalacje z tego zrodla.
 6. Otworz aplikacje `Potato Strike`.
 
@@ -42,5 +42,5 @@ phone/android/app/build/outputs/apk/debug/app-debug.apk
 GitHub Actions kopiuje go do prostszej nazwy:
 
 ```text
-phone/android/PotatoStrike-1.3-FINAL-PATCH-1.1.apk
+phone/android/PotatoStrike-1.3-FINAL-PATCH-1.3.apk
 ```

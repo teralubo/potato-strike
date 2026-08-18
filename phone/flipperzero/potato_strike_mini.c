@@ -23,7 +23,7 @@ static void potato_draw(Canvas* canvas, void* ctx) {
     PotatoStrikeMini* game = ctx;
     canvas_clear(canvas);
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 2, 10, "Potato Strike P1.1");
+    canvas_draw_str(canvas, 2, 10, "Potato Strike P1.3");
     canvas_set_font(canvas, FontSecondary);
     char hud[32];
     snprintf(hud, sizeof(hud), "HP:%d  SCORE:%d", game->hp, game->score);

@@ -16,6 +16,8 @@ const audioEvents = new Map();
 const roomOwners = new Map();
 const roomConfigs = new Map();
 const roomLobbyState = new Map();
+const roomBans = new Map();
+const roomKicks = new Map();
 
 function readJson(req, callback) {
   let body = "";
@@ -32,7 +34,7 @@ function readJson(req, callback) {
 }
 
 function activeRoomPlayers(room) {
-  const players = (rooms.get(room) || []).filter((player) => Date.now() - player.time < 10000);
+  const players = (rooms.get(room) || []).filter((player) => player.virtual || Date.now() - player.time < 10000);
   rooms.set(room, players);
   const activeIds = new Set(players.map((player) => player.playerId));
   if (!activeIds.has(roomOwners.get(room))) roomOwners.set(room, players[0]?.playerId || "");
@@ -49,6 +51,7 @@ function cleanPlayer(payload = {}) {
     name: String(payload.name || "Potato").slice(0, 40),
     team: payload.team === "CT" ? "CT" : "T",
     time: Date.now(),
+    virtual: Boolean(payload.virtual),
   };
 }
 
@@ -71,6 +74,7 @@ function lobbySnapshot(room) {
     config: roomConfigs.get(room) || null,
     status: lobby.status || "waiting",
     startedAt: Number(lobby.startedAt) || 0,
+    bans: [...(roomBans.get(room) || new Map()).entries()].map(([playerId, name]) => ({ playerId, name })),
   };
 }
 
@@ -106,6 +110,7 @@ const server = http.createServer((req, res) => {
     readJson(req, (error, payload) => {
       if (error) return send(res, 400, "Bad heartbeat");
       const room = cleanRoom(payload.room);
+      if ((roomBans.get(room) || new Map()).has(String(payload.playerId || "").slice(0, 80))) return send(res, 403, "Player is banned from this LAN room");
       upsertRoomPlayer(room, payload);
       send(res, 200, JSON.stringify(lobbySnapshot(room)), "application/json; charset=utf-8");
     });
@@ -123,7 +128,16 @@ const server = http.createServer((req, res) => {
       const player = cleanPlayer(payload);
       const active = activeRoomPlayers(room);
       const ownerId = roomOwners.get(room) || "";
-      if (!["create", "join", "leave", "transfer", "start"].includes(action)) return send(res, 400, "Unknown lobby action");
+      if (!["create", "join", "leave", "transfer", "start", "add", "kick", "ban", "unban"].includes(action)) return send(res, 400, "Unknown lobby action");
+      const bans = roomBans.get(room) || new Map();
+      roomBans.set(room, bans);
+      const kicks = roomKicks.get(room) || new Set();
+      roomKicks.set(room, kicks);
+      if (action === "join" && bans.has(player.playerId)) return send(res, 403, "Player is banned from this LAN room");
+      if (action === "join" && kicks.has(player.playerId)) {
+        kicks.delete(player.playerId);
+        return send(res, 403, "Player was kicked from this LAN room");
+      }
       if (action === "create" && ownerId && ownerId !== player.playerId && active.length) {
         return send(res, 409, "LAN room is already owned");
       }
@@ -134,11 +148,15 @@ const server = http.createServer((req, res) => {
           roomOwners.delete(room);
           roomConfigs.delete(room);
           roomLobbyState.delete(room);
+          roomBans.delete(room);
+          roomKicks.delete(room);
         }
         return send(res, 200, JSON.stringify(lobbySnapshot(room)), "application/json; charset=utf-8");
       }
       if (action === "transfer" && ownerId !== player.playerId) return send(res, 403, "Only lobby owner can transfer command");
       if (action === "start" && ownerId !== player.playerId) return send(res, 403, "Only lobby owner can start match");
+      if (["add", "kick", "ban", "unban"].includes(action) && ownerId !== player.playerId) return send(res, 403, "Only lobby owner can manage players");
+      if (["kick", "ban"].includes(action) && String(payload.targetId || "") === ownerId) return send(res, 400, "Lobby owner cannot remove themselves");
       upsertRoomPlayer(room, payload);
       if (action === "create") {
         roomOwners.set(room, player.playerId);
@@ -149,6 +167,19 @@ const server = http.createServer((req, res) => {
         if (!activeRoomPlayers(room).some((entry) => entry.playerId === targetId)) return send(res, 404, "Target player is not in lobby");
         roomOwners.set(room, targetId);
       }
+      if (action === "add") {
+        const guestId = String(payload.targetId || `local-${Date.now()}`).slice(0, 80);
+        if (bans.has(guestId)) return send(res, 403, "Player is banned from this LAN room");
+        upsertRoomPlayer(room, { playerId: guestId, name: payload.targetName || "LAN Player", team: payload.targetTeam, virtual: true });
+      }
+      if (action === "kick" || action === "ban") {
+        const targetId = String(payload.targetId || "").slice(0, 80);
+        const target = activeRoomPlayers(room).find((entry) => entry.playerId === targetId);
+        rooms.set(room, activeRoomPlayers(room).filter((entry) => entry.playerId !== targetId));
+        if (action === "kick" && targetId) kicks.add(targetId);
+        if (action === "ban" && targetId) bans.set(targetId, target?.name || payload.targetName || targetId);
+      }
+      if (action === "unban") bans.delete(String(payload.targetId || "").slice(0, 80));
       if (action === "start") {
         if (payload.config && typeof payload.config === "object") roomConfigs.set(room, payload.config);
         roomLobbyState.set(room, { status: "started", startedAt: Date.now() });

@@ -1,4 +1,4 @@
-# Potato Strike 1.3 FINAL Patch 1.1 compatibility launchers
+# Potato Strike 1.3 FINAL Patch 1.3 compatibility launchers
 
 Ten folder jest dla graczy, ktorzy maja slabszy albo starszy system i chca uruchomic gre bez recznego grzebania.
 
@@ -6,7 +6,7 @@ Najpewniejszy tryb na kazdym OS:
 
 1. Otworz `PotatoStrike.html` w aktualnej przegladarce.
 2. Jesli system blokuje pliki lokalne, uruchom lokalny serwer przez `npm run serve` albo uzyj launchera z tego folderu.
-3. Wersje `.exe`, AppImage, deb, rpm i tar.gz sa budowane recznie lub po tagu przez GitHub Actions dla `1.3 FINAL Patch 1.1`.
+3. Wersje `.exe`, AppImage, deb, rpm i tar.gz sa budowane recznie lub po tagu przez GitHub Actions dla `1.3 FINAL Patch 1.3`.
 
 ## Windows
 
@@ -24,7 +24,7 @@ Najpewniejszy tryb na kazdym OS:
 
 ## macOS best effort
 
-macOS nie jest glownym celem Patch 1.1, ale `compat/macos/PotatoStrike-macOS.command` otwiera HTML przez domyslna przegladarke.
+macOS nie jest glownym celem Patch 1.3, ale `compat/macos/PotatoStrike-macOS.command` otwiera HTML przez domyslna przegladarke.
 
 ## Zasada kompatybilnosci
 

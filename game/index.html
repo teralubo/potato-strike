@@ -544,12 +544,25 @@
           Przekaz dowodzenie
           <select id="lan-transfer-target"></select>
         </label>
+        <label>
+          Dodaj gracza lokalnego
+          <input id="lan-add-player-name" placeholder="Nick gracza">
+        </label>
+        <label>
+          Druzyna gracza
+          <select id="lan-add-player-team"><option value="T">T</option><option value="CT">CT</option></select>
+        </label>
       </div>
       <div class="menu-actions left">
         <button id="lan-lobby-start">Rozpocznij mecz</button>
+        <button id="lan-lobby-add-player" class="secondary">Dodaj gracza</button>
         <button id="lan-lobby-transfer" class="secondary">Przekaz dowodce</button>
         <button id="lan-lobby-settings" class="secondary">Ustawienia serwera</button>
         <button id="lan-lobby-refresh" class="secondary">Odswiez</button>
+      </div>
+      <div class="lan-ban-section">
+        <strong>Zbanowani gracze</strong>
+        <div id="lan-lobby-bans" class="lan-player-list"></div>
       </div>
       <p class="panel-note" id="lan-lobby-note">Dowodca ustawia serwer i rozpoczyna mecz, gdy gracze sa gotowi.</p>
     </div>
@@ -632,6 +645,8 @@
         </label>
       </div>
       <div class="menu-actions left">
+        <button id="server-host">Utworz serwer LAN</button>
+        <button id="server-join" class="secondary">Dolacz LAN</button>
         <button id="server-apply">Zastosuj na serwerze</button>
         <button id="server-export" class="secondary">Zapisz server config</button>
         <button id="server-import" class="secondary">Wgraj server config</button>
@@ -789,6 +804,7 @@
         <div class="menu-actions">
           <button id="start">Graj</button>
           <button id="create-lan" class="secondary">Utworz serwer LAN</button>
+          <button id="join-lan" class="secondary">DOLACZ LAN</button>
           <button id="quick-editor">EDYTOR</button>
           <button id="open-profile" class="secondary">Profil</button>
           <button id="open-mods" class="secondary">Mody</button>
@@ -796,7 +812,7 @@
           <button id="open-teams" class="secondary">Druzyny</button>
         </div>
       </div>
-      <div id="release-version" aria-label="Wersja gry">V1.3-FINAL PATCH: 1.1</div>
+      <div id="release-version" aria-label="Wersja gry">V1.3-FINAL PATCH: 1.3</div>
     </div>
   </div>
   <script src="game.js"></script>

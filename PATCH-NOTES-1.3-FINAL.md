@@ -1,8 +1,15 @@
 # Potato Strike 1.3 FINAL
 
-Aktualny patch: `1.1`.
+Aktualny patch: `1.3`.
 
 Strona gry: [https://teralubo.itch.io/potato-strike](https://teralubo.itch.io/potato-strike)
+
+## Patch 1.3 - LAN
+
+- Osobne przyciski tworzenia i dolaczania do LAN.
+- Konfiguracja serwera przed utworzeniem lobby.
+- Poczekalnia z rosterem, ustawieniami, lokalnymi slotami, transferem dowodcy, kickiem, banem i unbanem.
+- Walidacja uprawnien i banow wykonywana przez serwer.
 
 ## Patch 1.1 - kompatybilnosc
 

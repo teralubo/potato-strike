@@ -13,7 +13,12 @@ Workflow repo:
 - `beta` - zmiany gotowe do szerszych testow.
 - `main` - wydania zaakceptowane do publikacji.
 
-## 1.3 FINAL - Patch 1.1
+## 1.3 FINAL - Patch 1.3
+
+- `Utworz serwer LAN` otwiera konfiguracje hosta i poczekalnie dowodcy.
+- `DOLACZ LAN` pozwala podac nick, pokoj i adres serwera przed dolaczeniem.
+- Dowodca widzi graczy oraz ich ID/druzyne, moze dodawac lokalne sloty, kickowac, banowac, odbanowac i przekazac dowodzenie.
+- Serwer sprawdza uprawnienia i bany po swojej stronie.
 
 - Android 5.0+ otrzymuje uniwersalny APK z dotykowym sterowaniem i wbudowanym jednoplikowym runtime gry.
 - Linux ma AppImage, deb, rpm, tar.gz, katalog portable oraz awaryjne launchery HTML/local-server.

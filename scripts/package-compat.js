@@ -69,12 +69,12 @@ copyDir(path.join(root, "phone"), path.join(releaseDir, "phone"), (from, entry) 
 });
 
 const apk = path.join(root, "phone", "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk");
-if (fs.existsSync(apk)) copyFile(apk, path.join(releaseDir, "phone", "android", "PotatoStrike-1.3-FINAL-PATCH-1.1.apk"));
+if (fs.existsSync(apk)) copyFile(apk, path.join(releaseDir, "phone", "android", "PotatoStrike-1.3-FINAL-PATCH-1.3.apk"));
 
 const flipperDist = path.join(root, "phone", "flipperzero", "dist");
 if (fs.existsSync(flipperDist)) {
   for (const file of fs.readdirSync(flipperDist)) {
-    if (file.endsWith(".fap") && file !== "potato_strike_mini.fap") copyFile(path.join(flipperDist, file), path.join(releaseDir, "phone", "flipperzero", file));
+    if (file.includes("PATCH-1.3") && file.endsWith(".fap")) copyFile(path.join(flipperDist, file), path.join(releaseDir, "phone", "flipperzero", file));
   }
 }
 

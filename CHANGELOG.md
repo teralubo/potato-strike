@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3 FINAL - Patch 1.3
+
+Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.3`.
+
+### Patch 1.3 - LAN lobby administration
+
+- Split LAN entry into explicit `Utworz serwer LAN` and `DOLACZ LAN` actions.
+- Added a pre-lobby host setup screen for server name, room, address, player limit, timers, economy, bot difficulty, friendly fire, aiming policy and other commander settings.
+- Added a waiting-room roster with player names, IDs, teams and commander status.
+- Added commander-only local player slots, command transfer, kick, ban and unban controls.
+- Enforced kick and ban operations in the LAN server protocol; banned IDs cannot join or send heartbeat updates.
+- Kept guests added by the commander persistent without requiring a network heartbeat.
+- Added server-side ownership checks so non-commanders cannot start matches, edit settings or manage players.
+- Rebuilt full and compressed 1.3 packages and retained manual/tag-only compatibility builds.
+
 ## 1.3 FINAL - Patch 1.1
 
 Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.1`.
