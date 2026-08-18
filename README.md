@@ -16,7 +16,7 @@ Workflow repo:
 ## 1.3 FINAL - Patch 1.3
 
 - `Utworz serwer LAN` otwiera konfiguracje hosta i poczekalnie dowodcy.
-- `DOLACZ LAN` pozwala podac nick, pokoj i adres serwera przed dolaczeniem.
+- `DOLACZ LAN` otwiera liste aktywnych serwerow z nazwa, liczba graczy i statusem; pokoj jest wybierany automatycznie po kliknieciu.
 - Dowodca widzi graczy oraz ich ID/druzyne, moze dodawac lokalne sloty, kickowac, banowac, odbanowac i przekazac dowodzenie.
 - Serwer sprawdza uprawnienia i bany po swojej stronie.
 

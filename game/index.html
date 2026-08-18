@@ -566,6 +566,24 @@
       </div>
       <p class="panel-note" id="lan-lobby-note">Dowodca ustawia serwer i rozpoczyna mecz, gdy gracze sa gotowi.</p>
     </div>
+    <div class="panel hidden" id="lan-browser-panel" aria-label="Lista serwerow LAN">
+      <div class="panel-head">
+        <div>
+          <div class="muted">sieć lokalna</div>
+          <h2>Serwery LAN</h2>
+        </div>
+        <button class="close-panel" data-panel="lan-browser-panel">Zamknij</button>
+      </div>
+      <div class="lan-browser-toolbar">
+        <label>
+          Adres komputera hosta
+          <input id="lan-browser-address" value="ws://localhost:8787" placeholder="np. ws://192.168.1.20:8787">
+        </label>
+        <button id="lan-browser-refresh">Odswiez liste</button>
+      </div>
+      <div id="lan-browser-list" class="lan-server-list"></div>
+      <p class="panel-note" id="lan-browser-status">Wybierz serwer z listy. Nie musisz przepisywac nazwy pokoju.</p>
+    </div>
     <div class="panel hidden" id="network-panel" aria-label="Gra sieciowa">
       <div class="panel-head">
         <div>

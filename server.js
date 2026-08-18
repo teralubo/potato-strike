@@ -104,7 +104,8 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (req.method === "OPTIONS") return send(res, 204, "");
   if (url.pathname === "/api/rooms" && req.method === "GET") {
-    return send(res, 200, JSON.stringify([...rooms.entries()]), "application/json; charset=utf-8");
+    const list = [...rooms.keys()].map((room) => lobbySnapshot(room)).filter((entry) => entry.players.length > 0);
+    return send(res, 200, JSON.stringify(list), "application/json; charset=utf-8");
   }
   if (url.pathname === "/api/heartbeat" && req.method === "POST") {
     readJson(req, (error, payload) => {
@@ -161,6 +162,7 @@ const server = http.createServer((req, res) => {
       if (action === "create") {
         roomOwners.set(room, player.playerId);
         roomLobbyState.set(room, { status: "waiting", startedAt: 0 });
+        if (payload.config && typeof payload.config === "object") roomConfigs.set(room, payload.config);
       }
       if (action === "transfer") {
         const targetId = String(payload.targetId || "").slice(0, 80);

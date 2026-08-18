@@ -53,6 +53,11 @@ const hud = {
   lanLobbySettings: $("lan-lobby-settings"),
   lanLobbyRefresh: $("lan-lobby-refresh"),
   lanLobbyLeave: $("lan-lobby-leave"),
+  lanBrowserPanel: $("lan-browser-panel"),
+  lanBrowserAddress: $("lan-browser-address"),
+  lanBrowserRefresh: $("lan-browser-refresh"),
+  lanBrowserList: $("lan-browser-list"),
+  lanBrowserStatus: $("lan-browser-status"),
   shopPanel: $("shop-panel"),
   shopList: $("shop-list"),
   settingsPanel: $("settings-panel"),
@@ -2173,6 +2178,64 @@ function openLanSetup(hosting) {
   setTimeout(() => (hosting ? hud.serverHostname : hud.lanRoom).focus(), 0);
 }
 
+function renderLanServerList(servers = []) {
+  hud.lanBrowserList.innerHTML = "";
+  for (const server of servers) {
+    const row = document.createElement("div");
+    row.className = "lan-server-row";
+    const identity = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = server.config?.hostname || server.room || "Potato LAN";
+    const room = document.createElement("div");
+    room.className = "muted";
+    room.textContent = `Pokoj: ${server.room}`;
+    identity.append(name, room);
+    const players = document.createElement("span");
+    players.className = "tag";
+    players.textContent = `${server.players?.length || 0}/${server.config?.maxPlayers || 10} graczy`;
+    const status = document.createElement("span");
+    status.className = "tag";
+    status.textContent = server.status === "started" ? "W GRZE" : "OCZEKUJE";
+    const join = document.createElement("button");
+    join.textContent = "DOLACZ";
+    join.disabled = server.status === "started" || (server.players?.length || 0) >= (server.config?.maxPlayers || 10);
+    join.addEventListener("click", async () => {
+      hud.serverUrl.value = hud.lanBrowserAddress.value.trim() || "ws://localhost:8787";
+      hud.lanRoom.value = server.room;
+      await openLanLobby(false);
+    });
+    row.append(identity, players, status, join);
+    hud.lanBrowserList.appendChild(row);
+  }
+  if (!servers.length) hud.lanBrowserList.textContent = settings.language === "en" ? "No active LAN servers." : "Brak aktywnych serwerow LAN pod tym adresem.";
+}
+
+async function refreshLanServerBrowser() {
+  hud.lanBrowserRefresh.disabled = true;
+  hud.lanBrowserStatus.textContent = settings.language === "en" ? "Searching..." : "Pobieranie listy serwerow...";
+  hud.serverUrl.value = hud.lanBrowserAddress.value.trim() || "ws://localhost:8787";
+  try {
+    const response = await fetch(`${serverAudioBase()}/api/rooms`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const servers = await response.json();
+    renderLanServerList(Array.isArray(servers) ? servers : []);
+    hud.lanBrowserStatus.textContent = `${Array.isArray(servers) ? servers.length : 0} aktywnych serwerow / ${new Date().toLocaleTimeString()}`;
+  } catch (error) {
+    renderLanServerList([]);
+    hud.lanBrowserStatus.textContent = `Nie mozna pobrac listy: ${error.message}`;
+  } finally {
+    hud.lanBrowserRefresh.disabled = false;
+  }
+}
+
+function openLanServerBrowser() {
+  hud.lanBrowserAddress.value = hud.serverUrl.value || "ws://localhost:8787";
+  closePanels();
+  state.overlayOpen = true;
+  hud.lanBrowserPanel.classList.remove("hidden");
+  refreshLanServerBrowser();
+}
+
 async function openLanLobby(hosting) {
   if (lobbySession.active) {
     closePanels();
@@ -2190,7 +2253,7 @@ async function openLanLobby(hosting) {
   lobbySession.hosting = hosting;
   lobbySession.launching = false;
   try {
-    const payload = await lanLobbyRequest(hosting ? "create" : "join");
+    const payload = await lanLobbyRequest(hosting ? "create" : "join", hosting ? { config: serverConfigSnapshot() } : {});
     lobbySession.active = true;
     closePanels();
     state.overlayOpen = true;
@@ -6472,7 +6535,8 @@ hud.openNetwork.addEventListener("click", () => {
   togglePanel(hud.networkPanel);
 });
 hud.createLan.addEventListener("click", () => openLanSetup(true));
-hud.joinLan.addEventListener("click", () => openLanSetup(false));
+hud.joinLan.addEventListener("click", openLanServerBrowser);
+hud.lanBrowserRefresh.addEventListener("click", refreshLanServerBrowser);
 hud.serverHost.addEventListener("click", async () => {
   applyServerConfig(serverConfigFromControls(), { quiet: true });
   await openLanLobby(true);

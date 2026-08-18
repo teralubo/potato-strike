@@ -193,7 +193,7 @@ requireSnippets(gameJs, [
   "serverConfigSnapshot", "syncLanHeartbeat", "mp_show_enemy_minimap", "writecfg", "cvarlist", "requireCheats",
   "openingMove", "botStop", "isAwpScoped", "drawAwpScope", "aimZoom", "mouse.rightDown",
   "gameRulePresets", "applyGameRulePreset", "updateRespawns", "isIronSights", "drawPotatoIronSights", "showStoryHint",
-  "openLanLobby", "openLanSetup", "lanLobbyRequest", "renderLanLobby", "manageLanPlayer", "startLanLobbyMatch", "launchLanLobbyMatch", "botAimMode",
+  "openLanLobby", "openLanSetup", "openLanServerBrowser", "refreshLanServerBrowser", "renderLanServerList", "lanLobbyRequest", "renderLanLobby", "manageLanPlayer", "startLanLobbyMatch", "launchLanLobbyMatch", "botAimMode",
   "freedoomWeaponTextureSources", "freedoomWeaponTexture", "freedoomWeaponTextureKey", "freedoomWeaponProfiles", "freedoomWeaponVariant", "drawWeaponVariantDetail", "drawFreedoomWeaponTexture", "migrateCrosshairSettings", "crosshairEnabled",
   "drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming)", "if (!isAimActive()) drawCrosshair();", "customEnabled: settings.crosshairCustomEnabled",
   "buyZoneForTeam", "inBuyZone", "drawBuyZones2d", "draw3dBuyZoneMarker", "zoomSensitivity", "rawMouseInput", "fieldOfView",
@@ -205,7 +205,7 @@ requireSnippets(gameHtml, [
   'id="fast-bind-clear"', 'id="fast-bind-count"', 'id="fast-bind-list"',
   'id="crosshair-enabled"', 'id="crosshair-reset"', 'id="crosshair-paint-canvas"',
   'id="game-rules"', 'id="server-aim-mode"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
-  'id="create-lan"', 'id="join-lan"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="lan-lobby-bans"', 'id="lan-lobby-add-player"', 'id="menu-aim-mode"',
+  'id="create-lan"', 'id="join-lan"', 'id="lan-browser-panel"', 'id="lan-browser-list"', 'id="lan-browser-refresh"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="lan-lobby-bans"', 'id="lan-lobby-add-player"', 'id="menu-aim-mode"',
   'id="server-bot-difficulty"', 'id="server-buytime"', 'id="server-team-damage"',
   'id="release-version"', 'V1.3-FINAL PATCH: 1.3',
   '<option value="vsync" selected>',
@@ -213,7 +213,7 @@ requireSnippets(gameHtml, [
 
 const serverJs = fs.readFileSync("server.js", "utf8");
 requireSnippets(serverJs, [
-  "roomOwners", "roomConfigs", "roomLobbyState", "roomBans", "roomKicks", 'url.pathname === "/api/server-config"', 'url.pathname === "/api/lobby"',
+  "roomOwners", "roomConfigs", "roomLobbyState", "roomBans", "roomKicks", 'url.pathname === "/api/rooms"', 'url.pathname === "/api/server-config"', 'url.pathname === "/api/lobby"',
   '"access-control-allow-origin": "*"', 'req.method === "OPTIONS"',
   "Only lobby owner can update server config", "Only lobby owner can transfer command", "Only lobby owner can start match", "Only lobby owner can manage players",
 ], "LAN server ownership feature");

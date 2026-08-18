@@ -667,6 +667,31 @@ button:disabled {
 .lan-player-actions button { padding: 6px 8px; }
 .lan-ban-section { display: grid; gap: 8px; margin-top: 14px; }
 
+.lan-browser-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.lan-browser-toolbar label { display: grid; gap: 6px; }
+.lan-server-list { display: grid; gap: 8px; margin-top: 14px; }
+.lan-server-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(242, 240, 223, 0.14);
+  border-radius: 8px;
+  background: rgba(242, 240, 223, 0.055);
+  text-align: left;
+}
+
+@media (max-width: 620px) {
+  .lan-browser-toolbar, .lan-server-row { grid-template-columns: 1fr; }
+}
+
 .fast-bind-controls select {
   min-width: 0;
   border: 1px solid rgba(242, 240, 223, 0.2);

@@ -7,6 +7,7 @@ Strona gry: [https://teralubo.itch.io/potato-strike](https://teralubo.itch.io/po
 ## Patch 1.3 - LAN
 
 - Osobne przyciski tworzenia i dolaczania do LAN.
+- `DOLACZ LAN` pokazuje liste aktywnych serwerow z nazwa, pokojem, liczba graczy, limitem i statusem oraz przyciskiem dolaczenia.
 - Konfiguracja serwera przed utworzeniem lobby.
 - Poczekalnia z rosterem, ustawieniami, lokalnymi slotami, transferem dowodcy, kickiem, banem i unbanem.
 - Walidacja uprawnien i banow wykonywana przez serwer.

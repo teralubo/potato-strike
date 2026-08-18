@@ -7,6 +7,8 @@ Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.3`.
 ### Patch 1.3 - LAN lobby administration
 
 - Split LAN entry into explicit `Utworz serwer LAN` and `DOLACZ LAN` actions.
+- Replaced the join configuration form with a server browser that lists active rooms, server names, player counts, limits and waiting/in-game status with one-click joining.
+- Added a host-address field and refresh action for browsing rooms exposed by another computer on the local network.
 - Added a pre-lobby host setup screen for server name, room, address, player limit, timers, economy, bot difficulty, friendly fire, aiming policy and other commander settings.
 - Added a waiting-room roster with player names, IDs, teams and commander status.
 - Added commander-only local player slots, command transfer, kick, ban and unban controls.
