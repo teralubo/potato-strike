@@ -16,6 +16,9 @@ Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.3`.
 - Kept guests added by the commander persistent without requiring a network heartbeat.
 - Added server-side ownership checks so non-commanders cannot start matches, edit settings or manage players.
 - Rebuilt full and compressed 1.3 packages and retained manual/tag-only compatibility builds.
+- Fixed the apparent dead LAN buttons in offline EXE/Electron builds by starting the embedded LAN server automatically on port `8787`.
+- Added graceful port reuse when another Potato Strike LAN server is already running.
+- Completed Polish/English labels for the LAN browser and lobby administration controls.
 
 ## 1.3 FINAL - Patch 1.1
 

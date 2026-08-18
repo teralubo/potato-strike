@@ -630,6 +630,16 @@ const i18n = {
     close: "Zamknij",
     play: "Graj",
     createLan: "Utworz serwer LAN",
+    joinLan: "DOLACZ LAN",
+    lanServers: "Serwery LAN",
+    lanNetwork: "siec lokalna",
+    lanHostAddress: "Adres komputera hosta",
+    lanRefreshList: "Odswiez liste",
+    lanBrowserHelp: "Wybierz serwer z listy. Nie musisz przepisywac nazwy pokoju.",
+    lanAddPlayer: "Dodaj gracza",
+    lanAddPlayerLabel: "Dodaj gracza lokalnego",
+    lanPlayerTeam: "Druzyna gracza",
+    lanBans: "Zbanowani gracze",
     lobbyTitle: "Poczekalnia LAN",
     lobbyLeave: "Opusc lobby",
     lobbyStart: "Rozpocznij mecz",
@@ -751,6 +761,16 @@ const i18n = {
     close: "Close",
     play: "Play",
     createLan: "Create LAN server",
+    joinLan: "JOIN LAN",
+    lanServers: "LAN servers",
+    lanNetwork: "local network",
+    lanHostAddress: "Host computer address",
+    lanRefreshList: "Refresh list",
+    lanBrowserHelp: "Choose a server from the list. The room is selected automatically.",
+    lanAddPlayer: "Add player",
+    lanAddPlayerLabel: "Add local player",
+    lanPlayerTeam: "Player team",
+    lanBans: "Banned players",
     lobbyTitle: "LAN waiting room",
     lobbyLeave: "Leave lobby",
     lobbyStart: "Start match",
@@ -1091,6 +1111,16 @@ function applyLanguage() {
   document.documentElement.lang = settings.language === "en" ? "en" : "pl";
   setText("#start", tr("play"));
   setText("#create-lan", tr("createLan"));
+  setText("#join-lan", tr("joinLan"));
+  setText("#lan-browser-panel h2", tr("lanServers"));
+  setText("#lan-browser-panel .muted", tr("lanNetwork"));
+  setLabel("lan-browser-address", tr("lanHostAddress"));
+  setText("#lan-browser-refresh", tr("lanRefreshList"));
+  setText("#lan-browser-status", tr("lanBrowserHelp"));
+  setText("#lan-lobby-add-player", tr("lanAddPlayer"));
+  setLabel("lan-add-player-name", tr("lanAddPlayerLabel"));
+  setLabel("lan-add-player-team", tr("lanPlayerTeam"));
+  setText(".lan-ban-section > strong", tr("lanBans"));
   setText("#lan-lobby-title", tr("lobbyTitle"));
   setText("#lan-lobby-leave", tr("lobbyLeave"));
   setText("#lan-lobby-start", tr("lobbyStart"));
@@ -2188,16 +2218,16 @@ function renderLanServerList(servers = []) {
     name.textContent = server.config?.hostname || server.room || "Potato LAN";
     const room = document.createElement("div");
     room.className = "muted";
-    room.textContent = `Pokoj: ${server.room}`;
+    room.textContent = `${settings.language === "en" ? "Room" : "Pokoj"}: ${server.room}`;
     identity.append(name, room);
     const players = document.createElement("span");
     players.className = "tag";
-    players.textContent = `${server.players?.length || 0}/${server.config?.maxPlayers || 10} graczy`;
+    players.textContent = `${server.players?.length || 0}/${server.config?.maxPlayers || 10} ${settings.language === "en" ? "players" : "graczy"}`;
     const status = document.createElement("span");
     status.className = "tag";
-    status.textContent = server.status === "started" ? "W GRZE" : "OCZEKUJE";
+    status.textContent = server.status === "started" ? (settings.language === "en" ? "IN GAME" : "W GRZE") : (settings.language === "en" ? "WAITING" : "OCZEKUJE");
     const join = document.createElement("button");
-    join.textContent = "DOLACZ";
+    join.textContent = settings.language === "en" ? "JOIN" : "DOLACZ";
     join.disabled = server.status === "started" || (server.players?.length || 0) >= (server.config?.maxPlayers || 10);
     join.addEventListener("click", async () => {
       hud.serverUrl.value = hud.lanBrowserAddress.value.trim() || "ws://localhost:8787";
@@ -2219,10 +2249,10 @@ async function refreshLanServerBrowser() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const servers = await response.json();
     renderLanServerList(Array.isArray(servers) ? servers : []);
-    hud.lanBrowserStatus.textContent = `${Array.isArray(servers) ? servers.length : 0} aktywnych serwerow / ${new Date().toLocaleTimeString()}`;
+    hud.lanBrowserStatus.textContent = `${Array.isArray(servers) ? servers.length : 0} ${settings.language === "en" ? "active servers" : "aktywnych serwerow"} / ${new Date().toLocaleTimeString()}`;
   } catch (error) {
     renderLanServerList([]);
-    hud.lanBrowserStatus.textContent = `Nie mozna pobrac listy: ${error.message}`;
+    hud.lanBrowserStatus.textContent = `${settings.language === "en" ? "Cannot load the server list" : "Nie mozna pobrac listy"}: ${error.message}`;
   } finally {
     hud.lanBrowserRefresh.disabled = false;
   }

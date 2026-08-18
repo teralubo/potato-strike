@@ -172,7 +172,7 @@ if (!singleHtml.includes("data:image/png;base64,") || singleHtml.includes("asset
 
 requireSnippets(mainJs, [
   "config:save", "playersDir", "profile.json", "assets.json", "crashReporter", "showCrashRecoveryWindow",
-  "POTATO_SAFE_OFFLINE", "PotatoStrike.html", "log:renderer", "listModManifests", 'entry.name.toLowerCase() !== "mod.json"',
+  "POTATO_SAFE_OFFLINE", "PotatoStrike.html", "log:renderer", "listModManifests", 'entry.name.toLowerCase() !== "mod.json"', "startPotatoServer", "Embedded LAN server ready",
 ], "offline runtime feature");
 requireSnippets(preloadJs, ["saveConfig", "sendRendererLog", "log:renderer"], "preload bridge feature");
 
@@ -213,7 +213,7 @@ requireSnippets(gameHtml, [
 
 const serverJs = fs.readFileSync("server.js", "utf8");
 requireSnippets(serverJs, [
-  "roomOwners", "roomConfigs", "roomLobbyState", "roomBans", "roomKicks", 'url.pathname === "/api/rooms"', 'url.pathname === "/api/server-config"', 'url.pathname === "/api/lobby"',
+  "roomOwners", "roomConfigs", "roomLobbyState", "roomBans", "roomKicks", "startPotatoServer", "require.main === module", 'url.pathname === "/api/rooms"', 'url.pathname === "/api/server-config"', 'url.pathname === "/api/lobby"',
   '"access-control-allow-origin": "*"', 'req.method === "OPTIONS"',
   "Only lobby owner can update server config", "Only lobby owner can transfer command", "Only lobby owner can start match", "Only lobby owner can manage players",
 ], "LAN server ownership feature");

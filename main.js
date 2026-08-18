@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, crashReporter } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const { startPotatoServer } = require("./server");
 
 const windows = {
   game: null,
@@ -288,6 +289,11 @@ function openGameTest() {
 
 app.whenReady().then(() => {
   writeLog("main", `App ready argv=${JSON.stringify(process.argv)}`);
+  startPotatoServer(8787, {
+    onListening: (port) => writeLog("lan", `Embedded LAN server ready on http://localhost:${port}`),
+    onInUse: (port) => writeLog("lan", `Port ${port} already in use; using the existing LAN server`),
+    onError: (error) => writeLog("lan", "Embedded LAN server failed", error?.stack || error?.message || String(error)),
+  });
   const modeArg = process.argv.find((arg) => arg === "--editor" || arg === "--studio");
   if (modeArg) createEditorWindow();
   else createWindow();

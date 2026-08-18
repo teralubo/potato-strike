@@ -11,6 +11,7 @@ Strona gry: [https://teralubo.itch.io/potato-strike](https://teralubo.itch.io/po
 - Konfiguracja serwera przed utworzeniem lobby.
 - Poczekalnia z rosterem, ustawieniami, lokalnymi slotami, transferem dowodcy, kickiem, banem i unbanem.
 - Walidacja uprawnien i banow wykonywana przez serwer.
+- Offline EXE automatycznie uruchamia serwer LAN na porcie `8787`; przy zajetym porcie korzysta z istniejacego serwera zamiast zawieszac przyciski.
 
 ## Patch 1.1 - kompatybilnosc
 

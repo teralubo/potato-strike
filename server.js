@@ -245,6 +245,22 @@ const server = http.createServer((req, res) => {
   serveFile(req, res);
 });
 
-server.listen(port, () => {
-  console.log(`Potato Strike server: http://localhost:${port}`);
-});
+function startPotatoServer(listenPort = port, callbacks = {}) {
+  if (server.listening) return server;
+  server.once("error", (error) => {
+    if (error.code === "EADDRINUSE") {
+      callbacks.onInUse?.(listenPort);
+      return;
+    }
+    callbacks.onError?.(error);
+  });
+  server.listen(listenPort, () => {
+    console.log(`Potato Strike server: http://localhost:${listenPort}`);
+    callbacks.onListening?.(listenPort);
+  });
+  return server;
+}
+
+if (require.main === module) startPotatoServer();
+
+module.exports = { startPotatoServer };
