@@ -14,6 +14,7 @@ plik PotatoStrike.html. Aplikacja Electron korzysta z main.js i preload.js.
 Edytor i Sandbox pozostaja niezaleznymi trybami. Edytor Studio oferuje widok
 2D oraz 3D, obiekty, grupy, triggery, waypointy, polaczenia synchronizacji,
 markery, warstwy, transformacje move/rotate/scale, undo/redo i explorer.
+Przycisk EDYTOR w menu wywoluje openStandaloneEditor() bez panelu posredniego.
 
 Opcjonalny edytor Sandboxa jest czescia trybu `sandbox`; nie ma osobnej wartosci
 gameMode. Funkcje isSandboxMode() i isHybridMode() wskazuja aktywny Sandbox.
@@ -28,6 +29,8 @@ switchHybridView(). Widok editor:
 - aktywuje narzedzia edytora oraz panel wlasciwosci.
 - blokuje Nowa, Losowa i Zaladuj, aby nie podmienic aktywnej mapy Sandboxa.
 - Q/E obraca obiekt pod kursorem o 15 stopni w lewo/prawo.
+- pokazuje od razu dokowany panel narzedzi mapy; elementy misji, fabuly, modow i
+  generatora sa ukryte przez klase body.sandbox-map-editing.
 
 Widok sandbox:
 - zamyka panel edytora,

@@ -640,6 +640,24 @@ button:disabled {
   color: #d8d5bf;
 }
 
+body.sandbox-map-editing #editor-panel {
+  left: 14px;
+  top: 14px;
+  width: min(380px, calc(100vw - 28px));
+  height: calc(100vh - 28px);
+  max-height: none;
+  transform: none;
+  overflow-y: auto;
+}
+
+body.sandbox-map-editing #editor-panel [data-sandbox-editor-hide] {
+  display: none !important;
+}
+
+body.sandbox-map-editing #editor-panel .settings-grid {
+  grid-template-columns: 1fr;
+}
+
 .settings-grid .check {
   display: flex;
   gap: 8px;
@@ -1279,13 +1297,13 @@ button:disabled {
     <div class="panel hidden" id="editor-panel" aria-label="Edytor misji i map">
       <div class="panel-head">
         <div>
-          <div class="muted">story editor</div>
-          <h2>Edytor misji i map</h2>
+          <div class="muted" id="editor-panel-kicker">story editor</div>
+          <h2 id="editor-panel-title">Edytor misji i map</h2>
         </div>
         <button class="close-panel" data-panel="editor-panel">Zamknij</button>
       </div>
       <div class="settings-grid">
-        <label>
+        <label data-sandbox-editor-name>
           Nazwa misji
           <input id="editor-name" value="Moja misja">
         </label>
@@ -1310,7 +1328,7 @@ button:disabled {
             <option value="move">Przesun obiekt</option>
           </select>
         </label>
-        <label>
+        <label data-sandbox-editor-hide>
           Cel misji
           <select id="editor-goal">
             <option value="win">Wygraj runde</option>
@@ -1319,15 +1337,15 @@ button:disabled {
             <option value="kills">Zdobadz fragi</option>
           </select>
         </label>
-        <label>
+        <label data-sandbox-editor-hide>
           Wymagana liczba
           <input id="editor-target" type="number" min="1" value="1">
         </label>
-        <label>
+        <label data-sandbox-editor-hide>
           Opis celu pod TAB
           <input id="editor-objective-text" value="Wyeliminuj wszystkich wrogow">
         </label>
-        <label>
+        <label data-sandbox-editor-hide>
           Kod zakonczenia celu
           <textarea id="editor-goal-code" class="code-box" spellcheck="false">return ctx.enemiesAlive &lt;= 0;</textarea>
         </label>
@@ -1349,19 +1367,19 @@ button:disabled {
         </label>
       </div>
       <div class="menu-actions left">
-        <button id="open-editor">Otworz Studio</button>
-        <button id="open-mapgen" class="secondary">Generator map</button>
-        <button id="editor-new">Nowa mapa</button>
-        <button id="editor-random">Losowa misja/mapa</button>
+        <button id="open-editor" data-sandbox-editor-hide>Otworz Studio</button>
+        <button id="open-mapgen" class="secondary" data-sandbox-editor-hide>Generator map</button>
+        <button id="editor-new" data-sandbox-editor-hide>Nowa mapa</button>
+        <button id="editor-random" data-sandbox-editor-hide>Losowa misja/mapa</button>
         <button id="editor-save-map">Zapisz sama mape</button>
         <button id="editor-export-map" class="secondary">Eksportuj mape</button>
         <button id="editor-import-map" class="secondary">Importuj mape</button>
         <input id="editor-map-file" class="hidden" type="file" accept="application/json,.potato-map.json">
-        <button id="editor-save">Zapisz misje</button>
-        <button id="editor-load">Zaladuj zaznaczona</button>
-        <button id="editor-export">Pobierz misje</button>
+        <button id="editor-save" data-sandbox-editor-hide>Zapisz misje</button>
+        <button id="editor-load" data-sandbox-editor-hide>Zaladuj zaznaczona</button>
+        <button id="editor-export" data-sandbox-editor-hide>Pobierz misje</button>
       </div>
-      <div class="settings-grid">
+      <div class="settings-grid" data-sandbox-editor-hide>
         <label>
           Wlasna tekstura
           <input id="texture-file" type="file" accept="image/*">
@@ -1382,16 +1400,16 @@ button:disabled {
           </select>
         </label>
       </div>
-      <textarea id="mod-code" class="code-box" spellcheck="false" placeholder='{"name":"My Mode","mode":"deathmatch","roundTime":180}'></textarea>
-      <div class="menu-actions left">
+      <textarea id="mod-code" data-sandbox-editor-hide class="code-box" spellcheck="false" placeholder='{"name":"My Mode","mode":"deathmatch","roundTime":180}'></textarea>
+      <div class="menu-actions left" data-sandbox-editor-hide>
         <button id="texture-import">Wgraj teksture</button>
         <button id="mod-import">Wgraj mod/tryb</button>
         <button id="mod-export">Pobierz mod</button>
       </div>
-      <div id="asset-list" class="team-list"></div>
+      <div id="asset-list" class="team-list" data-sandbox-editor-hide></div>
       <div id="editor-properties" class="team-list"></div>
-      <div id="saved-missions" class="mission-list"></div>
-      <p class="panel-note">Gdy panel jest otwarty, klikaj na plansze: edytor doda/usunie/przesunie obiekty na mapie. Misje zapisuja sie lokalnie w przegladarce i dzialaja tez w buildzie offline.</p>
+      <div id="saved-missions" class="mission-list" data-sandbox-editor-hide></div>
+      <p class="panel-note" id="editor-panel-help">Gdy panel jest otwarty, klikaj na plansze: edytor doda/usunie/przesunie obiekty na mapie. Misje zapisuja sie lokalnie w przegladarce i dzialaja tez w buildzie offline.</p>
     </div>
     <div class="panel hidden" id="console-panel" aria-label="Komendy lobby">
       <div class="panel-head">
@@ -5428,8 +5446,15 @@ function switchHybridView(target = editor.hybridView === "editor" ? "sandbox" : 
     camera.y = clamp(player.y - innerHeight / 2, 0, Math.max(0, state.map.h - innerHeight));
     setGraphicsMode("2d");
     closePanels();
+    document.body.classList.add("sandbox-map-editing");
     state.overlayOpen = true;
     hud.editorPanel.classList.remove("hidden");
+    $("editor-panel-kicker").textContent = "SANDBOX / EDYCJA NA ZYWO";
+    $("editor-panel-title").textContent = "Edytor mapy";
+    $("editor-panel-help").textContent = "Edytujesz aktualny swiat Sandboxa. Klikaj na mapie narzedziem; Q obraca obiekt pod mysza w lewo, E w prawo. Zamknij, aby od razu wrocic do gry na tej samej mapie.";
+    hud.editorName.value = state.map.name || "Mapa Sandbox";
+    hud.editorName.closest("label").firstChild.textContent = "Nazwa mapy\n          ";
+    hud.editorTool.value = "move";
     for (const control of [hud.editorNew, hud.editorRandom, hud.editorLoad]) {
       control.disabled = true;
       control.title = "W Sandbox edytujesz aktualny swiat; ta opcja nie tworzy ani nie podmienia mapy";
@@ -5442,6 +5467,11 @@ function switchHybridView(target = editor.hybridView === "editor" ? "sandbox" : 
     editor.hybridView = "sandbox";
     editor.active = false;
     closePanels();
+    document.body.classList.remove("sandbox-map-editing");
+    $("editor-panel-kicker").textContent = "story editor";
+    $("editor-panel-title").textContent = "Edytor misji i map";
+    $("editor-panel-help").textContent = "Gdy panel jest otwarty, klikaj na plansze: edytor doda/usunie/przesunie obiekty na mapie. Misje zapisuja sie lokalnie w przegladarce i dzialaja tez w buildzie offline.";
+    hud.editorName.closest("label").firstChild.textContent = "Nazwa misji\n          ";
     for (const control of [hud.editorNew, hud.editorRandom, hud.editorLoad]) {
       control.disabled = false;
       control.title = "";
@@ -9043,7 +9073,10 @@ window.addEventListener("mouseup", (event) => {
   if (event.button === 0) releaseGrenadeAim();
 });
 
-document.querySelectorAll(".close-panel").forEach((button) => button.addEventListener("click", closePanels));
+document.querySelectorAll(".close-panel").forEach((button) => button.addEventListener("click", () => {
+  if (button.dataset.panel === "editor-panel" && editor.active && isHybridMode()) switchHybridView("sandbox");
+  else closePanels();
+}));
 hud.openSettings.addEventListener("click", () => togglePanel(hud.settingsPanel));
 hud.openBinds.addEventListener("click", () => togglePanel(hud.bindsPanel));
 hud.openTeams.addEventListener("click", () => togglePanel(hud.teamsPanel));
@@ -9056,7 +9089,7 @@ async function openStandaloneEditor() {
   window.location.href = window.location.pathname.toLowerCase().endsWith("potatostrike.html") ? "game/editor.html" : "editor.html";
 }
 
-hud.quickEditor.addEventListener("click", () => togglePanel(hud.editorPanel));
+hud.quickEditor.addEventListener("click", openStandaloneEditor);
 hud.openEditor.addEventListener("click", openStandaloneEditor);
 hud.openConsole.addEventListener("click", openOwnerConsole);
 hud.openNetwork.addEventListener("click", () => {

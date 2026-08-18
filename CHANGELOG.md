@@ -7,6 +7,8 @@
 - Prevented New, Random and Load from replacing the active Sandbox map while using its editor.
 - Added cursor-targeted object rotation: `Q` rotates left and `E` rotates right in 15-degree steps.
 - Changed Studio `Testuj` to a simple Training 1v1 launch with an easy bot.
+- Changed the main-menu `EDYTOR` action to open Studio immediately, bypassing the legacy mission/story editor screen.
+- Simplified the live Sandbox editor into a docked map-tool panel and hid mission, story, generator and mod setup controls.
 - Added dedicated `potato-strike-map` JSON export/import in both the in-game editor and the hybrid menu.
 - Preserved separate Editor and Sandbox modes and the existing Arma-inspired 2D/3D Studio workflow.
 - Added complete developer documentation in `DEV-tools/docs.txt`.

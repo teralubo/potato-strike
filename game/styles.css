@@ -633,6 +633,24 @@ button:disabled {
   color: #d8d5bf;
 }
 
+body.sandbox-map-editing #editor-panel {
+  left: 14px;
+  top: 14px;
+  width: min(380px, calc(100vw - 28px));
+  height: calc(100vh - 28px);
+  max-height: none;
+  transform: none;
+  overflow-y: auto;
+}
+
+body.sandbox-map-editing #editor-panel [data-sandbox-editor-hide] {
+  display: none !important;
+}
+
+body.sandbox-map-editing #editor-panel .settings-grid {
+  grid-template-columns: 1fr;
+}
+
 .settings-grid .check {
   display: flex;
   gap: 8px;

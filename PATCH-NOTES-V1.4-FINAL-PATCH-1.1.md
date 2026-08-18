@@ -7,6 +7,8 @@
 - Oba widoki korzystaja z jednej mapy, wiec postawione, przesuniete i usuniete obiekty sa widoczne natychmiast po przelaczeniu.
 - W widoku edytora `Q` obraca obiekt pod kursorem w lewo, a `E` w prawo.
 - Przycisk `Testuj` w Studio uruchamia prosty trening 1v1 z latwym botem.
+- Przycisk `EDYTOR` w menu otwiera od razu gotowe Studio, bez ekranu wyboru misji lub fabuly.
+- Edytor mapy wewnatrz Sandboxa pokazuje tylko potrzebne narzedzia i wlasciwosci w dokowanym panelu.
 
 ## Mapy
 

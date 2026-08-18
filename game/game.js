@@ -3616,8 +3616,15 @@ function switchHybridView(target = editor.hybridView === "editor" ? "sandbox" : 
     camera.y = clamp(player.y - innerHeight / 2, 0, Math.max(0, state.map.h - innerHeight));
     setGraphicsMode("2d");
     closePanels();
+    document.body.classList.add("sandbox-map-editing");
     state.overlayOpen = true;
     hud.editorPanel.classList.remove("hidden");
+    $("editor-panel-kicker").textContent = "SANDBOX / EDYCJA NA ZYWO";
+    $("editor-panel-title").textContent = "Edytor mapy";
+    $("editor-panel-help").textContent = "Edytujesz aktualny swiat Sandboxa. Klikaj na mapie narzedziem; Q obraca obiekt pod mysza w lewo, E w prawo. Zamknij, aby od razu wrocic do gry na tej samej mapie.";
+    hud.editorName.value = state.map.name || "Mapa Sandbox";
+    hud.editorName.closest("label").firstChild.textContent = "Nazwa mapy\n          ";
+    hud.editorTool.value = "move";
     for (const control of [hud.editorNew, hud.editorRandom, hud.editorLoad]) {
       control.disabled = true;
       control.title = "W Sandbox edytujesz aktualny swiat; ta opcja nie tworzy ani nie podmienia mapy";
@@ -3630,6 +3637,11 @@ function switchHybridView(target = editor.hybridView === "editor" ? "sandbox" : 
     editor.hybridView = "sandbox";
     editor.active = false;
     closePanels();
+    document.body.classList.remove("sandbox-map-editing");
+    $("editor-panel-kicker").textContent = "story editor";
+    $("editor-panel-title").textContent = "Edytor misji i map";
+    $("editor-panel-help").textContent = "Gdy panel jest otwarty, klikaj na plansze: edytor doda/usunie/przesunie obiekty na mapie. Misje zapisuja sie lokalnie w przegladarce i dzialaja tez w buildzie offline.";
+    hud.editorName.closest("label").firstChild.textContent = "Nazwa misji\n          ";
     for (const control of [hud.editorNew, hud.editorRandom, hud.editorLoad]) {
       control.disabled = false;
       control.title = "";
@@ -7231,7 +7243,10 @@ window.addEventListener("mouseup", (event) => {
   if (event.button === 0) releaseGrenadeAim();
 });
 
-document.querySelectorAll(".close-panel").forEach((button) => button.addEventListener("click", closePanels));
+document.querySelectorAll(".close-panel").forEach((button) => button.addEventListener("click", () => {
+  if (button.dataset.panel === "editor-panel" && editor.active && isHybridMode()) switchHybridView("sandbox");
+  else closePanels();
+}));
 hud.openSettings.addEventListener("click", () => togglePanel(hud.settingsPanel));
 hud.openBinds.addEventListener("click", () => togglePanel(hud.bindsPanel));
 hud.openTeams.addEventListener("click", () => togglePanel(hud.teamsPanel));
@@ -7244,7 +7259,7 @@ async function openStandaloneEditor() {
   window.location.href = window.location.pathname.toLowerCase().endsWith("potatostrike.html") ? "game/editor.html" : "editor.html";
 }
 
-hud.quickEditor.addEventListener("click", () => togglePanel(hud.editorPanel));
+hud.quickEditor.addEventListener("click", openStandaloneEditor);
 hud.openEditor.addEventListener("click", openStandaloneEditor);
 hud.openConsole.addEventListener("click", openOwnerConsole);
 hud.openNetwork.addEventListener("click", () => {
