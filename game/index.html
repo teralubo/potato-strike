@@ -458,6 +458,9 @@
         <button id="editor-new">Nowa mapa</button>
         <button id="editor-random">Losowa misja/mapa</button>
         <button id="editor-save-map">Zapisz sama mape</button>
+        <button id="editor-export-map" class="secondary">Eksportuj mape</button>
+        <button id="editor-import-map" class="secondary">Importuj mape</button>
+        <input id="editor-map-file" class="hidden" type="file" accept="application/json,.potato-map.json">
         <button id="editor-save">Zapisz misje</button>
         <button id="editor-load">Zaladuj zaznaczona</button>
         <button id="editor-export">Pobierz misje</button>
@@ -723,10 +726,14 @@
       </div>
       <div id="sandbox-world-summary" class="lobby-summary"></div>
       <div class="menu-actions left">
+        <button id="sandbox-world-switch" class="hidden">PRZELACZ: EDYTOR</button>
         <button id="sandbox-world-export">Eksportuj swiat</button>
         <button id="sandbox-world-import" class="secondary">Importuj swiat</button>
+        <button id="hybrid-map-export" class="secondary hidden">Eksportuj mape</button>
+        <button id="hybrid-map-import" class="secondary hidden">Importuj mape</button>
         <button id="sandbox-world-clear" class="secondary">Wyczysc utworzone elementy</button>
         <input id="sandbox-world-file" class="hidden" type="file" accept="application/json,.potato-sandbox.json">
+        <input id="hybrid-map-file" class="hidden" type="file" accept="application/json,.potato-map.json">
       </div>
       <p class="panel-note" id="sandbox-world-help">Eksport zapisuje rozmiar, sciany, obiekty, NPC i bronie z aktualnego swiata.</p>
     </div>
@@ -777,6 +784,7 @@
               <option value="offline">BOTY offline</option>
               <option value="story">Tryb fabularny</option>
               <option value="sandbox">Sandbox</option>
+              <option value="editor-sandbox">Edytor + Sandbox</option>
               <option value="lan">LAN</option>
               <option value="online">Online HTML</option>
             </select>
@@ -903,7 +911,7 @@
           <button id="open-teams" class="secondary">Druzyny</button>
         </div>
       </div>
-      <div id="release-version" aria-label="Wersja gry">V1.3-FINAL PATCH: 1.4</div>
+      <div id="release-version" aria-label="Wersja gry">V1.4 FINAL PATCH-1.1</div>
     </div>
   </div>
   <script src="game.js"></script>

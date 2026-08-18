@@ -1,6 +1,6 @@
 {
   "name": "potato-strike",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "private": true,
   "description": "Lightweight CS-like Potato Strike prototype.",
   "license": "GPL-3.0-only",

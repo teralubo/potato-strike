@@ -1,0 +1,100 @@
+POTATO STRIKE - DOKUMENTACJA DEWELOPERSKA
+V1.4 FINAL PATCH-1.1
+========================================
+
+1. ARCHITEKTURA
+---------------
+Runtime gry znajduje sie w game/index.html, game/styles.css i game/game.js.
+Pelny edytor Studio znajduje sie w game/editor.html, game/editor.css i
+game/editor.js. Skrypt scripts/build-single-html.js laczy runtime w samodzielny
+plik PotatoStrike.html. Aplikacja Electron korzysta z main.js i preload.js.
+
+2. TRYBY EDYCJI
+---------------
+Edytor i Sandbox pozostaja niezaleznymi trybami. Edytor Studio oferuje widok
+2D oraz 3D, obiekty, grupy, triggery, waypointy, polaczenia synchronizacji,
+markery, warstwy, transformacje move/rotate/scale, undo/redo i explorer.
+
+Tryb "Edytor + Sandbox" ma wartosc menu `editor-sandbox`. Funkcja
+isSandboxMode() zapewnia mu mechanike Sandboxa. Funkcja isHybridMode()
+odroznia go od zwyklego Sandboxa. Oba widoki pracuja na tym samym state.map.
+
+3. PRZELACZANIE W TRYBIE EDYTOR + SANDBOX
+------------------------------------------
+Klawisz P otwiera sandbox-world-panel. Przycisk sandbox-world-switch wywoluje
+switchHybridView(). Widok editor:
+- zapamietuje ustawienie grafiki,
+- ustawia render 2D i kamere nad aktualna pozycja gracza,
+- aktywuje narzedzia edytora oraz panel wlasciwosci.
+
+Widok sandbox:
+- zamyka panel edytora,
+- przywraca poprzedni renderer 2D/3D,
+- zachowuje mape i pozycje gracza,
+- przywraca pointer lock w perspektywie 3D.
+
+4. FORMAT MAPY I IMPORT/EKSPORT
+-------------------------------
+Plik mapy ma rozszerzenie .potato-map.json i strukture:
+{
+  "format": "potato-strike-map",
+  "version": 1,
+  "savedAt": "ISO-8601",
+  "map": { "name": "...", "w": 2200, "h": 1400, "obstacles": [] }
+}
+
+mapSnapshot() normalizuje i kopiuje state.map. exportCurrentMap() pobiera plik.
+importCurrentMapFile(input) akceptuje powyzszy format, obiekt z polem map oraz
+starszy surowy obiekt mapy. Import wymaga tablicy obstacles, normalizuje dane,
+ogranicza pozycje gracza do nowych granic i odswieza widoki.
+
+Pelny eksport swiata Sandbox (.potato-sandbox.json) pozostaje osobnym formatem;
+zawiera dodatkowo NPC, bronie, konfiguracje swiata i pozycje gracza.
+
+5. NARZEDZIA W EDYTORZE GRY
+----------------------------
+Klikniecie na canvas wywoluje editMapAt(). Narzedzia obejmuja sciane, skrzynie,
+oslone, rampe, swiatlo, bombsite A/B, spawn T/CT, usuwanie i przesuwanie.
+Wlasciwosci zaznaczonego obiektu pozwalaja zmieniac typ, X, Y, W, H, Z,
+rotacje i kolor. Zapis lokalny korzysta z saveCurrentMapOnly().
+
+Zaawansowane funkcje w stylu Arma sa w Studio:
+- F1 obiekty, F2 grupy, F3 triggery, F4 waypointy,
+- F5 synchronizacja, F6 markery,
+- 1 select, 2 move, 3 rotate, 4 scale,
+- warstwy, focus selection, kamera 2D/3D, import/export map.
+
+6. DODAWANIE NOWEJ ENCJI
+-------------------------
+Dodaj przycisk/narzedzie w odpowiednim HTML, obsluge typu w editMapAt() dla
+edytora gry albo w game/editor.js dla Studio, a nastepnie rendering i
+normalizacje danych. Nowe pola musza miec bezpieczne wartosci domyslne, aby
+stare mapy nadal dzialaly.
+
+7. TESTY I BUDOWANIE
+--------------------
+npm run verify          pelna walidacja repozytorium
+node --check game/game.js  kontrola skladni runtime
+npm run build:single    aktualizacja PotatoStrike.html
+npm run phone:sync      synchronizacja buildu Android
+npm run start           uruchomienie Electron
+npm run start:editor    uruchomienie Studio w Electron
+
+Przed wydaniem uruchom build:single, phone:sync i verify. Nie edytuj recznie
+wygenerowanego PotatoStrike.html; zrodlem sa pliki w katalogu game.
+
+8. ZGODNOSC I BEZPIECZENSTWO
+-----------------------------
+Import JSON nie wykonuje kodu. normalizeMap() zachowuje zgodnosc starszych
+map. Tryb hybrydowy uzywa isSandboxMode(), dlatego zmiany mechaniki Sandboxa
+powinny korzystac z tego helpera zamiast porownania gameMode === "sandbox".
+Limity liczby NPC, broni i wymiary swiata sa zachowane podczas importu swiata.
+
+9. CHECKLISTA PATCHA
+--------------------
+- zaktualizuj package.json i package-lock.json,
+- zaktualizuj release-version, README i CHANGELOG,
+- dodaj wymagane snippety do scripts/verify.js,
+- przebuduj single HTML i asset Android,
+- uruchom npm run verify,
+- sprawdz git diff oraz git status przed commitem.

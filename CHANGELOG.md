@@ -1,5 +1,13 @@
 # Changelog
 
+## V1.4 FINAL PATCH-1.1
+
+- Added `Editor + Sandbox`, a shared-world mode connecting the aerial map editor with the direct player camera.
+- Added the `P` switch menu; `PRZELACZ` moves between editor and sandbox views without rebuilding the world.
+- Added dedicated `potato-strike-map` JSON export/import in both the in-game editor and the hybrid menu.
+- Preserved separate Editor and Sandbox modes and the existing Arma-inspired 2D/3D Studio workflow.
+- Added complete developer documentation in `DEV-tools/docs.txt`.
+
 ## V1.4 FINAL PATCH-1.0
 
 - Added LAN team bot filling with a host-controlled on/off switch and per-team target size.

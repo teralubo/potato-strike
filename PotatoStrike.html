@@ -1354,6 +1354,9 @@ button:disabled {
         <button id="editor-new">Nowa mapa</button>
         <button id="editor-random">Losowa misja/mapa</button>
         <button id="editor-save-map">Zapisz sama mape</button>
+        <button id="editor-export-map" class="secondary">Eksportuj mape</button>
+        <button id="editor-import-map" class="secondary">Importuj mape</button>
+        <input id="editor-map-file" class="hidden" type="file" accept="application/json,.potato-map.json">
         <button id="editor-save">Zapisz misje</button>
         <button id="editor-load">Zaladuj zaznaczona</button>
         <button id="editor-export">Pobierz misje</button>
@@ -1619,10 +1622,14 @@ button:disabled {
       </div>
       <div id="sandbox-world-summary" class="lobby-summary"></div>
       <div class="menu-actions left">
+        <button id="sandbox-world-switch" class="hidden">PRZELACZ: EDYTOR</button>
         <button id="sandbox-world-export">Eksportuj swiat</button>
         <button id="sandbox-world-import" class="secondary">Importuj swiat</button>
+        <button id="hybrid-map-export" class="secondary hidden">Eksportuj mape</button>
+        <button id="hybrid-map-import" class="secondary hidden">Importuj mape</button>
         <button id="sandbox-world-clear" class="secondary">Wyczysc utworzone elementy</button>
         <input id="sandbox-world-file" class="hidden" type="file" accept="application/json,.potato-sandbox.json">
+        <input id="hybrid-map-file" class="hidden" type="file" accept="application/json,.potato-map.json">
       </div>
       <p class="panel-note" id="sandbox-world-help">Eksport zapisuje rozmiar, sciany, obiekty, NPC i bronie z aktualnego swiata.</p>
     </div>
@@ -1673,6 +1680,7 @@ button:disabled {
               <option value="offline">BOTY offline</option>
               <option value="story">Tryb fabularny</option>
               <option value="sandbox">Sandbox</option>
+              <option value="editor-sandbox">Edytor + Sandbox</option>
               <option value="lan">LAN</option>
               <option value="online">Online HTML</option>
             </select>
@@ -1799,7 +1807,7 @@ button:disabled {
           <button id="open-teams" class="secondary">Druzyny</button>
         </div>
       </div>
-      <div id="release-version" aria-label="Wersja gry">V1.3-FINAL PATCH: 1.4</div>
+      <div id="release-version" aria-label="Wersja gry">V1.4 FINAL PATCH-1.1</div>
     </div>
   </div>
   <script>
@@ -1958,8 +1966,15 @@ const hud = {
   sandboxWorldSummary: $("sandbox-world-summary"),
   sandboxWorldExport: $("sandbox-world-export"),
   sandboxWorldImport: $("sandbox-world-import"),
+  sandboxWorldSwitch: $("sandbox-world-switch"),
+  hybridMapExport: $("hybrid-map-export"),
+  hybridMapImport: $("hybrid-map-import"),
+  hybridMapFile: $("hybrid-map-file"),
   sandboxWorldClear: $("sandbox-world-clear"),
   sandboxWorldFile: $("sandbox-world-file"),
+  editorExportMap: $("editor-export-map"),
+  editorImportMap: $("editor-import-map"),
+  editorMapFile: $("editor-map-file"),
   sandboxWorldConfig: $("sandbox-world-config"),
   sandboxWidth: $("sandbox-width"),
   sandboxHeight: $("sandbox-height"),
@@ -2384,7 +2399,7 @@ function activeGameRules() {
 }
 
 function isRespawnMode() {
-  return state.gameMode === "sandbox" || Boolean(activeGameRules().respawn);
+  return isSandboxMode() || Boolean(activeGameRules().respawn);
 }
 
 function applyGameRulePreset(mode, updateMenu = true) {
@@ -2901,7 +2916,15 @@ let last = performance.now();
 let waitingForBind = "";
 let waitingForFastBind = false;
 let pendingFastBindKey = "";
-const editor = { active: false, selectedMission: "", selectedObject: null };
+const editor = { active: false, selectedMission: "", selectedObject: null, hybridView: "sandbox", previousGraphicsMode: "2d" };
+
+function isSandboxMode(mode = state.gameMode) {
+  return mode === "sandbox" || mode === "editor-sandbox";
+}
+
+function isHybridMode() {
+  return state.gameMode === "editor-sandbox";
+}
 
 function makeWeapons() {
   weapons = weaponCatalog.map((weapon, id) => ({
@@ -3645,7 +3668,7 @@ function syncMenuAimMode() {
   if (!hud.menuAimMode) return;
   const mode = hud.menuMode.value;
   const story = mode === "story";
-  const sandboxMode = mode === "sandbox";
+  const sandboxMode = isSandboxMode(mode);
   hud.sandboxWorldConfig?.classList.toggle("hidden", !sandboxMode);
   for (const control of [hud.gameRules, hud.matchSize, hud.fillMode, hud.menuTeam, hud.menuMap, hud.menuAimMode]) {
     control?.closest("label")?.classList.toggle("hidden", sandboxMode);
@@ -5151,7 +5174,7 @@ function physicsGunId() {
 }
 
 function isPhysicsGunActive() {
-  return state.gameMode === "sandbox" && activeWeapon()?.sandboxOnly;
+  return isSandboxMode() && activeWeapon()?.sandboxOnly;
 }
 
 function sandboxSpawnPoint(distance = 150) {
@@ -5221,7 +5244,7 @@ function resetSandboxLoadout() {
 }
 
 function clearSandboxSpawned() {
-  if (state.gameMode !== "sandbox") return;
+  if (!isSandboxMode()) return;
   state.map.obstacles = state.map.obstacles.filter((object) => object.sandboxBoundary);
   bots.length = 0;
   allies.length = 0;
@@ -5232,7 +5255,7 @@ function clearSandboxSpawned() {
 }
 
 function spawnSandboxObject(template) {
-  if (state.gameMode !== "sandbox" || !template) return;
+  if (!isSandboxMode() || !template) return;
   const point = sandboxSpawnPoint(150);
   const object = {
     ...template,
@@ -5248,7 +5271,7 @@ function spawnSandboxObject(template) {
 }
 
 function spawnSandboxNpc(template) {
-  if (state.gameMode !== "sandbox" || !template) return;
+  if (!isSandboxMode() || !template) return;
   const point = sandboxSpawnPoint(190);
   const team = template.hostile ? state.enemyTeam : state.team;
   const npc = makeTeamBot(team, (template.hostile ? bots.length : allies.length) + 1, "SANDBOX");
@@ -5266,7 +5289,7 @@ function spawnSandboxNpc(template) {
 }
 
 function spawnSandboxWeapon(weapon) {
-  if (state.gameMode !== "sandbox" || !weapon || weapon.sandboxOnly || weapon.melee) return;
+  if (!isSandboxMode() || !weapon || weapon.sandboxOnly || weapon.melee) return;
   const point = sandboxSpawnPoint(130);
   const item = weaponDropData(weapon, point.x, point.y);
   item.sandboxSpawned = true;
@@ -5306,6 +5329,11 @@ function renderSandboxSpawnMenu() {
 
 function renderSandboxWorldSummary() {
   if (!hud.sandboxWorldSummary) return;
+  const hybrid = isHybridMode();
+  hud.sandboxWorldSwitch?.classList.toggle("hidden", !hybrid);
+  hud.hybridMapExport?.classList.toggle("hidden", !hybrid);
+  hud.hybridMapImport?.classList.toggle("hidden", !hybrid);
+  if (hud.sandboxWorldSwitch) hud.sandboxWorldSwitch.textContent = `PRZELACZ: ${editor.hybridView === "editor" ? "SANDBOX" : "EDYTOR"}`;
   const spawned = state.map?.obstacles?.filter((object) => !object.sandboxBoundary).length || 0;
   const rows = [
     [settings.language === "en" ? "World" : "Swiat", `${sandbox.widthMeters} x ${sandbox.heightMeters} m`],
@@ -5339,9 +5367,75 @@ function sandboxSnapshot() {
 }
 
 function exportSandboxWorld() {
-  if (state.gameMode !== "sandbox") return;
+  if (!isSandboxMode()) return;
   downloadJson(`potato-sandbox-${sandbox.widthMeters}x${sandbox.heightMeters}.json`, sandboxSnapshot());
   showMessage(settings.language === "en" ? "Sandbox world exported" : "Wyeksportowano swiat sandbox");
+}
+
+function mapSnapshot() {
+  return {
+    format: "potato-strike-map",
+    version: 1,
+    savedAt: new Date().toISOString(),
+    map: normalizeMap(JSON.parse(JSON.stringify(state.map)), maps.custom),
+  };
+}
+
+function exportCurrentMap() {
+  if (!state.map) return;
+  const safeName = String(state.map.name || "mapa").replace(/[^a-z0-9_-]+/gi, "-").toLowerCase();
+  downloadJson(`${safeName || "mapa"}.potato-map.json`, mapSnapshot());
+  showMessage("Wyeksportowano mape");
+}
+
+async function importCurrentMapFile(input) {
+  const file = input?.files?.[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const rawMap = data?.format === "potato-strike-map" ? data.map : data?.map || data;
+    if (!rawMap || !Array.isArray(rawMap.obstacles)) throw new Error("nieprawidlowy plik mapy");
+    state.map = normalizeMap(rawMap, maps.custom);
+    state.mapKey = "editor";
+    maps.editor = JSON.parse(JSON.stringify(state.map));
+    hud.editorName.value = state.map.name || "Importowana mapa";
+    player.x = clamp(player.x, 32, state.map.w - 32);
+    player.y = clamp(player.y, 32, state.map.h - 32);
+    renderEditorProperties();
+    renderSandboxWorldSummary();
+    render2d();
+    showMessage("Zaimportowano mape do edytora");
+  } catch (error) {
+    showMessage(`Blad importu mapy: ${error.message}`);
+  } finally {
+    input.value = "";
+  }
+}
+
+function switchHybridView(target = editor.hybridView === "editor" ? "sandbox" : "editor") {
+  if (!isHybridMode()) return;
+  if (target === "editor") {
+    editor.hybridView = "editor";
+    editor.active = true;
+    editor.previousGraphicsMode = settings.graphicsMode;
+    camera.x = clamp(player.x - innerWidth / 2, 0, Math.max(0, state.map.w - innerWidth));
+    camera.y = clamp(player.y - innerHeight / 2, 0, Math.max(0, state.map.h - innerHeight));
+    setGraphicsMode("2d");
+    closePanels();
+    state.overlayOpen = true;
+    hud.editorPanel.classList.remove("hidden");
+    renderSavedMissions();
+    renderEditorProperties();
+    document.exitPointerLock?.();
+    showMessage("EDYTOR: widok z powietrza / P: menu przelaczania");
+  } else {
+    editor.hybridView = "sandbox";
+    editor.active = false;
+    closePanels();
+    setGraphicsMode(editor.previousGraphicsMode || "2d");
+    showMessage("SANDBOX: kamera gracza / P: menu przelaczania");
+    if (isPerspectiveMode()) requestGamePointerLock();
+  }
 }
 
 async function importSandboxWorldFile() {
@@ -5859,7 +5953,7 @@ function equipRuleWeapon(name) {
 }
 
 function applyRuleRoundLoadout() {
-  if (state.gameMode === "sandbox") return;
+  if (isSandboxMode()) return;
   if (state.ruleMode === "retake") {
     resetLoadout();
     player.armor = 100;
@@ -5942,7 +6036,7 @@ function resetRoundPositions() {
 function spawnBots() {
   bots.length = 0;
   allies.length = 0;
-  if (state.gameMode === "sandbox") {
+  if (isSandboxMode()) {
     renderTeams();
     return;
   }
@@ -6101,7 +6195,7 @@ function newMatch({ preserveLobbyOwner = false } = {}) {
       state.mapKey = "custom";
     }
   }
-  if (state.gameMode === "sandbox") {
+  if (isSandboxMode()) {
     settings.sandboxWidth = clamp(Number(hud.sandboxWidth.value) || 40, 30, 150);
     settings.sandboxHeight = clamp(Number(hud.sandboxHeight.value) || 30, 24, 120);
     settings.sandboxWallTexture = simple3dTextures[hud.sandboxWallTexture.value] ? hud.sandboxWallTexture.value : "white";
@@ -6131,11 +6225,11 @@ function newMatch({ preserveLobbyOwner = false } = {}) {
   player.plants = 0;
   player.defuses = 0;
   makeWeapons();
-  if (state.gameMode === "sandbox") resetSandboxLoadout();
+  if (isSandboxMode()) resetSandboxLoadout();
   else resetLoadout();
   resetRoundPositions();
   spawnBots();
-  if (state.gameMode === "sandbox") {
+  if (isSandboxMode()) {
     state.phase = "live";
     state.roundTime = 0;
     state.buyTime = 0;
@@ -6146,8 +6240,10 @@ function newMatch({ preserveLobbyOwner = false } = {}) {
   renderShop();
   renderMissions();
   renderStoryObjective();
-  showMessage(state.gameMode === "sandbox"
-    ? `${state.map.name} / Q: spawn / P: import-export / Physics Gun: LPM`
+  editor.hybridView = "sandbox";
+  editor.active = false;
+  showMessage(isSandboxMode()
+    ? `${state.map.name} / Q: spawn / P: ${isHybridMode() ? "PRZELACZ" : "import-export"} / Physics Gun: LPM`
     : `${state.gameMode.toUpperCase()} / ${rules.label} / ${teamName(state.team)} / ${state.map.name} / dowodca ${settings.nick}`);
 }
 
@@ -6250,7 +6346,7 @@ function useKey(dt) {
 }
 
 function updateRoundRules(dt) {
-  if (state.gameMode === "sandbox") return;
+  if (isSandboxMode()) return;
   if (state.phase === "freeze") {
     state.buyTime = Math.max(0, state.buyTime - dt);
     state.freezeTime -= dt;
@@ -6347,7 +6443,7 @@ function buyItem(type, id) {
 }
 
 function canBuyNow() {
-  if (state.gameMode === "sandbox") return false;
+  if (isSandboxMode()) return false;
   return (state.phase === "freeze" || state.phase === "live") && state.buyTime > 0 && inBuyZone();
 }
 
@@ -6650,7 +6746,7 @@ function shoot(owner, angle, weapon, hostile = false) {
     }
     burstShots = weapon.burstCapable && weapon.fireMode === "burst" ? Math.min(weapon.burstCount || 3, weapon.ammo) : 1;
     weapon.ammo -= burstShots;
-    if (state.gameMode === "sandbox" && settings.sandboxUnlimitedAmmo) weapon.ammo = weapon.magSize;
+    if (isSandboxMode() && settings.sandboxUnlimitedAmmo) weapon.ammo = weapon.magSize;
     weapon.cooldown = weapon.burstCapable && weapon.fireMode === "burst" ? (weapon.burstDelay || weapon.fireDelay) / 1000 : weapon.fireDelay / 1000;
     camera.shake = Math.min(10, camera.shake + weapon.recoil * 90 * settings.screenShake * burstShots);
   }
@@ -6691,7 +6787,7 @@ function reload() {
 }
 
 function sandboxAimObject() {
-  if (state.gameMode !== "sandbox") return null;
+  if (!isSandboxMode()) return null;
   if (isPerspectiveMode()) {
     const hit = castRayHit(player.angle);
     return hit.d <= 520 && hit.hit && !hit.hit.sandboxBoundary && !hit.hit.locked ? hit.hit : null;
@@ -6728,7 +6824,7 @@ function releasePhysicsGrab() {
 }
 
 function updatePhysicsGun() {
-  if (!sandbox.heldObjectId || state.gameMode !== "sandbox") return;
+  if (!sandbox.heldObjectId || !isSandboxMode()) return;
   const object = state.map.obstacles.find((item) => item.id === sandbox.heldObjectId);
   if (!object || object.locked || object.sandboxBoundary) {
     sandbox.heldObjectId = "";
@@ -6752,7 +6848,7 @@ function updatePlayer(dt) {
   if (isAwpScoped() || isIronSights()) speed *= 0.72;
   if (isPerspectiveMode()) {
     const wantsJump = actionDown("dash");
-    const sandboxFlight = state.gameMode === "sandbox" && player.noclipMode;
+    const sandboxFlight = isSandboxMode() && player.noclipMode;
     if (sandboxFlight) {
       player.verticalVelocity = 0;
       player.jumpHeight = clamp(player.jumpHeight + ((wantsJump ? 1 : 0) - (actionDown("crouch") ? 1 : 0)) * speed * dt, 0, 320);
@@ -6792,7 +6888,7 @@ function updatePlayer(dt) {
   if (isPerspectiveMode()) {
     const vx = Math.cos(player.angle) * forward * speed + Math.cos(player.angle + Math.PI / 2) * strafe * speed;
     const vy = Math.sin(player.angle) * forward * speed + Math.sin(player.angle + Math.PI / 2) * strafe * speed;
-    if (player.noclipMode && state.gameMode === "sandbox") {
+    if (player.noclipMode && isSandboxMode()) {
       player.x = clamp(player.x + (vx / len) * dt, player.r, state.map.w - player.r);
       player.y = clamp(player.y + (vy / len) * dt, player.r, state.map.h - player.r);
     } else moveEntity(player, vx / len, vy / len, dt);
@@ -7335,7 +7431,7 @@ function renderShop() {
 function drawMap2d() {
   ctx.fillStyle = "#293629";
   ctx.fillRect(-camera.x, -camera.y, state.map.w, state.map.h);
-  if (state.gameMode !== "sandbox") drawBuyZones2d();
+  if (!isSandboxMode()) drawBuyZones2d();
   if (settings.quality !== "low") {
     ctx.strokeStyle = "#2e3a2d";
     for (let x = 0; x < state.map.w; x += 80) {
@@ -7345,7 +7441,7 @@ function drawMap2d() {
       ctx.beginPath(); ctx.moveTo(-camera.x, y - camera.y); ctx.lineTo(state.map.w - camera.x, y - camera.y); ctx.stroke();
     }
   }
-  for (const [key, site] of state.gameMode === "sandbox" ? [] : Object.entries(state.map.sites)) {
+  for (const [key, site] of isSandboxMode() ? [] : Object.entries(state.map.sites)) {
     ctx.fillStyle = key === "A" ? "rgba(215,189,98,0.18)" : "rgba(119,181,111,0.18)";
     ctx.beginPath(); ctx.arc(site.x - camera.x, site.y - camera.y, site.r, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#f2f0df"; ctx.font = "22px Arial"; ctx.textAlign = "center"; ctx.fillText(key, site.x - camera.x, site.y - camera.y + 8);
@@ -7850,7 +7946,7 @@ function render3d() {
     draw3dCharacter(sx, actorY, size, s.color, s.bot.hostile);
   }
   draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon);
-  if (state.gameMode !== "sandbox") {
+  if (!isSandboxMode()) {
     draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
     draw3dBuyZoneMarker(w, h, fov, depth, colW, horizon);
   }
@@ -8509,7 +8605,7 @@ function draw3dWeapon(w, h) {
 function updateHud() {
   const weapon = activeWeapon();
   const grenade = selectedGrenade();
-  if (state.gameMode === "sandbox") {
+  if (isSandboxMode()) {
     const objectCount = state.map.obstacles.filter((object) => !object.sandboxBoundary).length;
     hud.mode.textContent = `SANDBOX / ${settings.graphicsMode.toUpperCase()}`;
     hud.team.textContent = "Q SPAWN / P WORLD";
@@ -8766,7 +8862,7 @@ window.addEventListener("keydown", (event) => {
   }
   if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.crouch, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev, "KeyQ", "Tab"].includes(event.code)) event.preventDefault();
   keys.add(event.code);
-  if (!typing && state.running && state.gameMode === "sandbox" && event.code === "KeyQ") {
+  if (!typing && state.running && isSandboxMode() && event.code === "KeyQ") {
     if (hud.sandboxSpawnPanel.classList.contains("hidden")) {
       closePanels();
       state.overlayOpen = true;
@@ -8779,12 +8875,12 @@ window.addEventListener("keydown", (event) => {
   if (event.code === bindings.dash && isPerspectiveMode() && state.grenadePrime) state.grenadePrime.jumpThrowQueued = true;
   if (event.code === "Escape") closePanels();
   if (event.code === "Tab" && showStoryObjective()) return;
-  if (event.code === "KeyP" && state.running && state.gameMode === "sandbox") {
+  if (!typing && event.code === "KeyP" && state.running && isSandboxMode()) {
     renderSandboxWorldSummary();
     togglePanel(hud.sandboxWorldPanel);
     return;
   }
-  if (!typing && event.code === "KeyV" && state.running && state.gameMode === "sandbox") {
+  if (!typing && event.code === "KeyV" && state.running && isSandboxMode()) {
     player.noclipMode = !player.noclipMode;
     showMessage(`Sandbox noclip: ${player.noclipMode ? "ON" : "OFF"} / granice mapy aktywne`);
     return;
@@ -8798,7 +8894,7 @@ window.addEventListener("keydown", (event) => {
   if (event.code === bindings.network) togglePanel(hud.networkPanel);
   if (event.code === bindings.console) openOwnerConsole();
   if (event.code === bindings.pause) {
-    if (state.gameMode !== "sandbox") setPaused(!state.paused);
+    if (!isSandboxMode()) setPaused(!state.paused);
     return;
   }
   if (state.overlayOpen) return;
@@ -8814,7 +8910,7 @@ window.addEventListener("keydown", (event) => {
 });
 window.addEventListener("keyup", (event) => {
   keys.delete(event.code);
-  if (event.code === "KeyQ" && state.gameMode === "sandbox" && !hud.sandboxSpawnPanel.classList.contains("hidden")) {
+  if (event.code === "KeyQ" && isSandboxMode() && !hud.sandboxSpawnPanel.classList.contains("hidden")) {
     closePanels();
     if (state.running && isPerspectiveMode()) requestGamePointerLock();
   }
@@ -9016,6 +9112,9 @@ hud.editorRandom.addEventListener("click", () => {
 });
 hud.editorSave.addEventListener("click", saveEditorMission);
 hud.editorSaveMap.addEventListener("click", saveCurrentMapOnly);
+hud.editorExportMap.addEventListener("click", exportCurrentMap);
+hud.editorImportMap.addEventListener("click", () => hud.editorMapFile.click());
+hud.editorMapFile.addEventListener("change", () => importCurrentMapFile(hud.editorMapFile));
 hud.editorLoad.addEventListener("click", () => loadEditorMission());
 hud.editorExport.addEventListener("click", () => {
   const mission = savedStoryMissions().find((item) => item.id === editor.selectedMission);
@@ -9090,6 +9189,10 @@ document.querySelectorAll("[data-sandbox-category]").forEach((button) => button.
 hud.sandboxWorldExport.addEventListener("click", exportSandboxWorld);
 hud.sandboxWorldImport.addEventListener("click", () => hud.sandboxWorldFile.click());
 hud.sandboxWorldFile.addEventListener("change", importSandboxWorldFile);
+hud.sandboxWorldSwitch.addEventListener("click", () => switchHybridView());
+hud.hybridMapExport.addEventListener("click", exportCurrentMap);
+hud.hybridMapImport.addEventListener("click", () => hud.hybridMapFile.click());
+hud.hybridMapFile.addEventListener("change", () => importCurrentMapFile(hud.hybridMapFile));
 hud.sandboxWorldClear.addEventListener("click", clearSandboxSpawned);
 hud.menuAimMode.addEventListener("change", () => {
   settings.botAimMode = hud.menuAimMode.value;

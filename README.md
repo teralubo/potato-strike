@@ -13,6 +13,13 @@ Workflow repo:
 - `beta` - zmiany gotowe do szerszych testow.
 - `main` - wydania zaakceptowane do publikacji.
 
+## V1.4 FINAL PATCH-1.1
+
+- Nowy tryb `Edytor + Sandbox` laczy widok mapy z powietrza z kamera gracza w jednym, wspoldzielonym swiecie.
+- `P` otwiera menu trybu, a `PRZELACZ` zmienia widok bez kasowania obiektow i pozycji gracza.
+- Edytor map obsluguje teraz osobny eksport/import plikow `*.potato-map.json`.
+- Studio nadal dziala osobno i zachowuje narzedzia 2D/3D inspirowane edytorami Arma: encje, grupy, triggery, waypointy, synchronizacje, markery, warstwy i transformacje.
+
 ## 1.3 FINAL - Patch 1.4
 
 - Nowy tryb `Sandbox` tworzy pusty swiat 2D/3D o rozmiarze podanym w metrach i z wybranym materialem scian.

@@ -48,7 +48,7 @@ const defaultConfig = JSON.parse(fs.readFileSync("configs/default-config.json", 
 const gameIdCount = verifyDomIds(gameJs, gameHtml, "Game");
 const editorIdCount = verifyDomIds(editorJs, editorHtml, "Studio");
 
-if (packageJson.version !== "1.4.1") fail(`Unexpected package version: ${packageJson.version}`);
+if (packageJson.version !== "1.4.2") fail(`Unexpected package version: ${packageJson.version}`);
 if (packageLock.version !== packageJson.version || packageLock.packages?.[""]?.version !== packageJson.version) {
   fail("package-lock.json version does not match package.json");
 }
@@ -198,7 +198,8 @@ requireSnippets(gameJs, [
   "drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming)", "if (!isAimActive()) drawCrosshair();", "customEnabled: settings.crosshairCustomEnabled",
   "buyZoneForTeam", "inBuyZone", "drawBuyZones2d", "draw3dBuyZoneMarker", "zoomSensitivity", "rawMouseInput", "fieldOfView",
   "drawWeaponSilhouette2d", "normalizeBotDifficulty", "teamDamageScale", "mp_friendlyfire_damage_reduction", 'b.weaponName === "AWP"',
-  "createSandboxMap", "renderSandboxSpawnMenu", "beginPhysicsGrab", "updatePhysicsGun", "sandboxSnapshot", "importSandboxWorldFile", 'state.gameMode === "sandbox"',
+  "createSandboxMap", "renderSandboxSpawnMenu", "beginPhysicsGrab", "updatePhysicsGun", "sandboxSnapshot", "importSandboxWorldFile",
+  "isSandboxMode", "isHybridMode", "switchHybridView", "mapSnapshot", "exportCurrentMap", "importCurrentMapFile",
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
@@ -208,8 +209,8 @@ requireSnippets(gameHtml, [
   'id="game-rules"', 'id="server-aim-mode"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
   'id="create-lan"', 'id="join-lan"', 'id="lan-browser-panel"', 'id="lan-browser-list"', 'id="lan-browser-refresh"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="lan-lobby-bans"', 'id="lan-lobby-add-player"', 'id="menu-aim-mode"',
   'id="server-bot-difficulty"', 'id="server-fill-bots"', 'id="server-bot-quota"', 'id="server-buytime"', 'id="server-team-damage"',
-  'value="sandbox"', 'id="sandbox-world-config"', 'id="sandbox-unlimited-ammo"', 'id="sandbox-spawn-panel"', 'id="sandbox-world-panel"', 'id="sandbox-world-file"', 'id="lan-restart-round"',
-  'id="release-version"', 'V1.3-FINAL PATCH: 1.4',
+  'value="sandbox"', 'value="editor-sandbox"', 'id="sandbox-world-config"', 'id="sandbox-unlimited-ammo"', 'id="sandbox-spawn-panel"', 'id="sandbox-world-panel"', 'id="sandbox-world-switch"', 'id="editor-export-map"', 'id="editor-import-map"', 'id="sandbox-world-file"', 'id="lan-restart-round"',
+  'id="release-version"', 'V1.4 FINAL PATCH-1.1',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
 
@@ -271,4 +272,6 @@ requireSnippets(betaPackageScript, ["PotatoStrike-V1.4-BETA-FINAL-PATCH-1.0", "P
 console.log(`Game DOM IDs OK: ${gameIdCount}`);
 console.log(`Studio DOM IDs OK: ${editorIdCount}`);
 console.log(`Studio 3D vendor OK: ${(vendorSize / 1024).toFixed(1)} KiB`);
-console.log("Potato Strike V1.4 FINAL PATCH-1.0 runtime, assets, release packages and workflows OK");
+if (!fs.existsSync("DEV-tools/docs.txt")) fail("Missing DEV-tools/docs.txt developer documentation");
+
+console.log("Potato Strike V1.4 FINAL PATCH-1.1 runtime, assets and workflows OK");
