@@ -198,6 +198,7 @@ requireSnippets(gameJs, [
   "drawFreedoomWeaponTexture(w, h, weapon, sway, recoilDrop, aiming)", "if (!isAimActive()) drawCrosshair();", "customEnabled: settings.crosshairCustomEnabled",
   "buyZoneForTeam", "inBuyZone", "drawBuyZones2d", "draw3dBuyZoneMarker", "zoomSensitivity", "rawMouseInput", "fieldOfView",
   "drawWeaponSilhouette2d", "normalizeBotDifficulty", "teamDamageScale", "mp_friendlyfire_damage_reduction", 'b.weaponName === "AWP"',
+  "createSandboxMap", "renderSandboxSpawnMenu", "beginPhysicsGrab", "updatePhysicsGun", "sandboxSnapshot", "importSandboxWorldFile", 'state.gameMode === "sandbox"',
 ], "game/runtime feature");
 
 requireSnippets(gameHtml, [
@@ -207,7 +208,8 @@ requireSnippets(gameHtml, [
   'id="game-rules"', 'id="server-aim-mode"', 'id="server-enemy-minimap"', 'id="server-config-file"', 'data-touch-action="aim"',
   'id="create-lan"', 'id="join-lan"', 'id="lan-browser-panel"', 'id="lan-browser-list"', 'id="lan-browser-refresh"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="lan-lobby-bans"', 'id="lan-lobby-add-player"', 'id="menu-aim-mode"',
   'id="server-bot-difficulty"', 'id="server-buytime"', 'id="server-team-damage"',
-  'id="release-version"', 'V1.3-FINAL PATCH: 1.3',
+  'value="sandbox"', 'id="sandbox-world-config"', 'id="sandbox-spawn-panel"', 'id="sandbox-world-panel"', 'id="sandbox-world-file"',
+  'id="release-version"', 'V1.3-FINAL PATCH: 1.4',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
 

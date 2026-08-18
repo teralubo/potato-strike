@@ -1,8 +1,17 @@
 # Potato Strike 1.3 FINAL
 
-Aktualny patch: `1.3`.
+Aktualny patch: `1.4`.
 
 Strona gry: [https://teralubo.itch.io/potato-strike](https://teralubo.itch.io/potato-strike)
+
+## Patch 1.4 - tryb Sandbox
+
+- Nowy tryb `Sandbox` dziala w 2D top-down i 3D FPS na jednym wspolnym swiecie.
+- Przed startem gracz wpisuje szerokosc i dlugosc w metrach oraz wybiera material scian granicznych.
+- Przytrzymanie `Q` otwiera katalog obiektow, NPC i broni tylko w trybie Sandbox.
+- Physics Gun chwyta i przesuwa utworzone obiekty LPM; w 3D scroll zmienia odleglosc trzymania.
+- `P` otwiera zarzadzanie swiatem z importem, eksportem i czyszczeniem utworzonych elementow.
+- Plik `.json` zachowuje swiat, obiekty, NPC, bronie, pozycje gracza oraz wybrana grafike.
 
 ## Patch 1.3 - LAN
 

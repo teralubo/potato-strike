@@ -13,7 +13,14 @@ Workflow repo:
 - `beta` - zmiany gotowe do szerszych testow.
 - `main` - wydania zaakceptowane do publikacji.
 
-## 1.3 FINAL - Patch 1.3
+## 1.3 FINAL - Patch 1.4
+
+- Nowy tryb `Sandbox` tworzy pusty swiat 2D/3D o rozmiarze podanym w metrach i z wybranym materialem scian.
+- Przytrzymaj `Q`, aby otworzyc katalog obiektow, NPC i broni. Menu nie jest dostepne w trybach meczowych.
+- Sandbox startuje z Physics Gun: przytrzymaj LPM, aby przenosic propy; w 3D scroll ustawia odleglosc trzymania.
+- `P` otwiera panel importu/eksportu calego swiata sandbox. Zapis obejmuje obiekty, NPC, pickupy broni, rozmiar oraz tryb grafiki.
+
+## Patch 1.3 - LAN
 
 - `Utworz serwer LAN` otwiera konfiguracje hosta i poczekalnie dowodcy.
 - `DOLACZ LAN` otwiera liste aktywnych serwerow z nazwa, liczba graczy i statusem; pokoj jest wybierany automatycznie po kliknieciu.
@@ -157,7 +164,7 @@ Configi startowe sa w folderze `configs/`, a export configu zawiera tez mapy i m
 - Profil zawiera tez `configId`, wygenerowane mapy, misje fabularne, tekstury i mody.
 - W wersji Electron profil zapisuje sie w `configs/players/<playerId>/` jako folder danych gracza: `profile.json`, `maps.json`, `missions.json`, `assets.json`.
 - W ustawieniach mozna pobrac albo wgrac profil JSON.
-- Pauza jest domyslnie pod `P`, a komendy lobby pod klawiszem konsoli.
+- Pauza jest domyslnie pod `P`; w trybie Sandbox ten klawisz otwiera import/eksport swiata. Komendy lobby sa pod klawiszem konsoli.
 
 ## Edytor i mody
 

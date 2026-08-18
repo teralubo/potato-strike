@@ -212,6 +212,26 @@ body {
   font-weight: 700;
 }
 
+.sandbox-world-config {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  border-top: 1px solid rgba(242, 240, 223, 0.16);
+  padding-top: 10px;
+}
+
+.sandbox-world-config input,
+.sandbox-world-config select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(242, 240, 223, 0.2);
+  border-radius: 8px;
+  padding: 9px;
+  background: #222820;
+  color: #f2f0df;
+}
+
 .menu-grid select,
 .settings-grid input {
   border: 1px solid rgba(242, 240, 223, 0.2);
@@ -386,6 +406,51 @@ button:disabled {
 
 .shop-list {
   grid-template-columns: 1fr;
+}
+
+.sandbox-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sandbox-tabs button.active {
+  border-color: #d7bd62;
+  background: #d7bd62;
+  color: #171812;
+}
+
+.sandbox-spawn-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.sandbox-spawn-item {
+  min-height: 78px;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: rgba(242, 240, 223, 0.07);
+  color: #f2f0df;
+}
+
+.sandbox-spawn-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(242, 240, 223, 0.24);
+  border-radius: 4px;
+  background: #394238;
+  color: #d7bd62;
+  font-size: 12px;
+}
+
+#sandbox-world-panel {
+  width: min(720px, calc(100vw - 28px));
 }
 
 .panel#shop-panel {

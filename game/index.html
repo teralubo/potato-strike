@@ -683,6 +683,39 @@
       <div id="mod-manager-list" class="mission-list"></div>
       <p class="panel-note">Foldery w `mods` sa kategoriami. Mody sa zapisane w profilu gracza: mozesz je wlaczac, wylaczac, usuwac, dodawac ponownie i ustawiac priorytet.</p>
     </div>
+    <div class="panel hidden" id="sandbox-spawn-panel" aria-label="Menu tworzenia sandbox">
+      <div class="panel-head">
+        <div>
+          <div class="muted" id="sandbox-spawn-kicker">przytrzymaj Q</div>
+          <h2 id="sandbox-spawn-title">Tworzenie sandbox</h2>
+        </div>
+        <button class="close-panel" data-panel="sandbox-spawn-panel">Zamknij</button>
+      </div>
+      <div class="sandbox-tabs" role="tablist" aria-label="Kategorie sandbox">
+        <button class="secondary active" data-sandbox-category="objects">Obiekty</button>
+        <button class="secondary" data-sandbox-category="npcs">NPC</button>
+        <button class="secondary" data-sandbox-category="weapons">Bronie</button>
+      </div>
+      <div id="sandbox-spawn-list" class="sandbox-spawn-list"></div>
+      <p class="panel-note" id="sandbox-spawn-help">Kliknij element, aby utworzyc go przed graczem. Physics Gun przenosi obiekty lewym przyciskiem myszy.</p>
+    </div>
+    <div class="panel hidden" id="sandbox-world-panel" aria-label="Zarzadzanie swiatem sandbox">
+      <div class="panel-head">
+        <div>
+          <div class="muted" id="sandbox-world-kicker">menu pod P</div>
+          <h2 id="sandbox-world-title">Swiat sandbox</h2>
+        </div>
+        <button class="close-panel" data-panel="sandbox-world-panel">Zamknij</button>
+      </div>
+      <div id="sandbox-world-summary" class="lobby-summary"></div>
+      <div class="menu-actions left">
+        <button id="sandbox-world-export">Eksportuj swiat</button>
+        <button id="sandbox-world-import" class="secondary">Importuj swiat</button>
+        <button id="sandbox-world-clear" class="secondary">Wyczysc utworzone elementy</button>
+        <input id="sandbox-world-file" class="hidden" type="file" accept="application/json,.potato-sandbox.json">
+      </div>
+      <p class="panel-note" id="sandbox-world-help">Eksport zapisuje rozmiar, sciany, obiekty, NPC i bronie z aktualnego swiata.</p>
+    </div>
     <div id="mobile-controls" class="hidden" aria-label="Sterowanie mobilne">
       <div class="mobile-stick">
         <button data-touch-action="forward">W</button>
@@ -729,10 +762,31 @@
             <select id="menu-mode">
               <option value="offline">BOTY offline</option>
               <option value="story">Tryb fabularny</option>
+              <option value="sandbox">Sandbox</option>
               <option value="lan">LAN</option>
               <option value="online">Online HTML</option>
             </select>
           </label>
+          <div id="sandbox-world-config" class="sandbox-world-config hidden">
+            <label>
+              Szerokosc swiata (metry)
+              <input id="sandbox-width" type="number" min="30" max="150" step="1" value="40">
+            </label>
+            <label>
+              Dlugosc swiata (metry)
+              <input id="sandbox-height" type="number" min="24" max="120" step="1" value="30">
+            </label>
+            <label>
+              Material scian
+              <select id="sandbox-wall-texture">
+                <option value="white" selected>Biale panele</option>
+                <option value="concrete">Beton</option>
+                <option value="brick">Cegla</option>
+                <option value="metal">Metal</option>
+                <option value="bluewall">Niebieskie panele</option>
+              </select>
+            </label>
+          </div>
           <label>
             Tryb gry
             <select id="game-rules">
@@ -830,7 +884,7 @@
           <button id="open-teams" class="secondary">Druzyny</button>
         </div>
       </div>
-      <div id="release-version" aria-label="Wersja gry">V1.3-FINAL PATCH: 1.3</div>
+      <div id="release-version" aria-label="Wersja gry">V1.3-FINAL PATCH: 1.4</div>
     </div>
   </div>
   <script src="game.js"></script>

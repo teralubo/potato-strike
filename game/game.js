@@ -139,6 +139,18 @@ const hud = {
   serverConfigFile: $("server-config-file"),
   modsPanel: $("mods-panel"),
   modManagerList: $("mod-manager-list"),
+  sandboxSpawnPanel: $("sandbox-spawn-panel"),
+  sandboxSpawnList: $("sandbox-spawn-list"),
+  sandboxWorldPanel: $("sandbox-world-panel"),
+  sandboxWorldSummary: $("sandbox-world-summary"),
+  sandboxWorldExport: $("sandbox-world-export"),
+  sandboxWorldImport: $("sandbox-world-import"),
+  sandboxWorldClear: $("sandbox-world-clear"),
+  sandboxWorldFile: $("sandbox-world-file"),
+  sandboxWorldConfig: $("sandbox-world-config"),
+  sandboxWidth: $("sandbox-width"),
+  sandboxHeight: $("sandbox-height"),
+  sandboxWallTexture: $("sandbox-wall-texture"),
   rerollMissions: $("reroll-missions"),
   graphicsMode: $("graphics-mode"),
   quality: $("quality"),
@@ -230,6 +242,7 @@ const hud = {
 };
 
 const weaponCatalog = [
+  { name: "Physics Gun", side: "BOTH", category: "Sandbox", price: 0, magSize: 1, reserve: 0, damage: 0, fireDelay: 80, reloadTime: 0, spread: 0, recoil: 0, bulletSpeed: 0, automatic: true, color: "#70d7e5", droppable: false, sandboxOnly: true },
   { name: "Glock-18", side: "T", category: "Pistol", price: 200, magSize: 20, reserve: 120, damage: 19, fireDelay: 95, reloadTime: 1.15, spread: 0.065, recoil: 0.042, bulletSpeed: 1040, automatic: false, color: "#bfc7c1", burstCapable: true, burstCount: 3, burstDelay: 280, fireMode: "semi" },
   { name: "USP-S", side: "CT", category: "Pistol", price: 200, magSize: 12, reserve: 60, damage: 23, fireDelay: 150, reloadTime: 1.2, spread: 0.042, recoil: 0.038, bulletSpeed: 1060, automatic: false, color: "#b7c0b6" },
   { name: "P2000", side: "CT", category: "Pistol", price: 200, magSize: 13, reserve: 52, damage: 22, fireDelay: 145, reloadTime: 1.2, spread: 0.049, recoil: 0.04, bulletSpeed: 1040, automatic: false, color: "#9fb5b2" },
@@ -442,6 +455,17 @@ const state = {
   frameSkip: 0,
   triggerPoll: 0,
   triggerStates: {},
+  sandboxCategory: "objects",
+};
+
+const sandbox = {
+  version: 1,
+  unitsPerMeter: 32,
+  widthMeters: 40,
+  heightMeters: 30,
+  wallTexture: "white",
+  heldObjectId: "",
+  holdDistance: 180,
 };
 
 const settings = {
@@ -490,6 +514,9 @@ const settings = {
   autoReload: true,
   fastBindsEnabled: true,
   fastBinds: [],
+  sandboxWidth: 40,
+  sandboxHeight: 30,
+  sandboxWallTexture: "white",
 };
 
 const serverSettings = {
@@ -541,7 +568,7 @@ function activeGameRules() {
 }
 
 function isRespawnMode() {
-  return Boolean(activeGameRules().respawn);
+  return state.gameMode === "sandbox" || Boolean(activeGameRules().respawn);
 }
 
 function applyGameRulePreset(mode, updateMenu = true) {
@@ -630,6 +657,21 @@ const i18n = {
     close: "Zamknij",
     play: "Graj",
     createLan: "Utworz serwer LAN",
+    sandboxMode: "Sandbox",
+    sandboxSpawnTitle: "Tworzenie sandbox",
+    sandboxWorldTitle: "Swiat sandbox",
+    sandboxExport: "Eksportuj swiat",
+    sandboxImport: "Importuj swiat",
+    sandboxClear: "Wyczysc utworzone elementy",
+    sandboxHoldQ: "przytrzymaj Q",
+    sandboxUnderP: "menu pod P",
+    sandboxObjects: "Obiekty",
+    sandboxWeapons: "Bronie",
+    sandboxWidth: "Szerokosc swiata (metry)",
+    sandboxHeight: "Dlugosc swiata (metry)",
+    sandboxWall: "Material scian",
+    sandboxSpawnHelp: "Kliknij element, aby utworzyc go przed graczem. Physics Gun przenosi obiekty lewym przyciskiem myszy.",
+    sandboxWorldHelp: "Eksport zapisuje rozmiar, sciany, obiekty, NPC i bronie z aktualnego swiata.",
     joinLan: "DOLACZ LAN",
     lanServers: "Serwery LAN",
     lanNetwork: "siec lokalna",
@@ -761,6 +803,21 @@ const i18n = {
     close: "Close",
     play: "Play",
     createLan: "Create LAN server",
+    sandboxMode: "Sandbox",
+    sandboxSpawnTitle: "Sandbox spawn menu",
+    sandboxWorldTitle: "Sandbox world",
+    sandboxExport: "Export world",
+    sandboxImport: "Import world",
+    sandboxClear: "Clear spawned items",
+    sandboxHoldQ: "hold Q",
+    sandboxUnderP: "menu under P",
+    sandboxObjects: "Objects",
+    sandboxWeapons: "Weapons",
+    sandboxWidth: "World width (meters)",
+    sandboxHeight: "World length (meters)",
+    sandboxWall: "Wall material",
+    sandboxSpawnHelp: "Click an item to spawn it in front of the player. Hold the left mouse button with the Physics Gun to move objects.",
+    sandboxWorldHelp: "Export saves the size, walls, objects, NPCs and weapons in the current world.",
     joinLan: "JOIN LAN",
     lanServers: "LAN servers",
     lanNetwork: "local network",
@@ -1111,6 +1168,21 @@ function applyLanguage() {
   document.documentElement.lang = settings.language === "en" ? "en" : "pl";
   setText("#start", tr("play"));
   setText("#create-lan", tr("createLan"));
+  setText("#sandbox-spawn-title", tr("sandboxSpawnTitle"));
+  setText("#sandbox-world-title", tr("sandboxWorldTitle"));
+  setText("#sandbox-world-export", tr("sandboxExport"));
+  setText("#sandbox-world-import", tr("sandboxImport"));
+  setText("#sandbox-world-clear", tr("sandboxClear"));
+  setText("#sandbox-spawn-kicker", tr("sandboxHoldQ"));
+  setText("#sandbox-world-kicker", tr("sandboxUnderP"));
+  setText('[data-sandbox-category="objects"]', tr("sandboxObjects"));
+  setText('[data-sandbox-category="npcs"]', "NPC");
+  setText('[data-sandbox-category="weapons"]', tr("sandboxWeapons"));
+  setText("#sandbox-spawn-help", tr("sandboxSpawnHelp"));
+  setText("#sandbox-world-help", tr("sandboxWorldHelp"));
+  setLabel("sandbox-width", tr("sandboxWidth"));
+  setLabel("sandbox-height", tr("sandboxHeight"));
+  setLabel("sandbox-wall-texture", tr("sandboxWall"));
   setText("#join-lan", tr("joinLan"));
   setText("#lan-browser-panel h2", tr("lanServers"));
   setText("#lan-browser-panel .muted", tr("lanNetwork"));
@@ -1331,7 +1403,7 @@ function codeName(code) {
 
 function fastBindActionEntries() {
   const entries = [];
-  for (const weapon of weaponCatalog.filter((item) => !item.melee)) {
+  for (const weapon of weaponCatalog.filter((item) => !item.melee && !item.sandboxOnly)) {
     entries.push({ group: tr("fastBindBuyWeapons"), value: `buy:weapon:${weaponCatalog.indexOf(weapon)}`, label: `${weapon.category}: ${weapon.name} ($${weapon.price})` });
   }
   for (const grenade of grenadeCatalog) {
@@ -1737,6 +1809,9 @@ function syncProfileFields() {
   hud.footstepVolume.value = String(settings.footstepVolume);
   hud.serverAudio.checked = settings.serverAudio;
   hud.controlMode.value = settings.controlMode;
+  hud.sandboxWidth.value = String(clamp(Number(settings.sandboxWidth) || 40, 30, 150));
+  hud.sandboxHeight.value = String(clamp(Number(settings.sandboxHeight) || 30, 24, 120));
+  hud.sandboxWallTexture.value = simple3dTextures[settings.sandboxWallTexture] ? settings.sandboxWallTexture : "white";
   hud.menuAimMode.value = ["none", "zoom", "sights"].includes(settings.botAimMode) ? settings.botAimMode : "sights";
   applyGameRulePreset(settings.gameRules || "classic");
   hud.showMinimap.checked = settings.showMinimap;
@@ -1753,6 +1828,11 @@ function syncMenuAimMode() {
   if (!hud.menuAimMode) return;
   const mode = hud.menuMode.value;
   const story = mode === "story";
+  const sandboxMode = mode === "sandbox";
+  hud.sandboxWorldConfig?.classList.toggle("hidden", !sandboxMode);
+  for (const control of [hud.gameRules, hud.matchSize, hud.fillMode, hud.menuTeam, hud.menuMap, hud.menuAimMode]) {
+    control?.closest("label")?.classList.toggle("hidden", sandboxMode);
+  }
   hud.menuAimMode.disabled = story || mode === "lan";
   if (story) hud.menuAimMode.value = "sights";
   else if (mode !== "lan") hud.menuAimMode.value = settings.botAimMode || "sights";
@@ -2885,7 +2965,7 @@ function activeWeapon() {
 }
 
 function canHoldAim(weapon = activeWeapon()) {
-  if (!isPerspectiveMode() || !player.alive || isBombSelected() || isGrenadeSelected() || weapon.melee || weapon.burstCapable) return false;
+  if (!isPerspectiveMode() || !player.alive || isBombSelected() || isGrenadeSelected() || weapon.melee || weapon.burstCapable || weapon.sandboxOnly) return false;
   return serverSettings.aimMode !== "none";
 }
 
@@ -3018,7 +3098,7 @@ function botRoundBudget(team) {
 function chooseAffordableWeapon(team, budget) {
   const defaultName = defaultWeaponName(team);
   const affordable = weapons
-    .filter((weapon) => !weapon.melee && weapon.category !== "Melee" && sideAllows(weapon, team) && weapon.price <= budget)
+    .filter((weapon) => !weapon.melee && !weapon.sandboxOnly && weapon.category !== "Melee" && sideAllows(weapon, team) && weapon.price <= budget)
     .filter((weapon) => state.round > 1 || isRespawnMode() || state.ruleMode === "retake" || weapon.category === "Pistol")
     .sort((a, b) => b.price - a.price);
   if (!affordable.length) return weapons.find((weapon) => weapon.name === defaultName);
@@ -3196,6 +3276,8 @@ function normalizeMap(rawMap, fallback = maps.custom) {
       layer: obj.layer || "default",
       visible: obj.visible !== false,
       locked: Boolean(obj.locked),
+      sandboxBoundary: Boolean(obj.sandboxBoundary),
+      sandboxSpawned: Boolean(obj.sandboxSpawned),
       script: obj.script || "",
     }))
     .filter((obj) => obj.w > 0 && obj.h > 0);
@@ -3211,6 +3293,261 @@ function normalizeMap(rawMap, fallback = maps.custom) {
   };
   map.editorData = source.editorData && typeof source.editorData === "object" ? JSON.parse(JSON.stringify(source.editorData)) : null;
   return map;
+}
+
+const sandboxObjectCatalog = [
+  { id: "box", name: "Box", namePl: "Skrzynia", icon: "BOX", w: 64, h: 64, z: 64, type: "crate", texture: "crate" },
+  { id: "small-box", name: "Small box", namePl: "Mala skrzynia", icon: "S", w: 38, h: 38, z: 38, type: "crate", texture: "crate" },
+  { id: "barrel", name: "Metal barrel", namePl: "Metalowa beczka", icon: "O", w: 44, h: 44, z: 72, type: "cover", texture: "metal" },
+  { id: "wall", name: "Wall panel", namePl: "Panel scienny", icon: "W", w: 128, h: 24, z: 112, type: "wall", texture: "white" },
+  { id: "cover", name: "Concrete cover", namePl: "Betonowa oslona", icon: "C", w: 112, h: 44, z: 54, type: "cover", texture: "concrete" },
+  { id: "hazard", name: "Hazard block", namePl: "Blok ostrzegawczy", icon: "!", w: 72, h: 72, z: 72, type: "hazard", texture: "hazard" },
+];
+
+const sandboxNpcCatalog = [
+  { id: "friendly", name: "Friendly NPC", namePl: "Przyjazny NPC", icon: "ALLY", hostile: false },
+  { id: "enemy", name: "Enemy NPC", namePl: "Wrogi NPC", icon: "ENEMY", hostile: true },
+  { id: "dummy", name: "Training dummy", namePl: "Manekin treningowy", icon: "DUMMY", hostile: true, stationary: true },
+];
+
+function sandboxObjectId(prefix = "prop") {
+  return `sandbox-${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function physicsGunId() {
+  return weapons.find((weapon) => weapon.sandboxOnly)?.id ?? 0;
+}
+
+function isPhysicsGunActive() {
+  return state.gameMode === "sandbox" && activeWeapon()?.sandboxOnly;
+}
+
+function sandboxSpawnPoint(distance = 150) {
+  const x = player.x + Math.cos(player.angle) * distance;
+  const y = player.y + Math.sin(player.angle) * distance;
+  return {
+    x: clamp(x, 64, state.map.w - 64),
+    y: clamp(y, 64, state.map.h - 64),
+  };
+}
+
+function createSandboxMap(widthMeters = sandbox.widthMeters, heightMeters = sandbox.heightMeters, wallTexture = sandbox.wallTexture) {
+  sandbox.widthMeters = clamp(Math.round(Number(widthMeters) || 40), 30, 150);
+  sandbox.heightMeters = clamp(Math.round(Number(heightMeters) || 30), 24, 120);
+  sandbox.wallTexture = simple3dTextures[wallTexture] ? wallTexture : "white";
+  const w = sandbox.widthMeters * sandbox.unitsPerMeter;
+  const h = sandbox.heightMeters * sandbox.unitsPerMeter;
+  const thickness = 28;
+  const wall = (id, x, y, wallWidth, wallHeight) => ({
+    id,
+    type: "wall",
+    x,
+    y,
+    w: wallWidth,
+    h: wallHeight,
+    z: 150,
+    elevation: 0,
+    texture: sandbox.wallTexture,
+    material: sandbox.wallTexture,
+    locked: true,
+    sandboxBoundary: true,
+  });
+  return normalizeMap({
+    name: `Sandbox ${sandbox.widthMeters}x${sandbox.heightMeters}m`,
+    w,
+    h,
+    tSpawn: { x: w / 2, y: h / 2 },
+    ctSpawn: { x: w / 2 + 96, y: h / 2 },
+    sites: { A: { x: w / 2, y: h / 2, r: 48 }, B: { x: w / 2, y: h / 2, r: 48 } },
+    obstacles: [
+      wall("sandbox-boundary-n", 0, 0, w, thickness),
+      wall("sandbox-boundary-s", 0, h - thickness, w, thickness),
+      wall("sandbox-boundary-w", 0, thickness, thickness, h - thickness * 2),
+      wall("sandbox-boundary-e", w - thickness, thickness, thickness, h - thickness * 2),
+    ],
+    meta: { gameMode: "sandbox", defaultTexture: sandbox.wallTexture, terrainColor: "#485443", skyColor: "#71858a", fogDistance: Math.max(w, h) * 1.1 },
+  });
+}
+
+function resetSandboxLoadout() {
+  for (const weapon of weapons) {
+    weapon.owned = false;
+    weapon.cooldown = 0;
+    weapon.reloading = 0;
+    weapon.ammo = weapon.magSize;
+    weapon.currentReserve = weapon.reserve;
+  }
+  const tool = weapons[physicsGunId()];
+  if (tool) {
+    tool.owned = true;
+    player.weaponId = tool.id;
+  }
+  player.grenades = {};
+  state.activeSpecial = "";
+  state.bomb.status = "none";
+  state.bomb.carrier = "";
+}
+
+function clearSandboxSpawned() {
+  if (state.gameMode !== "sandbox") return;
+  state.map.obstacles = state.map.obstacles.filter((object) => object.sandboxBoundary);
+  bots.length = 0;
+  allies.length = 0;
+  droppedWeapons.length = 0;
+  sandbox.heldObjectId = "";
+  renderSandboxWorldSummary();
+  showMessage(settings.language === "en" ? "Sandbox world cleared" : "Wyczyszczono swiat sandbox");
+}
+
+function spawnSandboxObject(template) {
+  if (state.gameMode !== "sandbox" || !template) return;
+  const point = sandboxSpawnPoint(150);
+  const object = {
+    ...template,
+    id: sandboxObjectId(template.id),
+    x: clamp(point.x - template.w / 2, 32, state.map.w - template.w - 32),
+    y: clamp(point.y - template.h / 2, 32, state.map.h - template.h - 32),
+    rot: Math.round((player.angle * 180) / Math.PI),
+    sandboxSpawned: true,
+    locked: false,
+  };
+  state.map.obstacles.push(object);
+  showMessage(`${settings.language === "en" ? template.name : template.namePl} +1`);
+}
+
+function spawnSandboxNpc(template) {
+  if (state.gameMode !== "sandbox" || !template) return;
+  const point = sandboxSpawnPoint(190);
+  const team = template.hostile ? state.enemyTeam : state.team;
+  const npc = makeTeamBot(team, (template.hostile ? bots.length : allies.length) + 1, "SANDBOX");
+  npc.x = point.x;
+  npc.y = point.y;
+  npc.hp = template.id === "dummy" ? 250 : 100;
+  npc.name = settings.language === "en" ? template.name : template.namePl;
+  npc.sandboxSpawned = true;
+  npc.speed = template.stationary ? 0 : npc.speed;
+  npc.stationary = Boolean(template.stationary);
+  npc.passive = Boolean(template.stationary);
+  if (template.hostile) bots.push(npc);
+  else allies.push(npc);
+  showMessage(`${npc.name} +1`);
+}
+
+function spawnSandboxWeapon(weapon) {
+  if (state.gameMode !== "sandbox" || !weapon || weapon.sandboxOnly || weapon.melee) return;
+  const point = sandboxSpawnPoint(130);
+  const item = weaponDropData(weapon, point.x, point.y);
+  item.sandboxSpawned = true;
+  item.ammo = weapon.magSize;
+  item.currentReserve = weapon.reserve;
+  droppedWeapons.push(item);
+  showMessage(`${weapon.name} +1`);
+}
+
+function renderSandboxSpawnMenu() {
+  if (!hud.sandboxSpawnList) return;
+  const category = state.sandboxCategory;
+  hud.sandboxSpawnList.innerHTML = "";
+  document.querySelectorAll("[data-sandbox-category]").forEach((button) => button.classList.toggle("active", button.dataset.sandboxCategory === category));
+  let entries = [];
+  if (category === "objects") entries = sandboxObjectCatalog.map((item) => ({ item, name: settings.language === "en" ? item.name : item.namePl, icon: item.icon, detail: `${item.w}x${item.h}`, action: () => spawnSandboxObject(item) }));
+  if (category === "npcs") entries = sandboxNpcCatalog.map((item) => ({ item, name: settings.language === "en" ? item.name : item.namePl, icon: item.icon, detail: item.stationary ? "250 HP" : "AI", action: () => spawnSandboxNpc(item) }));
+  if (category === "weapons") entries = weapons.filter((weapon) => !weapon.sandboxOnly && !weapon.melee).map((item) => ({ item, name: item.name, icon: item.category.slice(0, 3).toUpperCase(), detail: item.category, action: () => spawnSandboxWeapon(item) }));
+  for (const entry of entries) {
+    const button = document.createElement("button");
+    button.className = "sandbox-spawn-item secondary";
+    const icon = document.createElement("span");
+    icon.className = "sandbox-spawn-icon";
+    icon.textContent = entry.icon;
+    const label = document.createElement("span");
+    const title = document.createElement("strong");
+    const detail = document.createElement("span");
+    title.textContent = entry.name;
+    detail.className = "muted";
+    detail.textContent = entry.detail;
+    label.append(title, document.createElement("br"), detail);
+    button.append(icon, label);
+    button.addEventListener("click", entry.action);
+    hud.sandboxSpawnList.appendChild(button);
+  }
+}
+
+function renderSandboxWorldSummary() {
+  if (!hud.sandboxWorldSummary) return;
+  const spawned = state.map?.obstacles?.filter((object) => !object.sandboxBoundary).length || 0;
+  const rows = [
+    [settings.language === "en" ? "World" : "Swiat", `${sandbox.widthMeters} x ${sandbox.heightMeters} m`],
+    [settings.language === "en" ? "Objects" : "Obiekty", String(spawned)],
+    ["NPC", String(bots.length + allies.length)],
+  ];
+  hud.sandboxWorldSummary.innerHTML = "";
+  for (const [label, value] of rows) {
+    const cell = document.createElement("div");
+    const name = document.createElement("span");
+    const data = document.createElement("strong");
+    name.textContent = label;
+    data.textContent = value;
+    cell.append(name, data);
+    hud.sandboxWorldSummary.appendChild(cell);
+  }
+}
+
+function sandboxSnapshot() {
+  return {
+    format: "potato-strike-sandbox",
+    version: sandbox.version,
+    savedAt: new Date().toISOString(),
+    graphicsMode: settings.graphicsMode,
+    world: { widthMeters: sandbox.widthMeters, heightMeters: sandbox.heightMeters, wallTexture: sandbox.wallTexture },
+    map: state.map,
+    player: { x: player.x, y: player.y, angle: player.angle },
+    npcs: [...allies, ...bots].map((npc) => ({ ...npc })),
+    weapons: droppedWeapons.map((weapon) => ({ ...weapon })),
+  };
+}
+
+function exportSandboxWorld() {
+  if (state.gameMode !== "sandbox") return;
+  downloadJson(`potato-sandbox-${sandbox.widthMeters}x${sandbox.heightMeters}.json`, sandboxSnapshot());
+  showMessage(settings.language === "en" ? "Sandbox world exported" : "Wyeksportowano swiat sandbox");
+}
+
+async function importSandboxWorldFile() {
+  const file = hud.sandboxWorldFile.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (data?.format !== "potato-strike-sandbox" || !data.map || !data.world) throw new Error("invalid sandbox file");
+    sandbox.widthMeters = clamp(Number(data.world.widthMeters) || 40, 30, 150);
+    sandbox.heightMeters = clamp(Number(data.world.heightMeters) || 30, 24, 120);
+    sandbox.wallTexture = simple3dTextures[data.world.wallTexture] ? data.world.wallTexture : "white";
+    state.map = normalizeMap(data.map, createSandboxMap());
+    bots.length = 0;
+    allies.length = 0;
+    for (const raw of Array.isArray(data.npcs) ? data.npcs.slice(0, 64) : []) {
+      const npc = { ...raw, x: clamp(Number(raw.x) || state.map.w / 2, 32, state.map.w - 32), y: clamp(Number(raw.y) || state.map.h / 2, 32, state.map.h - 32), r: 15, sandboxSpawned: true };
+      if (npc.hostile) bots.push(npc);
+      else allies.push(npc);
+    }
+    droppedWeapons.length = 0;
+    for (const raw of Array.isArray(data.weapons) ? data.weapons.slice(0, 128) : []) {
+      const weapon = weapons.find((item) => item.name === raw.name);
+      if (!weapon || weapon.sandboxOnly || weapon.melee) continue;
+      droppedWeapons.push({ ...weaponDropData(weapon, clamp(Number(raw.x) || player.x, 32, state.map.w - 32), clamp(Number(raw.y) || player.y, 32, state.map.h - 32)), ammo: clamp(Number(raw.ammo) || weapon.magSize, 0, weapon.magSize), currentReserve: clamp(Number(raw.currentReserve) || weapon.reserve, 0, weapon.reserve), sandboxSpawned: true });
+    }
+    player.x = clamp(Number(data.player?.x) || state.map.w / 2, 32, state.map.w - 32);
+    player.y = clamp(Number(data.player?.y) || state.map.h / 2, 32, state.map.h - 32);
+    player.angle = Number(data.player?.angle) || 0;
+    if (data.graphicsMode) setGraphicsMode(data.graphicsMode);
+    resetSandboxLoadout();
+    renderSandboxWorldSummary();
+    closePanels();
+    showMessage(settings.language === "en" ? "Sandbox world imported" : "Zaimportowano swiat sandbox");
+  } catch (error) {
+    showMessage(`${settings.language === "en" ? "Import failed" : "Blad importu"}: ${error.message}`);
+  } finally {
+    hud.sandboxWorldFile.value = "";
+  }
 }
 
 function findSafePoint(origin = { x: state.map.w / 2, y: state.map.h / 2 }) {
@@ -3690,6 +4027,7 @@ function equipRuleWeapon(name) {
 }
 
 function applyRuleRoundLoadout() {
+  if (state.gameMode === "sandbox") return;
   if (state.ruleMode === "retake") {
     resetLoadout();
     player.armor = 100;
@@ -3772,6 +4110,10 @@ function resetRoundPositions() {
 function spawnBots() {
   bots.length = 0;
   allies.length = 0;
+  if (state.gameMode === "sandbox") {
+    renderTeams();
+    return;
+  }
   const count = Math.max(1, Number(settings.matchSize));
   const enemySpawn = findSafePoint(state.enemyTeam === "T" ? state.map.tSpawn : state.map.ctSpawn);
   for (let i = 0; i < count; i += 1) {
@@ -3923,7 +4265,15 @@ function newMatch({ preserveLobbyOwner = false } = {}) {
       state.mapKey = "custom";
     }
   }
-  state.map = normalizeMap(maps[state.mapKey] || maps.custom);
+  if (state.gameMode === "sandbox") {
+    settings.sandboxWidth = clamp(Number(hud.sandboxWidth.value) || 40, 30, 150);
+    settings.sandboxHeight = clamp(Number(hud.sandboxHeight.value) || 30, 24, 120);
+    settings.sandboxWallTexture = simple3dTextures[hud.sandboxWallTexture.value] ? hud.sandboxWallTexture.value : "white";
+    state.mapKey = "sandbox";
+    state.map = createSandboxMap(settings.sandboxWidth, settings.sandboxHeight, settings.sandboxWallTexture);
+  } else {
+    state.map = normalizeMap(maps[state.mapKey] || maps.custom);
+  }
   if (state.gameMode === "story" && !state.storyMission) {
     state.storyMission = { id: "default-eliminate", name: state.map.name || "Story", goal: normalizeStoryGoal(state.map.meta?.storyGoal), map: state.map };
   }
@@ -3943,15 +4293,24 @@ function newMatch({ preserveLobbyOwner = false } = {}) {
   player.plants = 0;
   player.defuses = 0;
   makeWeapons();
-  resetLoadout();
+  if (state.gameMode === "sandbox") resetSandboxLoadout();
+  else resetLoadout();
   resetRoundPositions();
   spawnBots();
+  if (state.gameMode === "sandbox") {
+    state.phase = "live";
+    state.roundTime = 0;
+    state.buyTime = 0;
+    renderSandboxWorldSummary();
+  }
   syncServerControls();
   syncLanHeartbeat(true);
   renderShop();
   renderMissions();
   renderStoryObjective();
-  showMessage(`${state.gameMode.toUpperCase()} / ${rules.label} / ${teamName(state.team)} / ${state.map.name} / dowodca ${settings.nick}`);
+  showMessage(state.gameMode === "sandbox"
+    ? `${state.map.name} / Q: spawn / P: import-export / Physics Gun: LPM`
+    : `${state.gameMode.toUpperCase()} / ${rules.label} / ${teamName(state.team)} / ${state.map.name} / dowodca ${settings.nick}`);
 }
 
 function swapSidesIfNeeded() {
@@ -4053,6 +4412,7 @@ function useKey(dt) {
 }
 
 function updateRoundRules(dt) {
+  if (state.gameMode === "sandbox") return;
   if (state.phase === "freeze") {
     state.buyTime = Math.max(0, state.buyTime - dt);
     state.freezeTime -= dt;
@@ -4149,6 +4509,7 @@ function buyItem(type, id) {
 }
 
 function canBuyNow() {
+  if (state.gameMode === "sandbox") return false;
   return (state.phase === "freeze" || state.phase === "live") && state.buyTime > 0 && inBuyZone();
 }
 
@@ -4490,6 +4851,57 @@ function reload() {
   showMessage(`Przeladowanie: ${weapon.name}`);
 }
 
+function sandboxAimObject() {
+  if (state.gameMode !== "sandbox") return null;
+  if (isPerspectiveMode()) {
+    const hit = castRayHit(player.angle);
+    return hit.d <= 520 && hit.hit && !hit.hit.sandboxBoundary && !hit.hit.locked ? hit.hit : null;
+  }
+  const worldX = mouse.x + camera.x;
+  const worldY = mouse.y + camera.y;
+  const direct = [...state.map.obstacles].reverse().find((object) => !object.sandboxBoundary && !object.locked && pointInMapObstacle(worldX, worldY, object));
+  if (direct) return direct;
+  return state.map.obstacles
+    .filter((object) => !object.sandboxBoundary && !object.locked)
+    .map((object) => ({ object, distance: dist(worldX, worldY, object.x + object.w / 2, object.y + object.h / 2) }))
+    .filter((entry) => entry.distance < 48)
+    .sort((a, b) => a.distance - b.distance)[0]?.object || null;
+}
+
+function beginPhysicsGrab() {
+  if (!isPhysicsGunActive()) return false;
+  const object = sandboxAimObject();
+  if (!object) {
+    showMessage(settings.language === "en" ? "Physics Gun: no movable object" : "Physics Gun: brak ruchomego obiektu");
+    return true;
+  }
+  sandbox.heldObjectId = object.id;
+  sandbox.holdDistance = clamp(dist(player.x, player.y, object.x + object.w / 2, object.y + object.h / 2), 80, 520);
+  emitAudioEvent("ui", { x: player.x, y: player.y }, false);
+  return true;
+}
+
+function releasePhysicsGrab() {
+  if (!sandbox.heldObjectId) return false;
+  sandbox.heldObjectId = "";
+  emitAudioEvent("ui", { x: player.x, y: player.y }, false);
+  return true;
+}
+
+function updatePhysicsGun() {
+  if (!sandbox.heldObjectId || state.gameMode !== "sandbox") return;
+  const object = state.map.obstacles.find((item) => item.id === sandbox.heldObjectId);
+  if (!object || object.locked || object.sandboxBoundary) {
+    sandbox.heldObjectId = "";
+    return;
+  }
+  const target = isPerspectiveMode()
+    ? { x: player.x + Math.cos(player.angle) * sandbox.holdDistance, y: player.y + Math.sin(player.angle) * sandbox.holdDistance }
+    : { x: mouse.x + camera.x, y: mouse.y + camera.y };
+  object.x = clamp(target.x - object.w / 2, 30, state.map.w - object.w - 30);
+  object.y = clamp(target.y - object.h / 2, 30, state.map.h - object.h - 30);
+}
+
 function updatePlayer(dt) {
   if (!player.alive || state.overlayOpen || state.phase === "ended") return;
   useKey(dt);
@@ -4556,7 +4968,8 @@ function updatePlayer(dt) {
       emitAudioEvent("reloadDone", { x: player.x, y: player.y, weapon }, false);
     }
   }
-  if (!isBombSelected() && !isGrenadeSelected() && mouse.down && (weapon.automatic || mouse.clicked)) shoot(player, player.angle, weapon);
+  updatePhysicsGun();
+  if (!isPhysicsGunActive() && !isBombSelected() && !isGrenadeSelected() && mouse.down && (weapon.automatic || mouse.clicked)) shoot(player, player.angle, weapon);
   mouse.clicked = false;
   player.invuln = Math.max(0, player.invuln - dt);
 }
@@ -4584,7 +4997,7 @@ function updateBots(dt) {
       maybeStep(bot, true, false);
     }
     bot.fire -= dt * 1000;
-    if (bot.fire <= 0 && los && d < 740 && player.alive && !player.notargetMode && bot.flashed <= 0) {
+    if (!bot.passive && bot.fire <= 0 && los && d < 740 && player.alive && !player.notargetMode && bot.flashed <= 0) {
       const weapon = actorWeaponStats(bot);
       shoot(bot, a, weapon, true);
       bot.fire = Math.max(260, (weapon.fireDelay || 520) / difficultyScale()) + Math.random() * 440;
@@ -5077,7 +5490,7 @@ function renderShop() {
 function drawMap2d() {
   ctx.fillStyle = "#293629";
   ctx.fillRect(-camera.x, -camera.y, state.map.w, state.map.h);
-  drawBuyZones2d();
+  if (state.gameMode !== "sandbox") drawBuyZones2d();
   if (settings.quality !== "low") {
     ctx.strokeStyle = "#2e3a2d";
     for (let x = 0; x < state.map.w; x += 80) {
@@ -5087,7 +5500,7 @@ function drawMap2d() {
       ctx.beginPath(); ctx.moveTo(-camera.x, y - camera.y); ctx.lineTo(state.map.w - camera.x, y - camera.y); ctx.stroke();
     }
   }
-  for (const [key, site] of Object.entries(state.map.sites)) {
+  for (const [key, site] of state.gameMode === "sandbox" ? [] : Object.entries(state.map.sites)) {
     ctx.fillStyle = key === "A" ? "rgba(215,189,98,0.18)" : "rgba(119,181,111,0.18)";
     ctx.beginPath(); ctx.arc(site.x - camera.x, site.y - camera.y, site.r, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#f2f0df"; ctx.font = "22px Arial"; ctx.textAlign = "center"; ctx.fillText(key, site.x - camera.x, site.y - camera.y + 8);
@@ -5365,8 +5778,23 @@ function render2d() {
   for (const ally of allies) if (ally.hp > 0) drawActor(ally, state.team === "T" ? "#c48a45" : "#8ea9b8", ally === state.spectator.target ? "OBS" : state.team);
   for (const bot of bots) if (bot.hp > 0) drawActor(bot, state.enemyTeam === "T" ? "#b84d42" : "#557bb0", state.enemyTeam);
   if (player.alive) drawActor(player, state.team === "T" ? "#c48a45" : "#8ea9b8", "YOU");
+  drawPhysicsGunBeam2d();
   drawMinimap();
   drawCrosshair();
+}
+
+function drawPhysicsGunBeam2d() {
+  if (!isPhysicsGunActive()) return;
+  const object = state.map.obstacles.find((item) => item.id === sandbox.heldObjectId);
+  if (!object) return;
+  ctx.strokeStyle = "rgba(112,215,229,0.92)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(player.x - camera.x, player.y - camera.y);
+  ctx.lineTo(object.x + object.w / 2 - camera.x, object.y + object.h / 2 - camera.y);
+  ctx.stroke();
+  ctx.strokeStyle = "#dffcff";
+  ctx.strokeRect(object.x - camera.x, object.y - camera.y, object.w, object.h);
 }
 
 function castRay(angle) {
@@ -5577,14 +6005,31 @@ function render3d() {
     draw3dCharacter(sx, actorY, size, s.color, s.bot.hostile);
   }
   draw3dProjectilesAndObjectives(w, h, fov, depth, colW, horizon);
-  draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
-  draw3dBuyZoneMarker(w, h, fov, depth, colW, horizon);
+  if (state.gameMode !== "sandbox") {
+    draw3dSiteMarkers(w, h, fov, depth, colW, horizon);
+    draw3dBuyZoneMarker(w, h, fov, depth, colW, horizon);
+  }
   draw3dWeapon(w, h);
+  drawPhysicsGunBeam3d(w, h);
   if (isAwpScoped()) drawAwpScope(w, h);
   else if (isIronSights()) drawPotatoIronSights(w, h);
   drawFpsStatusStrip(w, h);
   drawMinimap();
   if (!isAimActive()) drawCrosshair();
+}
+
+function drawPhysicsGunBeam3d(w, h) {
+  if (!isPhysicsGunActive() || !sandbox.heldObjectId) return;
+  ctx.strokeStyle = "rgba(112,215,229,0.9)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(w * 0.68, h * 0.86);
+  ctx.lineTo(w / 2, h / 2);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(112,215,229,0.18)";
+  ctx.beginPath();
+  ctx.arc(w / 2, h / 2, 18, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawAwpScope(w, h) {
@@ -6152,6 +6597,20 @@ function draw3dWeapon(w, h) {
     return;
   }
   const weapon = activeWeapon();
+  if (weapon.sandboxOnly) {
+    const scale = clamp(w / 1280, 0.78, 1.15);
+    const x = w / 2 + 92 * scale;
+    const y = h - 142 * scale + camera.shake;
+    drawWeaponHands(x, y, scale);
+    drawWeaponPart(x + 8 * scale, y + 24 * scale, 126 * scale, 34 * scale, "#354c50");
+    drawWeaponPart(x + 42 * scale, y + 52 * scale, 28 * scale, 58 * scale, "#273336");
+    drawWeaponPart(x + 126 * scale, y + 31 * scale, 58 * scale, 18 * scale, "#70d7e5");
+    ctx.fillStyle = sandbox.heldObjectId ? "#dffcff" : "#70d7e5";
+    ctx.beginPath();
+    ctx.arc(x + 188 * scale, y + 40 * scale, (sandbox.heldObjectId ? 13 : 9) * scale, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
   const model = weaponViewModel(weapon);
   const aiming = isIronSights();
   const scale = clamp(w / 1280, 0.78, 1.15);
@@ -6205,6 +6664,23 @@ function draw3dWeapon(w, h) {
 function updateHud() {
   const weapon = activeWeapon();
   const grenade = selectedGrenade();
+  if (state.gameMode === "sandbox") {
+    const objectCount = state.map.obstacles.filter((object) => !object.sandboxBoundary).length;
+    hud.mode.textContent = `SANDBOX / ${settings.graphicsMode.toUpperCase()}`;
+    hud.team.textContent = "Q SPAWN / P WORLD";
+    hud.health.textContent = `HP ${Math.ceil(player.hp)}`;
+    hud.armor.textContent = `${sandbox.widthMeters}x${sandbox.heightMeters}m`;
+    hud.money.textContent = `${settings.language === "en" ? "OBJECTS" : "OBIEKTY"} ${objectCount}`;
+    hud.buyZone.classList.add("hidden");
+    hud.round.textContent = `NPC ${bots.length + allies.length}`;
+    hud.score.textContent = `${settings.graphicsMode.toUpperCase()} FPS`;
+    hud.timer.textContent = "--:--";
+    hud.bomb.textContent = "Q SPAWN";
+    hud.missionPill.textContent = "P IMPORT / EXPORT";
+    hud.weaponName.textContent = weapon.name;
+    hud.ammo.textContent = sandbox.heldObjectId ? "HOLDING" : "LMB GRAB";
+    return;
+  }
   const spectated = state.spectator.active ? currentSpectatorTarget() : null;
   const living = state.spectator.active ? livingTeamBots() : [];
   hud.mode.textContent = `${state.gameMode.toUpperCase()} / ${activeGameRules().label.toUpperCase()}`;
@@ -6372,6 +6848,8 @@ function closePanels() {
   hud.networkPanel.classList.add("hidden");
   hud.lanLobbyPanel.classList.add("hidden");
   hud.modsPanel.classList.add("hidden");
+  hud.sandboxSpawnPanel?.classList.add("hidden");
+  hud.sandboxWorldPanel?.classList.add("hidden");
   hud.storyObjectivePanel?.classList.add("hidden");
 }
 
@@ -6441,11 +6919,26 @@ window.addEventListener("keydown", (event) => {
     for (const fastBind of fastBinds) executeFastBind(fastBind.action);
     return;
   }
-  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.crouch, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev, "Tab"].includes(event.code)) event.preventDefault();
+  if ([bindings.forward, bindings.left, bindings.back, bindings.right, bindings.dash, bindings.crouch, bindings.drop, bindings.spectatorNext, bindings.spectatorPrev, "KeyQ", "Tab"].includes(event.code)) event.preventDefault();
   keys.add(event.code);
+  if (!typing && state.running && state.gameMode === "sandbox" && event.code === "KeyQ") {
+    if (hud.sandboxSpawnPanel.classList.contains("hidden")) {
+      closePanels();
+      state.overlayOpen = true;
+      hud.sandboxSpawnPanel.classList.remove("hidden");
+      renderSandboxSpawnMenu();
+      document.exitPointerLock?.();
+    }
+    return;
+  }
   if (event.code === bindings.dash && isPerspectiveMode() && state.grenadePrime) state.grenadePrime.jumpThrowQueued = true;
   if (event.code === "Escape") closePanels();
   if (event.code === "Tab" && showStoryObjective()) return;
+  if (event.code === "KeyP" && state.running && state.gameMode === "sandbox") {
+    renderSandboxWorldSummary();
+    togglePanel(hud.sandboxWorldPanel);
+    return;
+  }
   if (event.code === bindings.hint) { showStoryHint(); return; }
   if (event.code === bindings.shop) togglePanel(hud.shopPanel);
   if (event.code === bindings.settings) togglePanel(hud.settingsPanel);
@@ -6454,7 +6947,10 @@ window.addEventListener("keydown", (event) => {
   if (event.code === bindings.teams) togglePanel(hud.teamsPanel);
   if (event.code === bindings.network) togglePanel(hud.networkPanel);
   if (event.code === bindings.console) openOwnerConsole();
-  if (event.code === bindings.pause) setPaused(!state.paused);
+  if (event.code === bindings.pause) {
+    if (state.gameMode !== "sandbox") setPaused(!state.paused);
+    return;
+  }
   if (state.overlayOpen) return;
   if (state.spectator.active && !player.alive) {
     if (event.code === bindings.spectatorNext) cycleSpectatorTarget(1);
@@ -6466,7 +6962,13 @@ window.addEventListener("keydown", (event) => {
   if (event.code === bindings.grenade) selectNextGrenade();
   if (event.code.startsWith("Digit")) equipHotkey(Number(event.code.slice(5)));
 });
-window.addEventListener("keyup", (event) => keys.delete(event.code));
+window.addEventListener("keyup", (event) => {
+  keys.delete(event.code);
+  if (event.code === "KeyQ" && state.gameMode === "sandbox" && !hud.sandboxSpawnPanel.classList.contains("hidden")) {
+    closePanels();
+    if (state.running && isPerspectiveMode()) requestGamePointerLock();
+  }
+});
 canvas.addEventListener("mousemove", (event) => {
   if (document.pointerLockElement === canvas) {
     if (isPerspectiveMode()) {
@@ -6526,6 +7028,14 @@ canvas.addEventListener("mousedown", async (event) => {
     event.preventDefault();
     return;
   }
+  if (event.button === 0 && isPhysicsGunActive()) {
+    mouse.down = true;
+    mouse.clicked = true;
+    beginPhysicsGrab();
+    await requestGamePointerLock();
+    event.preventDefault();
+    return;
+  }
   mouse.down = true;
   mouse.clicked = true;
   await requestGamePointerLock();
@@ -6536,10 +7046,17 @@ canvas.addEventListener("contextmenu", (event) => {
 canvas.addEventListener("wheel", (event) => {
   if (state.overlayOpen || !state.running || !player.alive) return;
   event.preventDefault();
+  if (sandbox.heldObjectId && isPhysicsGunActive()) {
+    sandbox.holdDistance = clamp(sandbox.holdDistance + (event.deltaY > 0 ? 24 : -24), 80, 520);
+    return;
+  }
   cycleWeapon(event.deltaY > 0 ? 1 : -1);
 }, { passive: false });
 window.addEventListener("mouseup", (event) => {
-  if (event.button === 0) mouse.down = false;
+  if (event.button === 0) {
+    mouse.down = false;
+    releasePhysicsGrab();
+  }
   if (event.button === 2) mouse.rightDown = false;
   if (event.button === 0) releaseGrenadeAim();
 });
@@ -6695,6 +7212,25 @@ hud.start.addEventListener("click", async () => {
 hud.graphicsMode.addEventListener("change", () => { setGraphicsMode(hud.graphicsMode.value); saveConfig(); });
 hud.menuGraphics.addEventListener("change", () => { setGraphicsMode(hud.menuGraphics.value); saveConfig(); });
 hud.menuMode.addEventListener("change", syncMenuAimMode);
+for (const control of [hud.sandboxWidth, hud.sandboxHeight, hud.sandboxWallTexture]) {
+  control.addEventListener("change", () => {
+    settings.sandboxWidth = clamp(Number(hud.sandboxWidth.value) || 40, 30, 150);
+    settings.sandboxHeight = clamp(Number(hud.sandboxHeight.value) || 30, 24, 120);
+    settings.sandboxWallTexture = simple3dTextures[hud.sandboxWallTexture.value] ? hud.sandboxWallTexture.value : "white";
+    hud.sandboxWidth.value = String(settings.sandboxWidth);
+    hud.sandboxHeight.value = String(settings.sandboxHeight);
+    hud.sandboxWallTexture.value = settings.sandboxWallTexture;
+    saveConfig();
+  });
+}
+document.querySelectorAll("[data-sandbox-category]").forEach((button) => button.addEventListener("click", () => {
+  state.sandboxCategory = button.dataset.sandboxCategory;
+  renderSandboxSpawnMenu();
+}));
+hud.sandboxWorldExport.addEventListener("click", exportSandboxWorld);
+hud.sandboxWorldImport.addEventListener("click", () => hud.sandboxWorldFile.click());
+hud.sandboxWorldFile.addEventListener("change", importSandboxWorldFile);
+hud.sandboxWorldClear.addEventListener("click", clearSandboxSpawned);
 hud.menuAimMode.addEventListener("change", () => {
   settings.botAimMode = hud.menuAimMode.value;
   saveConfig();

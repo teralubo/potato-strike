@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3 FINAL - Patch 1.4
+
+Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.4`.
+
+### Patch 1.4 - playable sandbox
+
+- Added a separate Sandbox mode for both the 2D top-down and 3D FPS renderers.
+- Added empty world creation with width and length in meters plus selectable boundary-wall materials.
+- Added the Sandbox-only `Q` spawn menu with objects, friendly/enemy NPCs, a training dummy and the full weapon list.
+- Added a lightweight Physics Gun that grabs and moves spawned props with LMB in 2D and 3D; the mouse wheel changes hold distance in 3D.
+- Added the Sandbox-only `P` world panel with complete JSON import/export and clearing of spawned content.
+- Sandbox saves retain dimensions, wall material, props, NPCs, dropped weapons, player position and graphics mode.
+- Added Polish/English labels and an automated Electron/CDP smoke test covering startup, spawning, Physics Gun movement, 2D/3D switching and world import.
+
 ## 1.3 FINAL - Patch 1.3
 
 Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.3`.
