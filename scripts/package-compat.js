@@ -3,7 +3,7 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const root = process.cwd();
-const releaseName = "PotatoStrike-1.3-FINAL";
+const releaseName = "PotatoStrike-V1.4-FINAL-PATCH-1.0";
 const distDir = path.join(root, "dist");
 const releaseDir = path.join(distDir, releaseName);
 const zipPath = path.join(root, `${releaseName}.zip`);
@@ -48,6 +48,7 @@ for (const file of [
   "CHANGELOG.md",
   "PATCH-NOTES-1.2-FINAL.md",
   "PATCH-NOTES-1.3-FINAL.md",
+  "PATCH-NOTES-V1.4-FINAL-PATCH-1.0.md",
   "package.json",
   "package-lock.json",
   "main.js",

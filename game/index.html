@@ -521,9 +521,15 @@
       </div>
       <div class="menu-actions">
         <button id="resume-game">Wroc do gry</button>
+        <button id="lan-resume-match" class="secondary hidden">Wznow mecz</button>
+        <button id="lan-restart-round" class="secondary hidden">Restart rundy</button>
+        <button id="lan-restart-match" class="secondary hidden">Restart meczu</button>
+        <button id="lan-referee-settings" class="secondary hidden">Ustawienia serwera</button>
+        <button id="lan-end-match" class="secondary hidden">Zakoncz mecz</button>
         <button id="pause-settings" class="secondary">Ustawienia</button>
         <button id="pause-menu" class="secondary">Menu glowne</button>
       </div>
+      <p id="lan-referee-note" class="panel-note hidden">Panel sedziego LAN pod P. Sterowanie meczem jest dostepne tylko dla dowodcy serwera.</p>
     </div>
     <div class="panel hidden" id="lan-lobby-panel" aria-label="Poczekalnia LAN">
       <div class="panel-head">
@@ -616,6 +622,14 @@
         <label>
           Poziom botow (0-5)
           <input id="server-bot-difficulty" type="number" min="0" max="5" step="1" value="5">
+        </label>
+        <label class="check">
+          <input id="server-fill-bots" type="checkbox" checked>
+          Uzupelnij team botami
+        </label>
+        <label>
+          Graczy w teamie po uzupelnieniu
+          <input id="server-bot-quota" type="number" min="1" max="10" step="1" value="5">
         </label>
         <label>
           Czas kupowania (sekundy)
@@ -786,6 +800,11 @@
                 <option value="bluewall">Niebieskie panele</option>
               </select>
             </label>
+            <label class="check">
+              <input id="sandbox-unlimited-ammo" type="checkbox">
+              Unlimited ammo dla broni zrespionych w sandbox
+            </label>
+            <p class="panel-note">Pod V wlaczysz latanie noclip. Granice swiata pozostaja aktywne.</p>
           </div>
           <label>
             Tryb gry

@@ -1,5 +1,12 @@
 # Changelog
 
+## V1.4 FINAL PATCH-1.0
+
+- Added LAN team bot filling with a host-controlled on/off switch and per-team target size.
+- Added a commander-only LAN referee panel under `P` for pausing, resuming, restarting a round or match, opening server settings and ending the match.
+- Added optional unlimited ammo when entering Sandbox.
+- Added Sandbox-only `V` noclip flight with enforced world and height boundaries.
+
 ## 1.3 FINAL - Patch 1.4
 
 Release identifier shown in the main menu: `V1.3-FINAL PATCH: 1.4`.

@@ -114,6 +114,12 @@ const hud = {
   resumeGame: $("resume-game"),
   pauseSettings: $("pause-settings"),
   pauseMenu: $("pause-menu"),
+  lanResumeMatch: $("lan-resume-match"),
+  lanRestartRound: $("lan-restart-round"),
+  lanRestartMatch: $("lan-restart-match"),
+  lanRefereeSettings: $("lan-referee-settings"),
+  lanEndMatch: $("lan-end-match"),
+  lanRefereeNote: $("lan-referee-note"),
   missionsPanel: $("missions-panel"),
   missionList: $("mission-list"),
   networkPanel: $("network-panel"),
@@ -123,6 +129,8 @@ const hud = {
   serverJoin: $("server-join"),
   serverMaxplayers: $("server-maxplayers"),
   serverBotDifficulty: $("server-bot-difficulty"),
+  serverFillBots: $("server-fill-bots"),
+  serverBotQuota: $("server-bot-quota"),
   serverBuyTime: $("server-buytime"),
   serverFreezeTime: $("server-freezetime"),
   serverRoundTime: $("server-roundtime"),
@@ -151,6 +159,7 @@ const hud = {
   sandboxWidth: $("sandbox-width"),
   sandboxHeight: $("sandbox-height"),
   sandboxWallTexture: $("sandbox-wall-texture"),
+  sandboxUnlimitedAmmo: $("sandbox-unlimited-ammo"),
   rerollMissions: $("reroll-missions"),
   graphicsMode: $("graphics-mode"),
   quality: $("quality"),
@@ -517,6 +526,7 @@ const settings = {
   sandboxWidth: 40,
   sandboxHeight: 30,
   sandboxWallTexture: "white",
+  sandboxUnlimitedAmmo: false,
 };
 
 const serverSettings = {
@@ -531,6 +541,7 @@ const serverSettings = {
   buyTime: 20,
   startMoney: 800,
   botQuota: 5,
+  fillTeamsWithBots: true,
   botDifficulty: 5,
   botStop: false,
   gravity: 720,
@@ -1812,6 +1823,7 @@ function syncProfileFields() {
   hud.sandboxWidth.value = String(clamp(Number(settings.sandboxWidth) || 40, 30, 150));
   hud.sandboxHeight.value = String(clamp(Number(settings.sandboxHeight) || 30, 24, 120));
   hud.sandboxWallTexture.value = simple3dTextures[settings.sandboxWallTexture] ? settings.sandboxWallTexture : "white";
+  hud.sandboxUnlimitedAmmo.checked = Boolean(settings.sandboxUnlimitedAmmo);
   hud.menuAimMode.value = ["none", "zoom", "sights"].includes(settings.botAimMode) ? settings.botAimMode : "sights";
   applyGameRulePreset(settings.gameRules || "classic");
   hud.showMinimap.checked = settings.showMinimap;
@@ -1995,6 +2007,7 @@ function normalizeServerConfig(config = {}) {
     buyTime: clamp(Number(source.buyTime ?? serverSettings.buyTime), 0, 120),
     startMoney: clamp(Number(source.startMoney ?? serverSettings.startMoney), 0, 16000),
     botQuota: clamp(Number(source.botQuota ?? serverSettings.botQuota), 0, 19),
+    fillTeamsWithBots: bool(source.fillTeamsWithBots, serverSettings.fillTeamsWithBots),
     botDifficulty: normalizeBotDifficulty(source.botDifficulty, serverSettings.botDifficulty),
     botStop: bool(source.botStop, serverSettings.botStop),
     gravity: clamp(Number(source.gravity ?? serverSettings.gravity), 100, 1600),
@@ -2038,6 +2051,8 @@ function syncServerControls() {
   hud.serverHostname.value = serverSettings.hostname;
   hud.serverMaxplayers.value = String(serverSettings.maxPlayers);
   hud.serverBotDifficulty.value = String(serverSettings.botDifficulty);
+  hud.serverFillBots.checked = serverSettings.fillTeamsWithBots;
+  hud.serverBotQuota.value = String(serverSettings.botQuota);
   hud.serverBuyTime.value = String(serverSettings.buyTime);
   hud.serverFreezeTime.value = String(serverSettings.freezeTime);
   hud.serverRoundTime.value = String(serverSettings.roundTime);
@@ -2048,9 +2063,10 @@ function syncServerControls() {
   hud.serverEnemyMinimap.checked = serverSettings.enemyMinimap;
   hud.serverCheats.checked = serverSettings.svCheats;
   hud.serverAimMode.value = serverSettings.aimMode;
-  for (const control of [hud.serverHostname, hud.serverMaxplayers, hud.serverBotDifficulty, hud.serverBuyTime, hud.serverFreezeTime, hud.serverRoundTime, hud.serverStartMoney, hud.serverGravity, hud.serverFriendlyFire, hud.serverTeamDamage, hud.serverEnemyMinimap, hud.serverCheats, hud.serverAimMode, hud.serverApply, hud.serverImport]) {
+  for (const control of [hud.serverHostname, hud.serverMaxplayers, hud.serverBotDifficulty, hud.serverFillBots, hud.serverBuyTime, hud.serverFreezeTime, hud.serverRoundTime, hud.serverStartMoney, hud.serverGravity, hud.serverFriendlyFire, hud.serverTeamDamage, hud.serverEnemyMinimap, hud.serverCheats, hud.serverAimMode, hud.serverApply, hud.serverImport]) {
     if (control) control.disabled = !editable;
   }
+  hud.serverBotQuota.disabled = !editable || !serverSettings.fillTeamsWithBots;
   if (hud.networkStatus) {
     const owner = state.lobbyOwnerId || settings.playerId;
     const role = editable ? "dowodca" : "gracz";
@@ -2064,6 +2080,8 @@ function serverConfigFromControls() {
     hostname: hud.serverHostname.value,
     maxPlayers: Number(hud.serverMaxplayers.value),
     botDifficulty: Number(hud.serverBotDifficulty.value),
+    fillTeamsWithBots: hud.serverFillBots.checked,
+    botQuota: Number(hud.serverBotQuota.value),
     buyTime: Number(hud.serverBuyTime.value),
     freezeTime: Number(hud.serverFreezeTime.value),
     roundTime: Number(hud.serverRoundTime.value),
@@ -2850,7 +2868,7 @@ function executeOwnerCommand(source) {
   if (command === "help" || command === "cmdlist") return logCommand(`commands: ${consoleCommands.join(", ")}`);
   if (command === "cvarlist") return logCommand(`cvars: ${Object.keys(consoleCvars).join(", ")}`);
   if (command === "status") return logCommand(`${serverSettings.hostname} | owner ${state.lobbyOwnerId} | ${state.gameMode} | ${state.map.name} | T ${state.score.T}:${state.score.CT} CT | bots ${bots.length + allies.length}`);
-  if (command === "version") return logCommand("Potato Strike 1.3 FINAL Patch 1.3 / console protocol 2");
+  if (command === "version") return logCommand("Potato Strike V1.4 FINAL PATCH-1.0 / console protocol 2");
   if (command === "echo") return logCommand(parts.join(" "));
   if (command === "clear") { hud.commandLog.innerHTML = ""; return; }
   if (command === "pause") { setPaused(true); return logCommand("paused"); }
@@ -2935,8 +2953,17 @@ function runOwnerCommand() {
 }
 
 function setPaused(value) {
+  if (state.gameMode === "lan" && !isLobbyCommander()) {
+    showMessage("Tylko dowodca LAN moze wstrzymac mecz");
+    return;
+  }
   state.paused = value;
   hud.pausePanel.classList.toggle("hidden", !value);
+  const lan = state.gameMode === "lan";
+  for (const control of [hud.lanResumeMatch, hud.lanRestartRound, hud.lanRestartMatch, hud.lanRefereeSettings, hud.lanEndMatch, hud.lanRefereeNote]) control?.classList.toggle("hidden", !lan);
+  hud.resumeGame.classList.toggle("hidden", lan);
+  hud.pauseSettings.classList.toggle("hidden", lan);
+  hud.pauseMenu.classList.toggle("hidden", lan);
   document.exitPointerLock?.();
 }
 
@@ -4114,9 +4141,13 @@ function spawnBots() {
     renderTeams();
     return;
   }
-  const count = Math.max(1, Number(settings.matchSize));
+  const target = Math.max(1, Number(state.gameMode === "lan" ? serverSettings.botQuota : settings.matchSize));
+  const fillLan = state.gameMode !== "lan" || serverSettings.fillTeamsWithBots;
+  const lobbyTeamCount = (team) => lobbySession.players.filter((slot) => slot.team === team).length;
+  const enemyCount = fillLan ? Math.max(0, target - (state.gameMode === "lan" ? lobbyTeamCount(state.enemyTeam) : 0)) : 0;
+  const allyCount = fillLan ? Math.max(0, target - (state.gameMode === "lan" ? lobbyTeamCount(state.team) : 1)) : 0;
   const enemySpawn = findSafePoint(state.enemyTeam === "T" ? state.map.tSpawn : state.map.ctSpawn);
-  for (let i = 0; i < count; i += 1) {
+  for (let i = 0; i < enemyCount; i += 1) {
     const placed = editorUnitSpawn(state.enemyTeam, i, null);
     const spawn = placed.point || findSafePoint({ x: enemySpawn.x + (Math.random() - 0.5) * 180, y: enemySpawn.y + (Math.random() - 0.5) * 180 });
     const loadout = makeBotLoadout(state.enemyTeam);
@@ -4146,7 +4177,7 @@ function spawnBots() {
     });
   }
   const allySpawn = findSafePoint(state.team === "T" ? state.map.tSpawn : state.map.ctSpawn);
-  for (let i = 1; i < count; i += 1) {
+  for (let i = 0; i < allyCount; i += 1) {
     const placed = editorUnitSpawn(state.team, i, null);
     const spawn = placed.point || findSafePoint({ x: allySpawn.x + (Math.random() - 0.5) * 170, y: allySpawn.y + (Math.random() - 0.5) * 170 });
     const loadout = makeBotLoadout(state.team);
@@ -4167,7 +4198,7 @@ function spawnBots() {
       fire: 520 + Math.random() * 760,
       weapon: loadout.weapon,
       loadout,
-      name: `BOT ${i}`,
+      name: `BOT ${i + 1}`,
       source: "BOT",
       flashed: 0,
       openingMove: 0,
@@ -4269,9 +4300,11 @@ function newMatch({ preserveLobbyOwner = false } = {}) {
     settings.sandboxWidth = clamp(Number(hud.sandboxWidth.value) || 40, 30, 150);
     settings.sandboxHeight = clamp(Number(hud.sandboxHeight.value) || 30, 24, 120);
     settings.sandboxWallTexture = simple3dTextures[hud.sandboxWallTexture.value] ? hud.sandboxWallTexture.value : "white";
+    settings.sandboxUnlimitedAmmo = hud.sandboxUnlimitedAmmo.checked;
     state.mapKey = "sandbox";
     state.map = createSandboxMap(settings.sandboxWidth, settings.sandboxHeight, settings.sandboxWallTexture);
   } else {
+    player.noclipMode = false;
     state.map = normalizeMap(maps[state.mapKey] || maps.custom);
   }
   if (state.gameMode === "story" && !state.storyMission) {
@@ -4812,6 +4845,7 @@ function shoot(owner, angle, weapon, hostile = false) {
     }
     burstShots = weapon.burstCapable && weapon.fireMode === "burst" ? Math.min(weapon.burstCount || 3, weapon.ammo) : 1;
     weapon.ammo -= burstShots;
+    if (state.gameMode === "sandbox" && settings.sandboxUnlimitedAmmo) weapon.ammo = weapon.magSize;
     weapon.cooldown = weapon.burstCapable && weapon.fireMode === "burst" ? (weapon.burstDelay || weapon.fireDelay) / 1000 : weapon.fireDelay / 1000;
     camera.shake = Math.min(10, camera.shake + weapon.recoil * 90 * settings.screenShake * burstShots);
   }
@@ -4913,19 +4947,25 @@ function updatePlayer(dt) {
   if (isAwpScoped() || isIronSights()) speed *= 0.72;
   if (isPerspectiveMode()) {
     const wantsJump = actionDown("dash");
-    if (wantsJump && !player.jumpLatch && player.jumpHeight <= 0 && state.phase === "live") {
+    const sandboxFlight = state.gameMode === "sandbox" && player.noclipMode;
+    if (sandboxFlight) {
+      player.verticalVelocity = 0;
+      player.jumpHeight = clamp(player.jumpHeight + ((wantsJump ? 1 : 0) - (actionDown("crouch") ? 1 : 0)) * speed * dt, 0, 320);
+    } else if (wantsJump && !player.jumpLatch && player.jumpHeight <= 0 && state.phase === "live") {
       player.jumpHeight = 0.01;
       player.verticalVelocity = 245;
       player.jumpLatch = true;
     }
     if (!wantsJump) player.jumpLatch = false;
-    player.verticalVelocity -= serverSettings.gravity * dt;
-    player.jumpHeight += player.verticalVelocity * dt;
-    if (player.jumpHeight <= 0) {
-      player.jumpHeight = 0;
-      player.verticalVelocity = 0;
+    if (!sandboxFlight) {
+      player.verticalVelocity -= serverSettings.gravity * dt;
+      player.jumpHeight += player.verticalVelocity * dt;
+      if (player.jumpHeight <= 0) {
+        player.jumpHeight = 0;
+        player.verticalVelocity = 0;
+      }
     }
-    player.crouched = actionDown("crouch");
+    player.crouched = !sandboxFlight && actionDown("crouch");
     const targetEyeHeight = player.crouched ? 38 : 58;
     player.eyeHeight += (targetEyeHeight - player.eyeHeight) * clamp(dt * 14, 0, 1);
     if (player.crouched) speed *= 0.54;
@@ -4947,7 +4987,7 @@ function updatePlayer(dt) {
   if (isPerspectiveMode()) {
     const vx = Math.cos(player.angle) * forward * speed + Math.cos(player.angle + Math.PI / 2) * strafe * speed;
     const vy = Math.sin(player.angle) * forward * speed + Math.sin(player.angle + Math.PI / 2) * strafe * speed;
-    if (player.noclipMode) {
+    if (player.noclipMode && state.gameMode === "sandbox") {
       player.x = clamp(player.x + (vx / len) * dt, player.r, state.map.w - player.r);
       player.y = clamp(player.y + (vy / len) * dt, player.r, state.map.h - player.r);
     } else moveEntity(player, vx / len, vy / len, dt);
@@ -6939,6 +6979,11 @@ window.addEventListener("keydown", (event) => {
     togglePanel(hud.sandboxWorldPanel);
     return;
   }
+  if (!typing && event.code === "KeyV" && state.running && state.gameMode === "sandbox") {
+    player.noclipMode = !player.noclipMode;
+    showMessage(`Sandbox noclip: ${player.noclipMode ? "ON" : "OFF"} / granice mapy aktywne`);
+    return;
+  }
   if (event.code === bindings.hint) { showStoryHint(); return; }
   if (event.code === bindings.shop) togglePanel(hud.shopPanel);
   if (event.code === bindings.settings) togglePanel(hud.settingsPanel);
@@ -7089,6 +7134,10 @@ hud.serverHost.addEventListener("click", async () => {
   await openLanLobby(true);
 });
 hud.serverJoin.addEventListener("click", () => openLanLobby(false));
+hud.serverFillBots.addEventListener("change", () => {
+  serverSettings.fillTeamsWithBots = hud.serverFillBots.checked;
+  hud.serverBotQuota.disabled = !hud.serverFillBots.checked || !canManageServer();
+});
 hud.lanLobbyStart.addEventListener("click", startLanLobbyMatch);
 hud.lanLobbyAddPlayer.addEventListener("click", async () => {
   const name = hud.lanAddPlayerName.value.trim();
@@ -7176,6 +7225,11 @@ hud.commandInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") runOwnerCommand();
 });
 hud.resumeGame.addEventListener("click", () => setPaused(false));
+hud.lanResumeMatch.addEventListener("click", () => setPaused(false));
+hud.lanRestartRound.addEventListener("click", () => { if (isLobbyCommander()) { resetRoundPositions(); setPaused(false); showMessage("Sedzia LAN: runda zrestartowana"); } });
+hud.lanRestartMatch.addEventListener("click", () => { if (isLobbyCommander()) { newMatch({ preserveLobbyOwner: true }); setPaused(false); showMessage("Sedzia LAN: mecz zrestartowany"); } });
+hud.lanRefereeSettings.addEventListener("click", () => { if (isLobbyCommander()) { setPaused(false); syncServerControls(); togglePanel(hud.networkPanel); } });
+hud.lanEndMatch.addEventListener("click", () => { if (isLobbyCommander()) { state.running = false; state.paused = false; closePanels(); hud.menu.classList.remove("hidden"); showMessage("Sedzia LAN: mecz zakonczony"); } });
 hud.pauseSettings.addEventListener("click", () => {
   setPaused(false);
   togglePanel(hud.settingsPanel);
@@ -7212,11 +7266,12 @@ hud.start.addEventListener("click", async () => {
 hud.graphicsMode.addEventListener("change", () => { setGraphicsMode(hud.graphicsMode.value); saveConfig(); });
 hud.menuGraphics.addEventListener("change", () => { setGraphicsMode(hud.menuGraphics.value); saveConfig(); });
 hud.menuMode.addEventListener("change", syncMenuAimMode);
-for (const control of [hud.sandboxWidth, hud.sandboxHeight, hud.sandboxWallTexture]) {
+for (const control of [hud.sandboxWidth, hud.sandboxHeight, hud.sandboxWallTexture, hud.sandboxUnlimitedAmmo]) {
   control.addEventListener("change", () => {
     settings.sandboxWidth = clamp(Number(hud.sandboxWidth.value) || 40, 30, 150);
     settings.sandboxHeight = clamp(Number(hud.sandboxHeight.value) || 30, 24, 120);
     settings.sandboxWallTexture = simple3dTextures[hud.sandboxWallTexture.value] ? hud.sandboxWallTexture.value : "white";
+    settings.sandboxUnlimitedAmmo = hud.sandboxUnlimitedAmmo.checked;
     hud.sandboxWidth.value = String(settings.sandboxWidth);
     hud.sandboxHeight.value = String(settings.sandboxHeight);
     hud.sandboxWallTexture.value = settings.sandboxWallTexture;
