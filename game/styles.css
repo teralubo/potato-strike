@@ -633,6 +633,34 @@ button:disabled {
   color: #d8d5bf;
 }
 
+.update-status {
+  align-self: center;
+  min-width: 88px;
+  color: #d8d5bf;
+  font: 800 12px/1.2 Consolas, monospace;
+  text-align: center;
+}
+
+.update-status.available {
+  color: #8ee58f;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #8ee58f;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #315a35;
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.button-link:hover { background: #3d7042; }
+.button-link.hidden { display: none; }
+
 body.sandbox-map-editing #editor-panel {
   left: 14px;
   top: 14px;

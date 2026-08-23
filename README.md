@@ -13,7 +13,7 @@ Workflow repo:
 - `beta` - zmiany gotowe do szerszych testow.
 - `main` - wydania zaakceptowane do publikacji.
 
-## V1.4 FINAL PATCH-1.1
+## V1.4 RELEASE PATCH-1.0
 
 - Zwykly `Sandbox` ma opcjonalny edytor mapy z gory pod `P`; nie jest to osobny tryb gry.
 - `PRZELACZ` zmienia widok bez tworzenia nowej mapy, kasowania obiektow ani zmiany pozycji gracza.

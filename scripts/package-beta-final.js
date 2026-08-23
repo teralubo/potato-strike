@@ -3,7 +3,7 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const root = process.cwd();
-const releaseName = "PotatoStrike-V1.4-BETA-FINAL-PATCH-1.0";
+const releaseName = "PotatoStrike-V1.4-RELEASE-PATCH-1.0-BETA";
 const distDir = path.join(root, "dist");
 const releaseDir = path.join(distDir, releaseName);
 const zipPath = path.join(root, `${releaseName}.zip`);

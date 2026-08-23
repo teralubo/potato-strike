@@ -210,7 +210,7 @@ requireSnippets(gameHtml, [
   'id="create-lan"', 'id="join-lan"', 'id="lan-browser-panel"', 'id="lan-browser-list"', 'id="lan-browser-refresh"', 'id="lan-lobby-panel"', 'id="lan-transfer-target"', 'id="lan-lobby-bans"', 'id="lan-lobby-add-player"', 'id="menu-aim-mode"',
   'id="server-bot-difficulty"', 'id="server-fill-bots"', 'id="server-bot-quota"', 'id="server-buytime"', 'id="server-team-damage"',
   'value="sandbox"', 'Sandbox (opcjonalny edytor pod P)', 'id="sandbox-world-config"', 'id="sandbox-unlimited-ammo"', 'id="sandbox-spawn-panel"', 'id="sandbox-world-panel"', 'id="sandbox-world-switch"', 'id="editor-panel-title"', 'data-sandbox-editor-hide', 'id="editor-export-map"', 'id="editor-import-map"', 'id="sandbox-world-file"', 'id="lan-restart-round"',
-  'id="release-version"', 'V1.4 FINAL PATCH-1.1',
+  'id="release-version"', 'V1.4 RELEASE PATCH-1.0',
   '<option value="vsync" selected>',
 ], "Fast Bind and V-Sync settings UI");
 
@@ -248,11 +248,11 @@ requireSnippets(editorCss, ["#studio-viewport-3d", ".studio-viewport-toolbar", "
 
 const workflow = fs.readFileSync(".github/workflows/potato-strike-1-2-beta.yml", "utf8");
 requireSnippets(workflow, [
-  "Potato Strike V1.4 FINAL PATCH-1.0 Compatibility Builds", "workflow_dispatch", "tags:", '"v*"', "concurrency:",
+  "Potato Strike V1.4 RELEASE PATCH-1.0 Compatibility Builds", "workflow_dispatch", "tags:", '"v*"', "concurrency:",
   "build:win:compat", "build:linux:compat", "PotatoStrike-1.3-FINAL-PATCH-1.3.apk",
   "PotatoStrikeMini-1.3-FINAL-PATCH-1.3-official.fap", "PotatoStrikeMini-1.3-FINAL-PATCH-1.3-momentum.fap",
-  "PotatoStrikeMini-1.3-FINAL-PATCH-1.3-unleashed.fap", "PotatoStrike-V1.4-FINAL-PATCH-1.0.zip", "potato-strike-v1.4-final-patch-1.0",
-  "PotatoStrike-V1.4-BETA-FINAL-PATCH-1.0.zip", "potato-strike-v1.4-beta-final-patch-1.0-compressed",
+  "PotatoStrikeMini-1.3-FINAL-PATCH-1.3-unleashed.fap", "PotatoStrike-V1.4-RELEASE-PATCH-1.0.zip", "potato-strike-v1.4-release-patch-1.0",
+  "PotatoStrike-V1.4-RELEASE-PATCH-1.0-BETA.zip", "potato-strike-v1.4-release-patch-1.0-beta-compressed",
 ], "1.3 compatibility workflow feature");
 
 const pagesWorkflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
@@ -265,13 +265,13 @@ for (const forbidden of ["npm ci", "npm run build:single", "actions/setup-node"]
 }
 
 const packageScript = fs.readFileSync("scripts/package-compat.js", "utf8");
-requireSnippets(packageScript, ["PotatoStrike-V1.4-FINAL-PATCH-1.0", "PATCH-NOTES-V1.4-FINAL-PATCH-1.0.md", "PotatoStrike-1.3-FINAL-PATCH-1.3.apk"], "release packager feature");
+requireSnippets(packageScript, ["PotatoStrike-V1.4-RELEASE-PATCH-1.0", "PATCH-NOTES-V1.4-FINAL-PATCH-1.0.md", "PotatoStrike-1.3-FINAL-PATCH-1.3.apk"], "release packager feature");
 const betaPackageScript = fs.readFileSync("scripts/package-beta-final.js", "utf8");
-requireSnippets(betaPackageScript, ["PotatoStrike-V1.4-BETA-FINAL-PATCH-1.0", "PATCH-NOTES-V1.4-FINAL-PATCH-1.0.md", "CompressionLevel Optimal", "mods", "game"], "compressed beta packager feature");
+requireSnippets(betaPackageScript, ["PotatoStrike-V1.4-RELEASE-PATCH-1.0-BETA", "PATCH-NOTES-V1.4-FINAL-PATCH-1.0.md", "CompressionLevel Optimal", "mods", "game"], "compressed beta packager feature");
 
 console.log(`Game DOM IDs OK: ${gameIdCount}`);
 console.log(`Studio DOM IDs OK: ${editorIdCount}`);
 console.log(`Studio 3D vendor OK: ${(vendorSize / 1024).toFixed(1)} KiB`);
 if (!fs.existsSync("DEV-tools/docs.txt")) fail("Missing DEV-tools/docs.txt developer documentation");
 
-console.log("Potato Strike V1.4 FINAL PATCH-1.1 runtime, assets and workflows OK");
+console.log("Potato Strike V1.4 RELEASE PATCH-1.0 runtime, assets and workflows OK");

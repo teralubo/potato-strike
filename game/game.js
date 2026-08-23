@@ -36,6 +36,9 @@ const hud = {
   message: $("message"),
   menu: $("menu"),
   start: $("start"),
+  checkUpdate: $("check-update"),
+  updateStatus: $("update-status"),
+  downloadUpdate: $("download-update"),
   createLan: $("create-lan"),
   joinLan: $("join-lan"),
   lanLobbyPanel: $("lan-lobby-panel"),
@@ -2890,7 +2893,7 @@ function executeOwnerCommand(source) {
   if (command === "help" || command === "cmdlist") return logCommand(`commands: ${consoleCommands.join(", ")}`);
   if (command === "cvarlist") return logCommand(`cvars: ${Object.keys(consoleCvars).join(", ")}`);
   if (command === "status") return logCommand(`${serverSettings.hostname} | owner ${state.lobbyOwnerId} | ${state.gameMode} | ${state.map.name} | T ${state.score.T}:${state.score.CT} CT | bots ${bots.length + allies.length}`);
-  if (command === "version") return logCommand("Potato Strike V1.4 FINAL PATCH-1.0 / console protocol 2");
+  if (command === "version") return logCommand("Potato Strike V1.4 RELEASE PATCH-1.0 / console protocol 2");
   if (command === "echo") return logCommand(parts.join(" "));
   if (command === "clear") { hud.commandLog.innerHTML = ""; return; }
   if (command === "pause") { setPaused(true); return logCommand("paused"); }
@@ -4706,22 +4709,24 @@ function dropWeaponAt(weapon, x, y, angle = Math.random() * Math.PI * 2) {
   return true;
 }
 
-function dropPlayerLoadoutOnDeath() {
+function dropPlayerLoadoutOnDeath({ retainWeapons = false } = {}) {
   let dropped = 0;
   for (const weapon of ownedWeapons()) {
     if (weapon.droppable === false || weapon.melee) continue;
     if (dropWeaponAt(weapon, player.x + (Math.random() - 0.5) * 34, player.y + (Math.random() - 0.5) * 34)) {
-      weapon.owned = false;
+      if (!retainWeapons) weapon.owned = false;
       weapon.cooldown = 0;
       weapon.reloading = 0;
       dropped += 1;
     }
   }
   state.activeSpecial = "";
-  const knife = weapons[knifeWeaponId()];
-  if (knife) {
-    knife.owned = true;
-    player.weaponId = knife.id;
+  if (!retainWeapons) {
+    const knife = weapons[knifeWeaponId()];
+    if (knife) {
+      knife.owned = true;
+      player.weaponId = knife.id;
+    }
   }
   if (playerHasBomb()) dropBombAt(player.x, player.y);
   if (dropped) renderShop();
@@ -4734,6 +4739,50 @@ function dropActorLoadoutOnDeath(actor) {
   for (const name of names) {
     const weapon = weapons.find((item) => item.name === name);
     dropWeaponAt(weapon, actor.x + (Math.random() - 0.5) * 28, actor.y + (Math.random() - 0.5) * 28);
+  }
+}
+
+const CURRENT_GAME_VERSION = "1.4.2";
+const GITHUB_RELEASES_API = "https://api.github.com/repos/teralubo/potato-strike/releases?per_page=20";
+
+function versionParts(value) {
+  const match = String(value || "").match(/\d+(?:\.\d+){1,3}/);
+  return match ? match[0].split(".").map((part) => Number(part) || 0) : [];
+}
+
+function isNewerVersion(candidate, current = CURRENT_GAME_VERSION) {
+  const next = versionParts(candidate);
+  const installed = versionParts(current);
+  if (!next.length) return false;
+  for (let i = 0; i < Math.max(next.length, installed.length); i += 1) {
+    if ((next[i] || 0) !== (installed[i] || 0)) return (next[i] || 0) > (installed[i] || 0);
+  }
+  return false;
+}
+
+async function checkForUpdate() {
+  hud.checkUpdate.disabled = true;
+  hud.updateStatus.classList.remove("available");
+  hud.updateStatus.textContent = "SPRAWDZAM...";
+  hud.downloadUpdate.classList.add("hidden");
+  try {
+    const response = await fetch(GITHUB_RELEASES_API, { headers: { Accept: "application/vnd.github+json" } });
+    if (!response.ok) throw new Error(`GitHub HTTP ${response.status}`);
+    const releases = await response.json();
+    const release = releases.find((item) => !item.draft && item.target_commitish === "main" && isNewerVersion(item.tag_name || item.name));
+    if (release) {
+      hud.updateStatus.textContent = "DOSTEPNY";
+      hud.updateStatus.classList.add("available");
+      hud.downloadUpdate.href = release.html_url || "https://github.com/teralubo/potato-strike/releases";
+      hud.downloadUpdate.classList.remove("hidden");
+    } else {
+      hud.updateStatus.textContent = "AKTUALNA";
+    }
+  } catch (error) {
+    hud.updateStatus.textContent = "BRAK POLACZENIA";
+    console.warn("Nie udalo sie sprawdzic aktualizacji", error);
+  } finally {
+    hud.checkUpdate.disabled = false;
   }
 }
 
@@ -4909,11 +4958,11 @@ function awardPlayerHit(bot) {
   player.hits += 1;
   advanceMission("hits", 1);
   if (bot.hp <= 0) {
+    dropActorLoadoutOnDeath(bot);
     if (isRespawnMode()) {
       bot.respawnTimer = 2.2;
       bot.deathCounted = true;
     }
-    else dropActorLoadoutOnDeath(bot);
     player.kills += 1;
     player.roundKills += 1;
     if (isRespawnMode()) state.fragScore.player += 1;
@@ -4937,8 +4986,15 @@ function meleeAttack(owner, angle, weapon, hostile = false) {
   const reach = 78;
   const arc = Math.PI / 2.35;
   if (hostile) {
-    if (dist(owner.x, owner.y, player.x, player.y) <= reach && Math.abs(angleDiff(angle, angleTo(owner.x, owner.y, player.x, player.y))) <= arc && hasLineOfSight(owner.x, owner.y, player.x, player.y)) {
-      damagePlayer(weapon.damage || 35);
+    const targets = allies.filter((ally) => ally.hp > 0);
+    if (player.alive && !player.notargetMode) targets.push(player);
+    const target = targets
+      .filter((candidate) => dist(owner.x, owner.y, candidate.x, candidate.y) <= reach && Math.abs(angleDiff(angle, angleTo(owner.x, owner.y, candidate.x, candidate.y))) <= arc && hasLineOfSight(owner.x, owner.y, candidate.x, candidate.y))
+      .sort((left, right) => dist(owner.x, owner.y, left.x, left.y) - dist(owner.x, owner.y, right.x, right.y))[0];
+    if (target === player) damagePlayer(weapon.damage || 35);
+    else if (target) {
+      damageActor(target, weapon.damage || 35);
+      if (target.hp <= 0) dropActorLoadoutOnDeath(target);
     }
     return;
   }
@@ -5152,15 +5208,19 @@ function updateBots(dt) {
     if (bot.hp <= 0) continue;
     bot.flashed = Math.max(0, bot.flashed - dt);
     bot.openingMove = Math.max(0, Number(bot.openingMove || 0) - dt);
-    const a = angleTo(bot.x, bot.y, player.x, player.y);
+    const possibleTargets = allies.filter((ally) => ally.hp > 0);
+    if (player.alive && !player.notargetMode) possibleTargets.push(player);
+    const target = possibleTargets.sort((left, right) => dist(bot.x, bot.y, left.x, left.y) - dist(bot.x, bot.y, right.x, right.y))[0];
+    if (!target) continue;
+    const a = angleTo(bot.x, bot.y, target.x, target.y);
     bot.angle = a;
-    const d = dist(bot.x, bot.y, player.x, player.y);
-    const los = hasLineOfSight(bot.x, bot.y, player.x, player.y);
+    const d = dist(bot.x, bot.y, target.x, target.y);
+    const los = hasLineOfSight(bot.x, bot.y, target.x, target.y);
     const targetSite = state.enemyTeam === "T" ? state.map.sites[state.bomb.site || (Math.random() < 0.5 ? "A" : "B")] : null;
     const editorWaypoint = nextEditorWaypoint(bot);
     if (bot.flashed <= 0 && (bot.openingMove > 0 || !los || d > 260 || player.notargetMode)) {
-      const tx = editorWaypoint?.x ?? targetSite?.x ?? player.x;
-      const ty = editorWaypoint?.y ?? targetSite?.y ?? player.y;
+      const tx = editorWaypoint?.x ?? targetSite?.x ?? target.x;
+      const ty = editorWaypoint?.y ?? targetSite?.y ?? target.y;
       const openingTarget = state.enemyTeam === "T" ? (targetSite || { x: state.map.w / 2, y: state.map.h / 2 }) : { x: state.map.w / 2, y: state.map.h / 2 };
       const moveA = bot.openingMove > 0
         ? angleTo(bot.x, bot.y, editorWaypoint?.x ?? openingTarget.x, editorWaypoint?.y ?? openingTarget.y)
@@ -5169,12 +5229,18 @@ function updateBots(dt) {
       maybeStep(bot, true, false);
     }
     bot.fire -= dt * 1000;
-    if (!bot.passive && bot.fire <= 0 && los && d < 740 && player.alive && !player.notargetMode && bot.flashed <= 0) {
+    if (!bot.passive && bot.fire <= 0 && los && d < 740 && bot.flashed <= 0) {
       const weapon = actorWeaponStats(bot);
       shoot(bot, a, weapon, true);
       bot.fire = Math.max(260, (weapon.fireDelay || 520) / difficultyScale()) + Math.random() * 440;
     }
-    if (d < bot.r + player.r) damagePlayer(16 * dt * difficultyScale());
+    if (d < bot.r + target.r) {
+      if (target === player) damagePlayer(16 * dt * difficultyScale());
+      else {
+        damageActor(target, 16 * dt * difficultyScale());
+        if (target.hp <= 0) dropActorLoadoutOnDeath(target);
+      }
+    }
   }
 }
 
@@ -5329,10 +5395,11 @@ function damagePlayer(amount) {
   if (player.hp <= 0) {
     player.hp = 0;
     player.alive = false;
+    dropPlayerLoadoutOnDeath({ retainWeapons: isRespawnMode() });
     if (isRespawnMode()) {
       player.respawnTimer = 2.5;
       state.fragScore.enemy += 1;
-    } else dropPlayerLoadoutOnDeath();
+    }
     emitAudioEvent("death", { x: player.x, y: player.y });
     enterSpectator();
   }
@@ -5349,6 +5416,7 @@ function respawnActor(actor, team) {
   actor.respawnTimer = 0;
   actor.openingMove = 0.8;
   actor.deathCounted = false;
+  actor.droppedLoadout = false;
 }
 
 function updateRespawns(dt) {
@@ -5403,11 +5471,12 @@ function updateBullets(dt) {
         if (ally.hp > 0 && dist(b.x, b.y, ally.x, ally.y) < ally.r) {
           damageActor(ally, b.damage);
           if (ally.hp <= 0) {
+            dropActorLoadoutOnDeath(ally);
             if (isRespawnMode() && !ally.deathCounted) {
               ally.respawnTimer = 2.2;
               ally.deathCounted = true;
               state.fragScore.enemy += 1;
-            } else if (!isRespawnMode()) dropActorLoadoutOnDeath(ally);
+            }
           }
           emitAudioEvent(ally.hp <= 0 ? "death" : "hit", { x: ally.x, y: ally.y }, false);
           remove = true;
@@ -5421,6 +5490,14 @@ function updateBullets(dt) {
           const awpKill = b.owner === player && b.weaponName === "AWP";
           damageActor(bot, awpKill ? Math.max(200, b.damage) : b.damage, awpKill);
           if (b.owner === player) awardPlayerHit(bot);
+          else if (bot.hp <= 0) {
+            dropActorLoadoutOnDeath(bot);
+            if (isRespawnMode() && !bot.deathCounted) {
+              bot.respawnTimer = 2.2;
+              bot.deathCounted = true;
+              state.fragScore.player += 1;
+            }
+          }
           remove = true;
           break;
         }
@@ -5485,11 +5562,12 @@ function updateGrenades(dt) {
         if (bot.hp > 0 && dist(effects[i].x, effects[i].y, bot.x, bot.y) < effects[i].r) {
           damageActor(bot, 16 * dt);
           if (bot.hp <= 0) {
+            dropActorLoadoutOnDeath(bot);
             if (isRespawnMode() && !bot.deathCounted) {
               bot.respawnTimer = 2.2;
               bot.deathCounted = true;
               state.fragScore.player += 1;
-            } else if (!isRespawnMode()) dropActorLoadoutOnDeath(bot);
+            }
           }
         }
       }
@@ -7338,6 +7416,7 @@ hud.teamDifficulty.addEventListener("change", () => {
   saveConfig();
 });
 hud.downloadGame.addEventListener("click", downloadLauncher);
+hud.checkUpdate.addEventListener("click", checkForUpdate);
 hud.generateMap.addEventListener("click", generateMapFromMenu);
 hud.editorNew.addEventListener("click", newEditorMap);
 hud.editorRandom.addEventListener("click", () => {

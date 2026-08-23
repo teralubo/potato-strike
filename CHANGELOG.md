@@ -1,6 +1,10 @@
 # Changelog
 
-## V1.4 FINAL PATCH-1.1
+## V1.4 RELEASE PATCH-1.0
+
+- Added an in-game GitHub update check for newer releases published from `main`, with a direct `UPDATE` link when one is available.
+- Weapons now drop from the player and bots whenever they die, including respawn modes.
+- Enemy bots now choose between the player and living allied bots instead of focusing exclusively on the player.
 
 - Integrated the optional aerial map editor directly into regular Sandbox instead of exposing a second game mode.
 - Added the `P` switch menu; `PRZELACZ` moves between editor and sandbox views without rebuilding the world.
@@ -13,7 +17,7 @@
 - Preserved separate Editor and Sandbox modes and the existing Arma-inspired 2D/3D Studio workflow.
 - Added complete developer documentation in `DEV-tools/docs.txt`.
 
-## V1.4 FINAL PATCH-1.0
+## V1.4 development snapshot - LAN and Sandbox
 
 - Added LAN team bot filling with a host-controlled on/off switch and per-team target size.
 - Added a commander-only LAN referee panel under `P` for pausing, resuming, restarting a round or match, opening server settings and ending the match.
