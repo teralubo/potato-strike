@@ -38,7 +38,7 @@ Workflow repo:
 - Android 5.0+ otrzymuje uniwersalny APK z dotykowym sterowaniem i wbudowanym jednoplikowym runtime gry.
 - Linux ma AppImage, deb, rpm, tar.gz, katalog portable oraz awaryjne launchery HTML/local-server.
 - Windows ma portable x64/ia32; Windows 7/8 korzysta z lekkiego launchera HTML i kompatybilnej przegladarki.
-- Flipper Zero otrzymuje osobna, natywna `Potato Strike Mini` w wariantach FAP dla Official, Momentum i Unleashed firmware.
+- Flipper Zero otrzymuje osobna, natywna `Potato Strike Mini` w wariantach FAP dla Official, Momentum i Unleashed firmware. Ta wersja jest w fazie **ALPHA / TESTING** i bedzie rozwijana oraz aktualizowana rzadziej niz glowna wersja gry.
 - Szczegoly: `PATCH-NOTES-1.3-FINAL.md` oraz `CHANGELOG.md`.
 
 - Widok 3D korzysta z lekkich sprite'ow broni wyeksportowanych z FreEDoom 0.13.0; tryb 2D pozostaje bez zmian.
@@ -85,7 +85,7 @@ Szczegoly sa w `GITHUB-ACTIONS-COST-SAVING.md`.
 Pakiet kompatybilnosci z 1.1 jest dalej utrzymywany i wersjonowany razem z 1.3:
 
 - `phone/android/` zawiera natywna wersje Android WebView ladujaca `PotatoStrike.html`.
-- `phone/flipperzero/` zawiera ultra-mini wersje `Potato Strike Mini` dla Flipper Zero.
+- `phone/flipperzero/` zawiera ultra-mini wersje `Potato Strike Mini` dla Flipper Zero. Jest to eksperymentalna wersja **ALPHA / TESTING**, bez gwarancji czestych aktualizacji.
 - `.github/workflows/potato-strike-1-2-beta.yml` buduje APK, FAP i paczki kompatybilnosci 1.3 jako artefakty GitHub Actions.
 - `.github/workflows/pages.yml` publikuje jednoplikowa wersje HTML na GitHub Pages, jesli Pages jest wlaczone w repo.
 - `compat/` zawiera launchery i instrukcje dla starszych Windowsow, roznych dystrybucji Linuxa i awaryjnego HTML/server mode.

@@ -1,5 +1,7 @@
 # Potato Strike Mini for Flipper Zero
 
+> **Status: ALPHA / TESTING.** Wersja na Flipper Zero jest eksperymentalnym, uproszczonym portem. Nie bedzie rozwijana ani aktualizowana tak czesto jak glowna wersja Potato Strike na PC, WWW i Androida. Moga wystepowac bledy, braki funkcji oraz problemy zgodnosci z wybranymi wersjami firmware.
+
 ## Najprosciej
 
 1. Pobierz paczke `potato-strike-1.3-final-folder` z GitHub Actions.
